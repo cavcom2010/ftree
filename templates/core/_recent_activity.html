@@ -1,22 +1,50 @@
-<section class="section activity-section">
-    <h2 class="section-title">Recent Activity</h2>
+<section id="activity">
+    <div class="section-head">
+        <div>
+            <h2>Recent Activity</h2>
+            <p>What changed since the last visit.</p>
+        </div>
+    </div>
     <div class="activity-list">
         {% for activity in recent_activities %}
-        <div class="activity-item">
-            <div class="activity-avatar">
-                {% if activity.actor %}
-                    {{ activity.actor.username|slice:":1"|upper }}
-                {% else %}
-                    ?
+        <article class="activity">
+            <div class="activity-icon">
+                {% if "branch" in activity.message|lower or "tree" in activity.message|lower %}🌳
+                {% elif "story" in activity.message|lower %}📝
+                {% elif "achievement" in activity.message|lower or "earned" in activity.message|lower %}🏆
+                {% elif "photo" in activity.message|lower or "memory" in activity.message|lower %}🖼️
+                {% elif "comment" in activity.message|lower %}💬
+                {% elif "spouse" in activity.message|lower or "child" in activity.message|lower or "added" in activity.message|lower %}🌳
+                {% else %}❤️
                 {% endif %}
             </div>
-            <div class="activity-body">
-                <p class="activity-message">{{ activity.message }}</p>
-                <span class="activity-time">{{ activity.created_at|timesince }} ago</span>
+            <div>
+                <b>{{ activity.message }}</b>
+                <p>{{ activity.created_at|timesince }} ago</p>
             </div>
-        </div>
+        </article>
         {% empty %}
-        <p class="activity-empty">No activity yet.</p>
+        <article class="activity">
+            <div class="activity-icon">🌳</div>
+            <div>
+                <b>New branch opened</b>
+                <p>David’s descendants were revealed and two children were added.</p>
+            </div>
+        </article>
+        <article class="activity">
+            <div class="activity-icon">📝</div>
+            <div>
+                <b>Story added</b>
+                <p>Sarah wrote about the old family house and tagged Linda.</p>
+            </div>
+        </article>
+        <article class="activity">
+            <div class="activity-icon">🏆</div>
+            <div>
+                <b>Achievement earned</b>
+                <p>Calvin became a Memory Keeper after uploading 10 photos.</p>
+            </div>
+        </article>
         {% endfor %}
     </div>
 </section>

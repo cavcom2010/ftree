@@ -1,9 +1,47 @@
-<section class="section tree-section" id="tree-preview">
-    <h2 class="section-title">Family Tree</h2>
-    <div class="tree-snapshot">
-        {% for lane in generation_rows %}
-            {% include "people/partials/generation_lane.html" with lane=lane %}
-        {% endfor %}
+<section id="tree">
+    <div class="section-head">
+        <div>
+            <h2>Interactive Tree</h2>
+            <p>Tap a name to reveal descendants.</p>
+        </div>
+        <button class="link-btn" onclick="revealAll()">Reveal all</button>
     </div>
-    <a href="#" class="btn btn-outline btn-block">Open Full Tree</a>
+    <div class="tree-card">
+        <div class="tree-top">
+            <button class="chip active">All Family</button>
+            <button class="chip">Generation 4</button>
+            <button class="chip">Ancestors</button>
+            <button class="chip">Descendants</button>
+            <button class="chip">Highlight Path</button>
+        </div>
+        <div class="tree-scroll">
+            <div class="tree">
+                {% for lane in generation_rows %}
+                <div class="generation {% if lane.number > 2 %}hidden{% else %}revealed{% endif %}" id="gen{{ lane.number }}">
+                    <div class="generation-label">
+                        Generation {{ lane.number }}<br>{{ lane.label }}
+                    </div>
+                    <div class="people-row">
+                        {% for person in lane.people %}
+                        <button class="person-card {% if lane.number < 4 %}has-kids{% endif %}"
+                                hx-get="/people/{{ person.id }}/drawer/"
+                                hx-target="#personDrawer"
+                                hx-swap="innerHTML"
+                                onclick="selectPerson(event, '{{ person.full_name|escapejs }}', '{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %} · {{ lane.label }}', '{{ person.first_name|slice:':1' }}'); {% if lane.number < 4 %}toggleGeneration('gen{{ lane.number|add:'1' }}'){% endif %}">
+                            <span class="avatar">{{ person.first_name|slice:":1" }}</span>
+                            <span class="person-meta">
+                                <b>{{ person.first_name }}</b>
+                                <small>{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}</small>
+                            </span>
+                            {% if lane.number < 4 %}
+                            <span class="expand-dot">+</span>
+                            {% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </section>

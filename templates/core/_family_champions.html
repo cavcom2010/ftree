@@ -1,29 +1,46 @@
-<section class="section champions-section">
-    <h2 class="section-title">Family Champions</h2>
-
-    {% if top_achievers %}
-    <div class="champions-row">
+<section id="champions">
+    <div class="section-head">
+        <div>
+            <h2>Family Champions</h2>
+            <p>Meaningful contribution, not fake points.</p>
+        </div>
+    </div>
+    <div class="activity-list">
         {% for achiever in top_achievers %}
-        <div class="champion-avatar" title="{{ achiever.user__username }} — {{ achiever.total }} achievement{{ achiever.total|pluralize }}">
-            <span>{{ achiever.user__username|slice:":1"|upper }}</span>
-            <small class="champion-count">{{ achiever.total }}</small>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if latest_achievements %}
-    <div class="latest-achievements">
-        {% for ua in latest_achievements %}
-        <div class="latest-ach-item">
-            <span class="latest-ach-icon">{{ ua.achievement.icon }}</span>
-            <div class="latest-ach-body">
-                <strong>{{ ua.user.username }}</strong> earned
-                <em>{{ ua.achievement.name }}</em>
-                <span class="latest-ach-time">{{ ua.earned_at|timesince }} ago</span>
+        <article class="activity">
+            <div class="activity-icon">
+                {% if forloop.counter == 1 %}🥇
+                {% elif forloop.counter == 2 %}🥈
+                {% elif forloop.counter == 3 %}🥉
+                {% else %}🏅{% endif %}
             </div>
-        </div>
+            <div>
+                <b>{{ achiever.user__username }}</b>
+                <p>{{ achiever.total }} achievement{{ achiever.total|pluralize }}</p>
+            </div>
+        </article>
+        {% empty %}
+        <article class="activity">
+            <div class="activity-icon">🥇</div>
+            <div>
+                <b>Barbara</b>
+                <p>Memory Keeper · +80 points</p>
+            </div>
+        </article>
+        <article class="activity">
+            <div class="activity-icon">🥈</div>
+            <div>
+                <b>Calvin</b>
+                <p>Family Historian · +65 points</p>
+            </div>
+        </article>
+        <article class="activity">
+            <div class="activity-icon">🥉</div>
+            <div>
+                <b>Muno</b>
+                <p>Story Teller · +42 points</p>
+            </div>
+        </article>
         {% endfor %}
     </div>
-    {% endif %}
 </section>

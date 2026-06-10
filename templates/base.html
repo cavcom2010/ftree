@@ -4,15 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}HeritageTree{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
     {% block head %}{% endblock %}
 </head>
-<body class="app-shell">
-    <div class="app-content">
-        {% block content %}{% endblock %}
+<body>
+    <div class="toast" id="toast">Branch revealed</div>
+
+    <div class="app-shell">
+        {% include "core/_left_sidebar.html" %}
+
+        <div class="app-main">
+            {% include "core/_header.html" %}
+
+            <main class="page">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        {% include "core/_right_sidebar.html" %}
     </div>
+
     {% include "core/_bottom_nav.html" %}
+
+    <section class="person-drawer" id="personDrawer">
+        <div class="drawer-handle"></div>
+        <div class="drawer-main">
+            <div class="drawer-avatar" id="drawerAvatar">👤</div>
+            <div>
+                <b id="drawerName">Person</b>
+                <span id="drawerMeta">Select someone</span>
+            </div>
+            <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button>
+        </div>
+        <div class="drawer-actions">
+            <button class="btn primary" onclick="showToast('Profile opened')">View Profile</button>
+            <button class="btn" onclick="showToast('Add relative opened')">Add Relative</button>
+            <button class="btn" onclick="showToast('Timeline opened')">Timeline</button>
+            <button class="btn soft" onclick="revealAll()">Reveal Branch</button>
+        </div>
+    </section>
+
+    <section id="global-sheet" class="global-sheet"></section>
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+
     <script defer src="{% static 'js/app.js' %}"></script>
     {% block scripts %}{% endblock %}
 </body>

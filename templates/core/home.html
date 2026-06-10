@@ -13,40 +13,20 @@
 
 {% else %}
 
-{% include "core/_header.html" %}
+{% include "core/_hero.html" %}
 
-<main class="main">
+{% include "core/_today_in_history.html" %}
 
-    {% include "core/_hero.html" %}
+{% include "people/partials/tree_preview.html" %}
 
-    {% include "core/_today_in_history.html" %}
+{% include "core/_family_prompt.html" %}
 
-    {% include "people/partials/tree_preview.html" %}
+{% include "core/_memories_carousel.html" %}
 
-    <section class="section prompt-section" id="family-prompt">
-        <h2 class="section-title">Family Prompt</h2>
-        <div hx-get="/prompts/current/"
-             hx-trigger="load"
-             hx-swap="innerHTML">
-            <div class="prompt-card">
-                <p class="prompt-question">Loading today&rsquo;s prompt...</p>
-            </div>
-        </div>
-    </section>
-
-    {% include "core/_memories_carousel.html" %}
-
+<div class="feed-columns">
     {% include "core/_recent_activity.html" %}
-
     {% include "core/_family_champions.html" %}
-
-</main>
-
-<section id="person-drawer" class="person-drawer"></section>
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-
-<section id="global-sheet" class="global-sheet"></section>
-<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+</div>
 
 {% endif %}
 {% endblock %}

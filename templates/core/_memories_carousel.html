@@ -1,33 +1,50 @@
-<section class="section memories-section">
-    <h2 class="section-title">Family Memories</h2>
-    <div class="memories-scroll">
-        <div class="memory-card">
-            <div class="memory-thumb" style="background: linear-gradient(135deg, #40916c, #52b788);">📸</div>
-            <div class="memory-card-body">
-                <strong>Summer BBQ 2019</strong>
-                <span class="memory-meta">8 photos &middot; 2 years ago</span>
-            </div>
+<section id="memories">
+    <div class="section-head">
+        <div>
+            <h2>Family Memories</h2>
+            <p>Emotional content, not random scrolling.</p>
         </div>
-        <div class="memory-card">
-            <div class="memory-thumb" style="background: linear-gradient(135deg, #2d6a4f, #40916c);">🎥</div>
-            <div class="memory-card-body">
-                <strong>Grandma&rsquo;s Recipe</strong>
-                <span class="memory-meta">Video &middot; 3 years ago</span>
+        <a href="/memories/" class="link-btn">Gallery</a>
+    </div>
+    <div class="memory-strip">
+        {% for memory in memories|slice:":3" %}
+        <article class="memory-card" onclick="showToast('{{ memory.title|escapejs }} opened')">
+            <span class="label">🖼️ Memory</span>
+            <h3>{{ memory.title }}</h3>
+            <p>{{ memory.description|default:"A family memory worth keeping." }}</p>
+            <div class="memory-meta">
+                <span>❤️ 0</span>
+                <span>💬 0</span>
             </div>
-        </div>
-        <div class="memory-card">
-            <div class="memory-thumb" style="background: linear-gradient(135deg, #1b4332, #2d6a4f);">🎵</div>
-            <div class="memory-card-body">
-                <strong>Olivia&rsquo;s First Steps</strong>
-                <span class="memory-meta">Video &middot; 12 years ago</span>
+        </article>
+        {% empty %}
+        <article class="memory-card" onclick="showToast('Wedding 1968 opened')">
+            <span class="label">📷 Photo Story</span>
+            <h3>Wedding 1968</h3>
+            <p>New captions added by Aunt Mary and Uncle James.</p>
+            <div class="memory-meta">
+                <span>❤️ 32</span>
+                <span>💬 14</span>
             </div>
-        </div>
-        <div class="memory-card">
-            <div class="memory-thumb" style="background: linear-gradient(135deg, #52b788, #95d5b2);">📄</div>
-            <div class="memory-card-body">
-                <strong>Birth Certificate</strong>
-                <span class="memory-meta">Document &middot; 1930</span>
+        </article>
+        <article class="memory-card" onclick="showToast('Voice memory opened')">
+            <span class="label">🎤 Voice Memory</span>
+            <h3>Grandma’s Advice</h3>
+            <p>A 2m 34s recording preserved for the next generation.</p>
+            <div class="memory-meta">
+                <span>🙏 41</span>
+                <span>▶ Play</span>
             </div>
-        </div>
+        </article>
+        <article class="memory-card" onclick="showToast('First house opened')">
+            <span class="label">🏠 Place Memory</span>
+            <h3>The First House</h3>
+            <p>Stories, photos and map location attached to the branch.</p>
+            <div class="memory-meta">
+                <span>❤️ 18</span>
+                <span>💬 7</span>
+            </div>
+        </article>
+        {% endfor %}
     </div>
 </section>

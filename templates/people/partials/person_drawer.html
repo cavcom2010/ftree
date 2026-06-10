@@ -1,35 +1,22 @@
-<div class="person-drawer-handle"></div>
-<div class="person-drawer-content">
-    <div class="person-drawer-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% endif %}">
-        {{ person.first_name|slice:":1" }}
+<div class="drawer-handle"></div>
+<div class="drawer-main">
+    <div class="drawer-avatar">{{ person.first_name|slice:":1" }}</div>
+    <div>
+        <b>{{ person.full_name }}</b>
+        <span>
+            {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}
+            {% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}
+            {% if generation_label %} · {{ generation_label }}{% endif %}
+        </span>
     </div>
-    <h3 class="person-drawer-name">{{ person.full_name }}</h3>
-    <p class="person-drawer-meta">
-        {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}
-        {% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}
-    </p>
-    {% if generation_label %}
-    <p class="person-drawer-generation">{{ generation_label }}</p>
-    {% endif %}
-
-    <div class="person-drawer-actions">
-        <button class="btn btn-primary btn-sm">View Profile</button>
-        <button class="btn btn-outline btn-sm"
-                hx-get="/people/{{ person.id }}/add-relative/child/"
-                hx-target="#person-drawer"
-                hx-swap="innerHTML">Add Relative</button>
-        <button class="btn btn-ghost btn-sm">Timeline</button>
-        <button class="btn btn-ghost btn-sm" onclick="revealAll()">Reveal Branch</button>
-    </div>
-
-    <div class="person-drawer-tabs">
-        <button class="drawer-tab active">Profile</button>
-        <button class="drawer-tab">Memories</button>
-        <button class="drawer-tab">Stories</button>
-        <button class="drawer-tab">Timeline</button>
-    </div>
-
-    <button class="person-drawer-close" onclick="closeDrawer()" aria-label="Close">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button>
+</div>
+<div class="drawer-actions">
+    <button class="btn primary">View Profile</button>
+    <button class="btn"
+            hx-get="/people/{{ person.id }}/add-relative/child/"
+            hx-target="#personDrawer"
+            hx-swap="innerHTML">Add Relative</button>
+    <button class="btn">Timeline</button>
+    <button class="btn soft" onclick="revealAll()">Reveal Branch</button>
 </div>

@@ -1,17 +1,9 @@
-<header class="header">
-    <div class="header-top">
-        <button class="header-icon" aria-label="Search">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </button>
-        <div class="header-brand">
-            <span class="header-logo">🌳</span>
-            <span class="header-title">HeritageTree</span>
-        </div>
-        <button class="header-icon" aria-label="Add">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+<header class="sticky-header">
+    <div class="brand-mark">🌳</div>
+    <div class="brand-text">
+        <strong>HeritageTree</strong>
+        <span>Good morning Calvin · {{ generation_count|default:0 }} generations</span>
     </div>
-    <div class="header-sub">
-        <span class="header-greeting">Good morning Calvin &middot; {{ generation_count }} generations</span>
-    </div>
+    <button class="icon-btn" aria-label="Search" onclick="showToast('Global search will open here')">🔎</button>
+    <button class="icon-btn" aria-label="Add" onclick="showToast('Add menu will open here')">＋</button>
 </header>

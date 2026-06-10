@@ -1,10 +1,18 @@
-<section class="section prompt-section">
-    <h2 class="section-title">Family Prompt</h2>
-    <div class="prompt-card">
-        <p class="prompt-question">&ldquo;What is your favorite childhood memory with your grandparents?&rdquo;</p>
-        <div class="prompt-actions">
-            <button class="btn btn-primary btn-sm">✏️ Answer</button>
-            <button class="btn btn-ghost btn-sm">📤 Share</button>
+<section id="prompt">
+    <div class="section-head">
+        <div>
+            <h2>Family Prompt</h2>
+            <p>Turns quiet relatives into contributors.</p>
+        </div>
+    </div>
+    <div hx-get="/prompts/current/" hx-trigger="load" hx-swap="innerHTML">
+        <div class="prompt-card">
+            <div class="mini">TODAY’S QUESTION</div>
+            <h3>Loading today’s question...</h3>
+            <div class="prompt-actions">
+                <button class="btn primary">Answer</button>
+                <button class="btn">Share</button>
+            </div>
         </div>
     </div>
 </section>

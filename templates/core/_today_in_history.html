@@ -1,29 +1,35 @@
-<section class="section today-section">
-    <h2 class="section-title">Today in Family History</h2>
-    <div class="today-cards">
-        <div class="today-card">
-            <div class="today-card-icon">🎂</div>
-            <div class="today-card-content">
-                <span class="today-card-date">Jan 1, 1930</span>
+<section id="today">
+    <div class="section-head">
+        <div>
+            <h2>Today in Family History</h2>
+            <p>Small reasons to return every day.</p>
+        </div>
+        <button class="link-btn" onclick="showToast('Today page opened')">View all</button>
+    </div>
+    <div class="today-grid">
+        <article class="today-card" onclick="showToast('Birthday memory opened')">
+            <div class="today-icon">🎂</div>
+            <div>
                 <strong>Robert Johnson</strong>
-                <span class="today-card-label">Born this day</span>
+                <span>Born this day, Jan 1, 1930.</span>
             </div>
-        </div>
-        <div class="today-card">
-            <div class="today-card-icon">💍</div>
-            <div class="today-card-content">
-                <span class="today-card-date">Jun 15, 1952</span>
+            <div>›</div>
+        </article>
+        <article class="today-card" onclick="showToast('Wedding anniversary opened')">
+            <div class="today-icon">💍</div>
+            <div>
                 <strong>Robert &amp; Margaret</strong>
-                <span class="today-card-label">Anniversary</span>
+                <span>Anniversary, Jun 15, 1952.</span>
             </div>
-        </div>
-        <div class="today-card">
-            <div class="today-card-icon">📸</div>
-            <div class="today-card-content">
-                <span class="today-card-date">4 years ago</span>
+            <div>›</div>
+        </article>
+        <article class="today-card" onclick="showToast('Photo memory opened')">
+            <div class="today-icon">📷</div>
+            <div>
                 <strong>Family Reunion</strong>
-                <span class="today-card-label">Memory</span>
+                <span>Memory from 4 years ago.</span>
             </div>
-        </div>
+            <div>›</div>
+        </article>
     </div>
 </section>

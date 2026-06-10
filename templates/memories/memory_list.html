@@ -5,28 +5,27 @@
 
 {% block content %}
 
-{% include "core/_header.html" %}
+<main class="memories-page">
 
-<main class="main memories-page">
-
-    <section class="section">
-        <div class="feed-tabs">
-            <a href="/feed/" class="feed-tab">Family Feed</a>
-            <a href="/stories/" class="feed-tab">Stories</a>
-            <span class="feed-tab active">Memories</span>
+    <section>
+        <div class="tree-top" style="margin-bottom:14px;">
+            <a href="/feed/" class="chip">Family Feed</a>
+            <a href="/stories/" class="chip">Stories</a>
+            <span class="chip active">Memories</span>
         </div>
     </section>
 
     {% for memory in memories %}
         {% include "memories/partials/memory_card.html" with memory=memory %}
     {% empty %}
-    <section class="section">
-        <div class="activity-empty">No memories preserved yet. Add photos and documents to your family tree.</div>
+    <section>
+        <div class="empty-card">
+            <div class="empty-card-icon">🖼️</div>
+            <p>No memories preserved yet. Add photos and documents to your family tree.</p>
+        </div>
     </section>
     {% endfor %}
 
 </main>
-
-{% include "core/_bottom_nav.html" %}
 
 {% endblock %}

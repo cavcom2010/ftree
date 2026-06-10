@@ -1,29 +1,27 @@
 <section class="hero">
-    <h1 class="hero-title">Your family tree,<br>but alive.</h1>
-    <p class="hero-desc">Trace your roots, share stories, and keep your family&rsquo;s legacy growing with every generation.</p>
+    <span class="pill">✨ Mobile-first family platform</span>
+    <h1>Your family tree, but alive.</h1>
+    <p>A clean social family platform where people reveal branches, preserve memories, answer family prompts, and discover relationships without the clutter of ordinary social media.</p>
     <div class="hero-actions">
-        <a href="#" class="btn btn-primary">🌳 Explore Tree</a>
-        <button class="btn btn-secondary"
-                hx-get="/relationships/finder/"
-                hx-target="#global-sheet"
-                hx-swap="innerHTML">🔗 Find Relationship</button>
+        <a href="#tree" class="btn primary" onclick="scrollToSection('tree'); return false;">Explore Tree</a>
+        <button class="btn soft" onclick="showToast('Relationship Finder opened')">Find Relationship</button>
     </div>
-    <div class="hero-stats">
+    <div class="quick-stats">
         <div class="stat">
-            <span class="stat-value">{{ people_count }}</span>
-            <span class="stat-label">People</span>
+            <strong>{{ people_count|default:0 }}</strong>
+            <span>People</span>
         </div>
         <div class="stat">
-            <span class="stat-value">{{ generation_count }}</span>
-            <span class="stat-label">Generations</span>
+            <strong>{{ generation_count|default:0 }}</strong>
+            <span>Generations</span>
         </div>
         <div class="stat">
-            <span class="stat-value">{{ photo_count }}</span>
-            <span class="stat-label">Photos</span>
+            <strong>{{ photo_count|default:0 }}</strong>
+            <span>Photos</span>
         </div>
         <div class="stat">
-            <span class="stat-value">{{ story_count }}</span>
-            <span class="stat-label">Stories</span>
+            <strong>{{ story_count|default:0 }}</strong>
+            <span>Stories</span>
         </div>
     </div>
 </section>

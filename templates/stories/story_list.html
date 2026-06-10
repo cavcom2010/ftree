@@ -5,32 +5,31 @@
 
 {% block content %}
 
-{% include "core/_header.html" %}
+<main class="stories-page">
 
-<main class="main stories-page">
-
-    <section class="section">
-        <div class="feed-tabs">
-            <a href="/feed/" class="feed-tab">Family Feed</a>
-            <span class="feed-tab active">Stories</span>
-            <a href="/memories/" class="feed-tab">Memories</a>
+    <section>
+        <div class="tree-top" style="margin-bottom:14px;">
+            <a href="/feed/" class="chip">Family Feed</a>
+            <span class="chip active">Stories</span>
+            <a href="/memories/" class="chip">Memories</a>
         </div>
     </section>
 
-    <section class="section">
-        <a href="/stories/create/" class="btn btn-primary btn-block">Tell a Family Story</a>
+    <section>
+        <a href="/stories/create/" class="btn primary" style="width:100%;">Tell a Family Story</a>
     </section>
 
     {% for story in stories %}
         {% include "stories/partials/story_card.html" with story=story %}
     {% empty %}
-    <section class="section">
-        <div class="activity-empty">No stories written yet. Start sharing your family&rsquo;s history.</div>
+    <section>
+        <div class="empty-card">
+            <div class="empty-card-icon">📝</div>
+            <p>No stories written yet. Start sharing your family’s history.</p>
+        </div>
     </section>
     {% endfor %}
 
 </main>
-
-{% include "core/_bottom_nav.html" %}
 
 {% endblock %}

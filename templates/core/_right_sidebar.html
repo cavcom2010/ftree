@@ -1,0 +1,24 @@
+<aside class="desktop-panel">
+    <div class="desktop-search">🔎 Search people, places, stories...</div>
+
+    <div class="profile-panel">
+        <div class="profile-big" id="desktopAvatar">👤</div>
+        <h3 id="desktopName">{{ request.user.username|default:"Family Member" }}</h3>
+        <p id="desktopMeta">Generation 2 · Living</p>
+        <div class="prompt-actions">
+            <button class="btn primary" onclick="showToast('Profile opened')">Profile</button>
+            <button class="btn" onclick="showToast('Add menu opened')">Add</button>
+        </div>
+    </div>
+
+    <div class="widget">
+        <h3>Relationship Finder</h3>
+        <p>Calvin → Robert Johnson</p>
+        <button class="btn primary" style="width:100%" onclick="showToast('Relationship Finder opened')">Find Relationship</button>
+    </div>
+
+    <div class="widget">
+        <h3>Family Compass</h3>
+        <p>You are viewing <strong>Generation 2</strong>. Reveal descendants to move down the branch.</p>
+    </div>
+</aside>

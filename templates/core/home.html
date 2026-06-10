@@ -23,7 +23,16 @@
 
     {% include "people/partials/tree_preview.html" %}
 
-    {% include "core/_family_prompt.html" %}
+    <section class="section prompt-section" id="family-prompt">
+        <h2 class="section-title">Family Prompt</h2>
+        <div hx-get="/prompts/current/"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="prompt-card">
+                <p class="prompt-question">Loading today&rsquo;s prompt...</p>
+            </div>
+        </div>
+    </section>
 
     {% include "core/_memories_carousel.html" %}
 

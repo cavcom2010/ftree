@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from datetime import date
 
 from apps.families.models import Family, FamilyMembership
 from apps.people.models import Person
@@ -8,6 +9,7 @@ from apps.relationships.models import Relationship
 from apps.stories.models import Story
 from apps.social.models import Activity
 from apps.achievements.models import Achievement, UserAchievement
+from apps.prompts.models import FamilyPrompt
 
 
 class Command(BaseCommand):
@@ -24,6 +26,7 @@ class Command(BaseCommand):
             self._seed_stories(people)
             self._seed_activities(people)
             self._seed_user_achievements()
+            self._seed_prompt()
 
         self.stdout.write(self.style.SUCCESS("Demo family seeded successfully."))
 
@@ -325,3 +328,17 @@ class Command(BaseCommand):
             self.stdout.write(f"  Awarded {count} achievements to demo user")
         else:
             self.stdout.write(f"  User achievements already exist")
+
+    def _seed_prompt(self):
+        today = date.today()
+        prompt, created = FamilyPrompt.objects.get_or_create(
+            family=self.family,
+            active_date=today,
+            defaults={
+                "question": "What was your first job, and who helped you get it?",
+            },
+        )
+        if created:
+            self.stdout.write(f"  Created today's family prompt")
+        else:
+            self.stdout.write(f"  Today's prompt already exists")

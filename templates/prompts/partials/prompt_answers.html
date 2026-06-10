@@ -1,0 +1,18 @@
+{% for answer in answers %}
+<div class="prompt-answer-item">
+    <div class="prompt-answer-avatar">
+        {% if answer.user %}
+            {{ answer.user.username|slice:":1"|upper }}
+        {% else %}
+            ?
+        {% endif %}
+    </div>
+    <div class="prompt-answer-body">
+        <p class="prompt-answer-text">{{ answer.body }}</p>
+        <span class="prompt-answer-meta">
+            {% if answer.user %}{{ answer.user.username }} · {% endif %}
+            {{ answer.created_at|timesince }} ago
+        </span>
+    </div>
+</div>
+{% endfor %}

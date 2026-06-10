@@ -9,4 +9,5 @@ urlpatterns = [
     path("", include("apps.social.urls")),
     path("", include("apps.stories.urls")),
     path("", include("apps.memories.urls")),
+    path("", include("apps.prompts.urls")),
 ]

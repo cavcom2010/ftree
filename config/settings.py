@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.stories",
     "apps.social",
     "apps.achievements",
+    "apps.prompts",
 ]
 
 MIDDLEWARE = [

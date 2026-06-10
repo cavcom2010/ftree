@@ -1,0 +1,22 @@
+<div class="prompt-card">
+    <p class="prompt-question">&ldquo;{{ question }}&rdquo;</p>
+
+    {% if prompt %}
+    <div class="prompt-answers" id="prompt-answers">
+        {% include "prompts/partials/prompt_answers.html" with answers=answers %}
+    </div>
+
+    <div class="prompt-actions">
+        <button class="btn btn-primary btn-sm"
+                hx-get="/prompts/{{ prompt.id }}/answer/"
+                hx-target="#prompt-answer-form"
+                hx-swap="innerHTML">
+            ✏️ Answer
+        </button>
+    </div>
+
+    <div id="prompt-answer-form"></div>
+    {% else %}
+    <p class="prompt-empty">Check back tomorrow for a new prompt!</p>
+    {% endif %}
+</div>

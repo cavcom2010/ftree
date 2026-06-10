@@ -1,0 +1,15 @@
+<form class="answer-form"
+      hx-post="/prompts/{{ prompt.id }}/answer/"
+      hx-target="closest .prompt-card"
+      hx-swap="outerHTML">
+    <textarea name="body" class="answer-textarea"
+              placeholder="Share your memory..."
+              rows="3" required></textarea>
+    <div class="answer-form-actions">
+        <button type="submit" class="btn btn-primary btn-sm">Share</button>
+        <button type="button" class="btn btn-ghost btn-sm"
+                onclick="this.closest('#prompt-answer-form').innerHTML=''">
+            Cancel
+        </button>
+    </div>
+</form>

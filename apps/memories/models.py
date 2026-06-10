@@ -17,7 +17,7 @@ class Memory(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     memory_type = models.CharField(max_length=20, choices=Type.choices)
-    file = models.FileField(upload_to="memories/%Y/%m/")
+    file = models.FileField(upload_to="memories/%Y/%m/", null=True, blank=True)
     people = models.ManyToManyField("people.Person", related_name="memories", blank=True)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

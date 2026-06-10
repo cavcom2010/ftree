@@ -1,16 +1,19 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Ftree{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}HeritageTree{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
     {% block head %}{% endblock %}
 </head>
-<body>
-    {% block content %}{% endblock %}
+<body class="app-shell">
+    <div class="app-content">
+        {% block content %}{% endblock %}
+    </div>
+    {% include "core/_bottom_nav.html" %}
+    <script defer src="{% static 'js/app.js' %}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

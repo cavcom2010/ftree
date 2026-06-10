@@ -1,0 +1,22 @@
+<section class="section activity-section">
+    <h2 class="section-title">Recent Activity</h2>
+    <div class="activity-list">
+        {% for activity in recent_activities %}
+        <div class="activity-item">
+            <div class="activity-avatar">
+                {% if activity.actor %}
+                    {{ activity.actor.username|slice:":1"|upper }}
+                {% else %}
+                    ?
+                {% endif %}
+            </div>
+            <div class="activity-body">
+                <p class="activity-message">{{ activity.message }}</p>
+                <span class="activity-time">{{ activity.created_at|timesince }} ago</span>
+            </div>
+        </div>
+        {% empty %}
+        <p class="activity-empty">No activity yet.</p>
+        {% endfor %}
+    </div>
+</section>

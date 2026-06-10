@@ -1,8 +1,35 @@
 {% extends "base.html" %}
-
-{% block title %}Ftree - Home{% endblock %}
+{% load static %}
 
 {% block content %}
-<h1>Welcome to Ftree</h1>
-<p>Family tree application.</p>
+{% if empty_state %}
+
+<div class="empty-state">
+    <div class="empty-state-icon">🌳</div>
+    <h1>Welcome to HeritageTree</h1>
+    <p>No family tree found yet. Seed the demo data to get started.</p>
+    <code>python manage.py seed_demo_family</code>
+</div>
+
+{% else %}
+
+{% include "core/_header.html" %}
+
+<main class="main">
+
+    {% include "core/_hero.html" %}
+
+    {% include "core/_today_in_history.html" %}
+
+    {% include "core/_tree_placeholder.html" %}
+
+    {% include "core/_family_prompt.html" %}
+
+    {% include "core/_memories_carousel.html" %}
+
+    {% include "core/_recent_activity.html" %}
+
+</main>
+
+{% endif %}
 {% endblock %}

@@ -8,6 +8,7 @@ from apps.people.forms import PersonForm
 from apps.people.models import Person
 from apps.people.services import get_descendant_generation
 from apps.relationships.models import Relationship
+from apps.relationships.services import find_relationship_path
 from apps.social.models import Activity
 
 User = get_user_model()
@@ -138,5 +139,56 @@ def add_relative(request, person_id, relation_type):
             "current_person": current_person,
             "relation_type": relation_type,
             "relation_label": RELATION_LABELS[relation_type],
+        },
+    )
+
+
+def relationship_finder(request):
+    family = _family()
+    people = Person.objects.filter(family=family).order_by("first_name")
+
+    if request.method == "POST":
+        from_id = request.POST.get("from_person")
+        to_id = request.POST.get("to_person")
+
+        person_a = None
+        person_b = None
+
+        if from_id:
+            person_a = Person.objects.filter(id=from_id, family=family).first()
+        if to_id:
+            person_b = Person.objects.filter(id=to_id, family=family).first()
+
+        if person_a and person_b:
+            path = find_relationship_path(person_a, person_b)
+
+            if path:
+                links = len(path) - 1
+                return render(
+                    request,
+                    "relationships/partials/finder_result.html",
+                    {
+                        "path": path,
+                        "person_a": person_a,
+                        "person_b": person_b,
+                        "link_count": links,
+                    },
+                )
+            else:
+                return render(
+                    request,
+                    "relationships/partials/finder_result.html",
+                    {
+                        "person_a": person_a,
+                        "person_b": person_b,
+                        "no_path": True,
+                    },
+                )
+
+    return render(
+        request,
+        "relationships/partials/finder_form.html",
+        {
+            "people": people,
         },
     )

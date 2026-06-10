@@ -8,4 +8,9 @@ urlpatterns = [
         views.add_relative,
         name="add_relative",
     ),
+    path(
+        "relationships/finder/",
+        views.relationship_finder,
+        name="relationship_finder",
+    ),
 ]

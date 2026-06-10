@@ -1,0 +1,31 @@
+<div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Find Relationship</h3>
+    <form class="person-form"
+          hx-post="/relationships/finder/"
+          hx-target="#global-sheet"
+          hx-swap="innerHTML">
+        <div class="form-group">
+            <label class="form-label" for="from_person">From</label>
+            <select name="from_person" id="from_person">
+                <option value="">Select a person...</option>
+                {% for p in people %}
+                <option value="{{ p.id }}">{{ p.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="to_person">To</label>
+            <select name="to_person" id="to_person">
+                <option value="">Select a person...</option>
+                {% for p in people %}
+                <option value="{{ p.id }}">{{ p.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">Find Path</button>
+            <button type="button" class="btn btn-ghost btn-block" onclick="closeSheet()">Cancel</button>
+        </div>
+    </form>
+</div>

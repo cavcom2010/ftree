@@ -1,0 +1,43 @@
+<div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Relationship Path</h3>
+
+    {% if no_path %}
+    <div class="finder-no-path">
+        <p class="finder-no-path-icon">🔍</p>
+        <p>No family connection found between</p>
+        <strong>{{ person_a.full_name }}</strong>
+        <span>and</span>
+        <strong>{{ person_b.full_name }}</strong>
+    </div>
+    {% else %}
+    <div class="finder-path">
+        {% for person in path %}
+        <div class="finder-node">
+            <div class="finder-node-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% endif %}">
+                {{ person.first_name|slice:":1" }}
+            </div>
+            <span class="finder-node-name">{{ person.first_name }}</span>
+            <span class="finder-node-full">{{ person.full_name }}</span>
+        </div>
+        {% if not forloop.last %}
+        <div class="finder-arrow">↓</div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="finder-summary">
+        <p><strong>{{ person_a.first_name }}</strong> and <strong>{{ person_b.first_name }}</strong></p>
+        <p class="finder-summary-desc">Connected through {{ link_count }} family link{{ link_count|pluralize }}</p>
+    </div>
+
+    <button class="btn btn-outline btn-block" disabled>🔦 Highlight on Tree (coming soon)</button>
+    {% endif %}
+
+    <button type="button" class="btn btn-ghost btn-block"
+            hx-get="/relationships/finder/"
+            hx-target="#global-sheet"
+            hx-swap="innerHTML">
+        New Search
+    </button>
+</div>

@@ -3,7 +3,10 @@
     <p class="hero-desc">Trace your roots, share stories, and keep your family&rsquo;s legacy growing with every generation.</p>
     <div class="hero-actions">
         <a href="#" class="btn btn-primary">🌳 Explore Tree</a>
-        <a href="#" class="btn btn-secondary">🔗 Find Relationship</a>
+        <button class="btn btn-secondary"
+                hx-get="/relationships/finder/"
+                hx-target="#global-sheet"
+                hx-swap="innerHTML">🔗 Find Relationship</button>
     </div>
     <div class="hero-stats">
         <div class="stat">

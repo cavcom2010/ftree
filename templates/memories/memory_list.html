@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Memories · HeritageTree{% endblock %}
+
+{% block content %}
+
+{% include "core/_header.html" %}
+
+<main class="main memories-page">
+
+    <section class="section">
+        <div class="feed-tabs">
+            <a href="/feed/" class="feed-tab">Family Feed</a>
+            <a href="/stories/" class="feed-tab">Stories</a>
+            <span class="feed-tab active">Memories</span>
+        </div>
+    </section>
+
+    {% for memory in memories %}
+        {% include "memories/partials/memory_card.html" with memory=memory %}
+    {% empty %}
+    <section class="section">
+        <div class="activity-empty">No memories preserved yet. Add photos and documents to your family tree.</div>
+    </section>
+    {% endfor %}
+
+</main>
+
+{% include "core/_bottom_nav.html" %}
+
+{% endblock %}

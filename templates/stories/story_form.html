@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Write a Story · HeritageTree{% endblock %}
+
+{% block content %}
+
+{% include "core/_header.html" %}
+
+<main class="main">
+
+    <section class="section">
+        <h2 class="section-title">{{ title|default:"Tell a Family Story" }}</h2>
+        <form class="person-form" method="post" action="/stories/create/">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="id_title">Title *</label>
+                {{ form.title }}
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_body">Your story *</label>
+                {{ form.body }}
+            </div>
+            <div class="form-group form-group-check">
+                {{ form.is_featured }}
+                <label class="form-label form-label-check" for="id_is_featured">
+                    Feature this story at the top
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">Publish Story</button>
+                <a href="/stories/" class="btn btn-ghost btn-block">Cancel</a>
+            </div>
+        </form>
+    </section>
+
+</main>
+
+{% endblock %}

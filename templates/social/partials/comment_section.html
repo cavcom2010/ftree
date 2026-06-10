@@ -1,0 +1,33 @@
+<div class="comment-section">
+    <h4 class="comment-heading">Family Notes</h4>
+
+    {% for comment in comments %}
+    <div class="comment-item">
+        <div class="comment-avatar">
+            {% if comment.user %}
+                {{ comment.user.username|slice:":1"|upper }}
+            {% else %}
+                ?
+            {% endif %}
+        </div>
+        <div class="comment-body">
+            <p class="comment-text">{{ comment.body }}</p>
+            <span class="comment-time">
+                {% if comment.user %}{{ comment.user.username }} · {% endif %}
+                {{ comment.created_at|timesince }} ago
+            </span>
+        </div>
+    </div>
+    {% empty %}
+    <p class="comment-empty">No family notes yet. Be the first to share a thought.</p>
+    {% endfor %}
+
+    <form class="comment-form"
+          hx-post="/comment/{{ content_type }}/{{ object_id }}/"
+          hx-target="closest .comment-section"
+          hx-swap="outerHTML">
+        <input type="text" name="body" class="comment-input"
+               placeholder="Share a family note…" maxlength="500" required>
+        <button type="submit" class="btn btn-primary btn-sm">Post</button>
+    </form>
+</div>

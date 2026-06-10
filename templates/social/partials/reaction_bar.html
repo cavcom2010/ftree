@@ -1,0 +1,32 @@
+<div class="reaction-bar">
+    <button class="react-btn {% if 'love' in item.user_reactions %}active{% endif %}"
+            hx-post="/react/{{ content_type }}/{{ object_id }}/love/"
+            hx-target="closest .reaction-bar"
+            hx-swap="outerHTML">
+        ❤️ <span class="react-count">{{ item.reaction_counts.love|default:0 }}</span>
+    </button>
+    <button class="react-btn {% if 'respect' in item.user_reactions %}active{% endif %}"
+            hx-post="/react/{{ content_type }}/{{ object_id }}/respect/"
+            hx-target="closest .reaction-bar"
+            hx-swap="outerHTML">
+        🙏 <span class="react-count">{{ item.reaction_counts.respect|default:0 }}</span>
+    </button>
+    <button class="react-btn {% if 'funny' in item.user_reactions %}active{% endif %}"
+            hx-post="/react/{{ content_type }}/{{ object_id }}/funny/"
+            hx-target="closest .reaction-bar"
+            hx-swap="outerHTML">
+        😄 <span class="react-count">{{ item.reaction_counts.funny|default:0 }}</span>
+    </button>
+    <button class="react-btn {% if 'miss_them' in item.user_reactions %}active{% endif %}"
+            hx-post="/react/{{ content_type }}/{{ object_id }}/miss_them/"
+            hx-target="closest .reaction-bar"
+            hx-swap="outerHTML">
+        🕊️ <span class="react-count">{{ item.reaction_counts.miss_them|default:0 }}</span>
+    </button>
+    <button class="react-btn {% if 'thanks' in item.user_reactions %}active{% endif %}"
+            hx-post="/react/{{ content_type }}/{{ object_id }}/thanks/"
+            hx-target="closest .reaction-bar"
+            hx-swap="outerHTML">
+        🌸 <span class="react-count">{{ item.reaction_counts.thanks|default:0 }}</span>
+    </button>
+</div>

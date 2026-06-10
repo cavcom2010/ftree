@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Feed · HeritageTree{% endblock %}
+
+{% block content %}
+
+{% include "core/_header.html" %}
+
+<main class="main feed-page">
+
+    <section class="section">
+        <div class="feed-tabs">
+            <button class="feed-tab active">Family Feed</button>
+            <a href="/stories/" class="feed-tab">Stories</a>
+            <a href="/memories/" class="feed-tab">Memories</a>
+        </div>
+    </section>
+
+    {% for item in feed_items %}
+        {% include "social/partials/activity_card.html" with activity=item %}
+    {% empty %}
+        <section class="section">
+            <div class="activity-empty">No family updates yet. Start by adding people to your tree.</div>
+        </section>
+    {% endfor %}
+
+    {% if stories %}
+    <section class="section">
+        <h2 class="section-title">Recent Stories</h2>
+        {% for story in stories|slice:":3" %}
+            {% include "stories/partials/story_card.html" with story=story %}
+        {% endfor %}
+    </section>
+    {% endif %}
+
+</main>
+
+{% include "core/_bottom_nav.html" %}
+
+{% endblock %}

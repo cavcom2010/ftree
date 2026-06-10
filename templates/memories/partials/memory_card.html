@@ -1,0 +1,31 @@
+<section class="section">
+    <div class="story-card">
+        <div class="memory-card-inner">
+            {% if memory.file %}
+            <div class="memory-thumb-large">
+                {{ memory.get_memory_type_display }} 📦
+            </div>
+            {% else %}
+            <div class="memory-thumb-large memory-thumb-placeholder">
+                {{ memory.get_memory_type_display }}
+            </div>
+            {% endif %}
+            <div class="memory-card-info">
+                <h3 class="story-card-title">{{ memory.title }}</h3>
+                {% if memory.description %}
+                <p class="story-card-excerpt">{{ memory.description|truncatechars:200 }}</p>
+                {% endif %}
+                <div class="story-card-meta">
+                    <span>
+                        {{ memory.get_memory_type_display }}
+                        &middot; {{ memory.created_at|date:"M j, Y" }}
+                    </span>
+                </div>
+
+                {% with memory as item %}
+                {% include "social/partials/reaction_bar.html" with item=item content_type="memory" object_id=memory.id %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</section>

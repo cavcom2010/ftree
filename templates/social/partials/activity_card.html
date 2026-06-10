@@ -1,0 +1,18 @@
+<div class="activity-card">
+    <div class="activity-card-avatar">
+        {% if activity.actor %}
+            {{ activity.actor.username|slice:":1"|upper }}
+        {% else %}
+            ?
+        {% endif %}
+    </div>
+    <div class="activity-card-body">
+        <p class="activity-card-message">{{ activity.message }}</p>
+        <span class="activity-card-time">{{ activity.created_at|timesince }} ago</span>
+    </div>
+    {% if activity.person %}
+    <a href="#" class="activity-card-badge">👤</a>
+    {% elif activity.story %}
+    <a href="/stories/" class="activity-card-badge">📖</a>
+    {% endif %}
+</div>

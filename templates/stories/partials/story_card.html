@@ -1,0 +1,27 @@
+<section class="section">
+    <div class="story-card">
+        <div class="story-card-header">
+            <h3 class="story-card-title">{{ story.title }}</h3>
+            {% if story.is_featured %}
+            <span class="story-featured-badge">Featured</span>
+            {% endif %}
+        </div>
+        <p class="story-card-excerpt">{{ story.body|truncatechars:200 }}</p>
+        <div class="story-card-meta">
+            <span>
+                {% if story.author %}
+                    by {{ story.author.username }}
+                {% endif %}
+                &middot; {{ story.created_at|date:"M j, Y" }}
+            </span>
+        </div>
+
+        <div hx-get="/comment/story/{{ story.id }}/"
+             hx-trigger="load"
+             hx-swap="outerHTML">
+            <p class="comment-loading">Loading family notes...</p>
+        </div>
+
+        {% include "social/partials/reaction_bar.html" with item=story content_type="story" object_id=story.id %}
+    </div>
+</section>

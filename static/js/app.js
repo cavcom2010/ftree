@@ -1,3 +1,15 @@
+function setViewportHeight() {
+    document.documentElement.style.setProperty(
+        "--vh",
+        window.innerHeight * 0.01 + "px"
+    );
+}
+setViewportHeight();
+window.addEventListener("resize", setViewportHeight);
+window.addEventListener("orientationchange", function () {
+    setTimeout(setViewportHeight, 100);
+});
+
 document.addEventListener("DOMContentLoaded", function () {
     var navItems = document.querySelectorAll(".nav-item");
     navItems.forEach(function (item) {
@@ -16,6 +28,24 @@ document.addEventListener("DOMContentLoaded", function () {
             selectPerson(card);
         });
     }
+});
+
+var bottomNav = document.getElementById("bottom-nav");
+
+document.addEventListener("focusin", function (e) {
+    var tag = e.target.tagName;
+    if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        e.target.isContentEditable
+    ) {
+        if (bottomNav) bottomNav.classList.add("nav-hidden");
+    }
+});
+
+document.addEventListener("focusout", function () {
+    if (bottomNav) bottomNav.classList.remove("nav-hidden");
 });
 
 document.body.addEventListener("showToast", function (event) {

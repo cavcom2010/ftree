@@ -29,6 +29,7 @@
     --radius-lg: 20px;
     --radius-full: 9999px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
 }
 
 /* ===== Base ===== */
@@ -46,6 +47,7 @@ body {
     max-width: 430px;
     margin: 0 auto;
     min-height: 100dvh;
+    min-height: calc(var(--vh, 1vh) * 100);
     overflow-x: hidden;
 }
 
@@ -63,7 +65,7 @@ body {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(216, 243, 220, 0.6);
-    padding: 12px 16px 10px;
+    padding: calc(12px + var(--safe-top)) 16px 10px;
 }
 
 .header-top {
@@ -243,6 +245,7 @@ body {
 /* ===== Sections ===== */
 .section {
     padding: 0 16px 24px;
+    scroll-margin-top: calc(80px + var(--safe-top));
 }
 
 .section-title {
@@ -347,6 +350,7 @@ body {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     padding: 4px 0;
+    scroll-padding-inline: calc(50vw - 60px);
 }
 
 .gen-lane-scroll::-webkit-scrollbar {
@@ -626,9 +630,9 @@ body {
 /* ===== Toast ===== */
 .toast {
     position: fixed;
-    bottom: calc(120px + var(--safe-bottom));
+    top: calc(72px + var(--safe-top));
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(-20px);
     background: var(--green-900);
     color: #fff;
     padding: 10px 20px;
@@ -1607,4 +1611,56 @@ body {
     font-size: 15px;
     color: var(--text);
     margin: 2px 0;
+}
+
+/* ===== Small Screen Adjustments ===== */
+@media (max-width: 390px) {
+    .hero-title {
+        font-size: 24px;
+    }
+
+    .gen-lane-pad {
+        flex: 0 0 calc(50vw - 52px);
+        min-width: calc(50vw - 52px);
+    }
+
+    .person-card {
+        width: 70px;
+    }
+
+    .person-card-name {
+        font-size: 12px;
+        max-width: 66px;
+    }
+
+    .person-card-avatar {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+    }
+
+    .person-card-expand {
+        width: 70px;
+    }
+
+    .hero-stats {
+        padding: 12px 8px;
+        gap: 4px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+    }
+
+    .stat-label {
+        font-size: 10px;
+    }
+}
+
+/* ===== Keyboard-aware nav ===== */
+.bottom-nav.nav-hidden {
+    transform: translateX(-50%) translateY(120%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s, opacity 0.25s;
 }

@@ -1,0 +1,63 @@
+<div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">{% if title %}{{ title }}{% else %}Add Person{% endif %}</h3>
+    <form class="person-form"
+          hx-post="/people/create/"
+          hx-target="#global-sheet"
+          hx-swap="innerHTML">
+        <div class="form-group">
+            <label class="form-label" for="id_first_name">First name *</label>
+            {{ form.first_name }}
+            {{ form.first_name.errors }}
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_last_name">Last name *</label>
+            {{ form.last_name }}
+            {{ form.last_name.errors }}
+        </div>
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_middle_name">Middle</label>
+                {{ form.middle_name }}
+            </div>
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_maiden_name">Maiden</label>
+                {{ form.maiden_name }}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_gender">Gender</label>
+            {{ form.gender }}
+        </div>
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_birth_date">Birth date</label>
+                {{ form.birth_date }}
+            </div>
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_death_date">Death date</label>
+                {{ form.death_date }}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_birth_place">Birth place</label>
+            {{ form.birth_place }}
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_current_place">Current place</label>
+            {{ form.current_place }}
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_biography">Biography</label>
+            {{ form.biography }}
+        </div>
+        <div class="form-group form-group-check">
+            {{ form.is_private }}
+            <label class="form-label form-label-check" for="id_is_private">Keep this person private</label>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">Save Person</button>
+            <button type="button" class="btn btn-ghost btn-block" onclick="closeSheet()">Cancel</button>
+        </div>
+    </form>
+</div>

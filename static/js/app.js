@@ -18,10 +18,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+document.body.addEventListener("showToast", function (event) {
+    showToast(event.detail.value);
+});
+
 document.body.addEventListener("htmx:afterSwap", function (event) {
     if (event.detail.target.id === "person-drawer") {
         event.detail.target.classList.add("show");
         document.getElementById("drawer-overlay").classList.add("show");
+    }
+    if (event.detail.target.id === "global-sheet") {
+        event.detail.target.classList.add("show");
+        document.getElementById("sheet-overlay").classList.add("show");
     }
 });
 
@@ -90,4 +98,10 @@ function revealAll() {
 function closeDrawer() {
     document.getElementById("person-drawer").classList.remove("show");
     document.getElementById("drawer-overlay").classList.remove("show");
+}
+
+function closeSheet() {
+    document.getElementById("global-sheet").classList.remove("show");
+    document.getElementById("sheet-overlay").classList.remove("show");
+    document.getElementById("global-sheet").innerHTML = "";
 }

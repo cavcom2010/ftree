@@ -14,7 +14,10 @@
 
     <div class="person-drawer-actions">
         <button class="btn btn-primary btn-sm">View Profile</button>
-        <button class="btn btn-outline btn-sm">Add Relative</button>
+        <button class="btn btn-outline btn-sm"
+                hx-get="/people/{{ person.id }}/add-relative/child/"
+                hx-target="#person-drawer"
+                hx-swap="innerHTML">Add Relative</button>
         <button class="btn btn-ghost btn-sm">Timeline</button>
         <button class="btn btn-ghost btn-sm" onclick="revealAll()">Reveal Branch</button>
     </div>

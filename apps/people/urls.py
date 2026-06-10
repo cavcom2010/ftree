@@ -13,4 +13,9 @@ urlpatterns = [
         views.person_descendants,
         name="person_descendants",
     ),
+    path(
+        "people/create/",
+        views.person_create,
+        name="person_create",
+    ),
 ]

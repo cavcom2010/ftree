@@ -1,0 +1,71 @@
+<div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">
+        Add {{ relation_label }} for <span class="text-muted">{{ current_person.first_name }}</span>
+    </h3>
+    <div class="relation-type-tabs">
+        <a class="rel-type-tab {% if relation_type == 'parent' %}active{% endif %}"
+           hx-get="/people/{{ current_person.id }}/add-relative/parent/"
+           hx-target="#person-drawer" hx-swap="innerHTML">Parent</a>
+        <a class="rel-type-tab {% if relation_type == 'child' %}active{% endif %}"
+           hx-get="/people/{{ current_person.id }}/add-relative/child/"
+           hx-target="#person-drawer" hx-swap="innerHTML">Child</a>
+        <a class="rel-type-tab {% if relation_type == 'spouse' %}active{% endif %}"
+           hx-get="/people/{{ current_person.id }}/add-relative/spouse/"
+           hx-target="#person-drawer" hx-swap="innerHTML">Spouse</a>
+        <a class="rel-type-tab {% if relation_type == 'sibling' %}active{% endif %}"
+           hx-get="/people/{{ current_person.id }}/add-relative/sibling/"
+           hx-target="#person-drawer" hx-swap="innerHTML">Sibling</a>
+    </div>
+    <form class="person-form"
+          hx-post="/people/{{ current_person.id }}/add-relative/{{ relation_type }}/"
+          hx-target="#person-drawer"
+          hx-swap="innerHTML">
+        <div class="form-group">
+            <label class="form-label" for="id_first_name">First name *</label>
+            {{ form.first_name }}
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_last_name">Last name *</label>
+            {{ form.last_name }}
+        </div>
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_middle_name">Middle</label>
+                {{ form.middle_name }}
+            </div>
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_maiden_name">Maiden</label>
+                {{ form.maiden_name }}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_gender">Gender</label>
+            {{ form.gender }}
+        </div>
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_birth_date">Birth</label>
+                {{ form.birth_date }}
+            </div>
+            <div class="form-group form-group-half">
+                <label class="form-label" for="id_death_date">Death</label>
+                {{ form.death_date }}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_birth_place">Birth place</label>
+            {{ form.birth_place }}
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">
+                Save {{ relation_label }}
+            </button>
+            <button type="button" class="btn btn-ghost btn-block"
+                    hx-get="/people/{{ current_person.id }}/drawer/"
+                    hx-target="#person-drawer" hx-swap="innerHTML">
+                Back to profile
+            </button>
+        </div>
+    </form>
+</div>

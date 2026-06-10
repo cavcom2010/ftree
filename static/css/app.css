@@ -876,3 +876,203 @@ body {
     color: var(--green-800);
     font-family: monospace;
 }
+
+/* ===== Global Sheet ===== */
+.sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(27, 67, 50, 0.3);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+
+.global-sheet.show .sheet-overlay,
+.sheet-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.global-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%;
+    max-width: 430px;
+    max-height: 85dvh;
+    overflow-y: auto;
+    background: var(--white);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 24px rgba(27, 67, 50, 0.15);
+    z-index: 310;
+    padding: 0 20px calc(24px + var(--safe-bottom));
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.global-sheet.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.sheet-content {
+    padding-top: 12px;
+}
+
+.sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green-900);
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.sheet-title .text-muted {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* ===== Forms ===== */
+.person-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group-half {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group input[type="email"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--green-500);
+    box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.15);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238ba89a' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.form-group-check {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--green-700);
+}
+
+.form-label-check {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.errorlist {
+    list-style: none;
+    padding: 0;
+    font-size: 12px;
+    color: #dc2626;
+}
+
+/* ===== Relation Type Tabs ===== */
+.relation-type-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--green-50);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    margin-bottom: 16px;
+}
+
+.rel-type-tab {
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.rel-type-tab.active {
+    background: var(--white);
+    color: var(--green-800);
+    box-shadow: var(--shadow-sm);
+}
+
+.rel-type-tab:hover {
+    color: var(--green-700);
+}

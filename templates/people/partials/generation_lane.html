@@ -10,4 +10,7 @@
         {% endfor %}
         <div class="gen-lane-pad"></div>
     </div>
+    {% for person in lane.people %}
+        <div id="descendants-for-{{ person.id }}"></div>
+    {% endfor %}
 </div>

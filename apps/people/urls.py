@@ -8,4 +8,9 @@ urlpatterns = [
         views.person_drawer,
         name="person_drawer",
     ),
+    path(
+        "people/<int:person_id>/descendants/",
+        views.person_descendants,
+        name="person_descendants",
+    ),
 ]

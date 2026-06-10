@@ -359,17 +359,24 @@ body {
 }
 
 /* ===== Person Card ===== */
-.person-card {
+.person-card-col {
     flex: 0 0 auto;
     scroll-snap-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0;
+}
+
+.person-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 4px;
     width: 80px;
-    padding: 8px 4px;
+    padding: 8px 4px 4px;
     border: 2px solid transparent;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
     background: transparent;
     cursor: pointer;
     transition: all 0.2s;
@@ -384,6 +391,32 @@ body {
 .person-card.selected {
     border-color: var(--green-500);
     background: var(--green-50);
+}
+
+.person-card-expand {
+    width: 80px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: var(--green-50);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 10px;
+}
+
+.person-card-expand:hover {
+    background: var(--green-100);
+    color: var(--green-700);
+}
+
+.person-card.selected + .person-card-expand {
+    background: var(--green-100);
+    color: var(--green-700);
 }
 
 .person-card-avatar {
@@ -570,6 +603,24 @@ body {
     justify-content: center;
     color: var(--text-secondary);
     cursor: pointer;
+}
+
+/* ===== Descendant Lane ===== */
+.gen-lane-descendant {
+    border-top: 1px solid var(--green-300);
+    margin-top: 4px;
+    background: var(--green-50);
+    border-bottom: none;
+}
+
+.gen-lane-descendant-empty {
+    padding: 8px 16px;
+}
+
+.descendant-empty-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
 }
 
 /* ===== Toast ===== */

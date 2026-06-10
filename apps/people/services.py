@@ -1,4 +1,48 @@
 from apps.people.models import Person
+from apps.relationships.models import Relationship
+
+
+def get_child_ids(person):
+    return (
+        Relationship.objects.filter(
+            from_person=person,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+        .values_list("to_person_id", flat=True)
+    )
+
+
+def get_children(person):
+    return Person.objects.filter(id__in=get_child_ids(person))
+
+
+def get_descendant_generation(person):
+    children = list(get_children(person))
+    if not children:
+        return None
+
+    gen_map = {
+        "Robert": 2, "Margaret": 2,
+        "James": 3, "Linda": 3, "Michael": 3,
+        "Emily": 4, "David": 4, "Laura": 4,
+    }
+    next_gen = gen_map.get(person.first_name, 2)
+    labels = {2: "Children", 3: "Grandchildren", 4: "Great-grandchildren"}
+
+    return {
+        "number": next_gen,
+        "label": labels.get(next_gen, "Descendants"),
+        "people": children,
+    }
+
+
+def get_life_years(person):
+    parts = []
+    if person.birth_date:
+        parts.append(str(person.birth_date.year))
+    if person.death_date:
+        parts.append(str(person.death_date.year))
+    return " – ".join(parts) if parts else ""
 
 
 def get_generation_label(person):

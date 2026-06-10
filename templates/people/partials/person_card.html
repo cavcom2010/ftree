@@ -1,18 +1,29 @@
-<button class="person-card"
-        hx-get="/people/{{ person.id }}/drawer/"
-        hx-target="#person-drawer"
-        hx-swap="innerHTML"
-        data-person-name="{{ person.full_name }}"
-        data-person-meta="{% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}"
-        data-person-avatar="{{ person.first_name|slice:':1' }}"
-        data-next-lane="{% if lane.number < 4 %}lane-gen-{{ lane.number|add:'1' }}{% endif %}"
-        data-row-id="row-gen-{{ lane.number }}"
-        data-card-id="card-gen-{{ lane.number }}-{{ person.id }}">
-    <div class="person-card-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% else %}unknown{% endif %}">
-        {{ person.first_name|slice:":1" }}
-    </div>
-    <span class="person-card-name">{{ person.first_name }}</span>
-    <span class="person-card-dates">
-        {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}
-    </span>
-</button>
+<div class="person-card-col">
+    <button class="person-card"
+            hx-get="/people/{{ person.id }}/drawer/"
+            hx-target="#person-drawer"
+            hx-swap="innerHTML"
+            data-person-name="{{ person.full_name }}"
+            data-person-meta="{% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}"
+            data-person-avatar="{{ person.first_name|slice:':1' }}"
+            data-next-lane="{% if not desc_row %}{% if lane.number < 4 %}lane-gen-{{ lane.number|add:'1' }}{% endif %}{% endif %}"
+            data-row-id="{{ desc_row|default:'row-gen' }}-{{ desc_parent_id|default:lane.number }}"
+            data-card-id="card-{{ desc_row|default:'gen' }}-{{ desc_parent_id|default:lane.number }}-{{ person.id }}">
+        <div class="person-card-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% else %}unknown{% endif %}">
+            {{ person.first_name|slice:":1" }}
+        </div>
+        <span class="person-card-name">{{ person.first_name }}</span>
+        <span class="person-card-dates">
+            {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}
+        </span>
+    </button>
+    <button class="person-card-expand"
+            hx-get="/people/{{ person.id }}/descendants/"
+            hx-target="#descendants-for-{{ person.id }}"
+            hx-swap="innerHTML"
+            title="Show children">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="6 9 12 15 18 9"/>
+        </svg>
+    </button>
+</div>

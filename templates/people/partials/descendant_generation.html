@@ -1,0 +1,19 @@
+{% if generation and generation.people %}
+<div class="gen-lane gen-lane-descendant" id="descendants-for-{{ person.id }}">
+    <div class="gen-lane-header">
+        <span class="gen-lane-number">Generation {{ generation.number }}</span>
+        <span class="gen-lane-label">{{ generation.label }} of {{ person.first_name }}</span>
+    </div>
+    <div class="gen-lane-scroll" id="row-desc-{{ person.id }}">
+        <div class="gen-lane-pad"></div>
+        {% for child in generation.people %}
+            {% include "people/partials/person_card.html" with person=child lane=generation desc_row="row-desc" desc_parent_id=person.id %}
+        {% endfor %}
+        <div class="gen-lane-pad"></div>
+    </div>
+</div>
+{% else %}
+<div class="gen-lane-descendant-empty" id="descendants-for-{{ person.id }}">
+    <p class="descendant-empty-text">No children recorded.</p>
+</div>
+{% endif %}

@@ -437,7 +437,7 @@ body {
     transition: opacity 0.25s;
 }
 
-.drawer-overlay.open {
+.drawer-overlay.show {
     opacity: 1;
     pointer-events: auto;
 }
@@ -457,7 +457,7 @@ body {
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.person-drawer.open {
+.person-drawer.show {
     transform: translateX(-50%) translateY(0);
 }
 
@@ -507,12 +507,69 @@ body {
 .person-drawer-meta {
     font-size: 14px;
     color: var(--text-secondary);
-    margin-bottom: 16px;
+    margin-bottom: 2px;
+}
+
+.person-drawer-generation {
+    font-size: 12px;
+    color: var(--green-700);
+    font-weight: 500;
+    margin-bottom: 12px;
+    background: var(--green-50);
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
 }
 
 .person-drawer-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.person-drawer-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--green-50);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    margin-bottom: 6px;
+}
+
+.drawer-tab {
+    padding: 7px 16px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.drawer-tab.active {
+    background: var(--white);
+    color: var(--green-800);
+    box-shadow: var(--shadow-sm);
+}
+
+.person-drawer-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--green-50);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
 }
 
 /* ===== Toast ===== */

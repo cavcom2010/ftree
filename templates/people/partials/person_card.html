@@ -1,4 +1,7 @@
 <button class="person-card"
+        hx-get="/people/{{ person.id }}/drawer/"
+        hx-target="#person-drawer"
+        hx-swap="innerHTML"
         data-person-name="{{ person.full_name }}"
         data-person-meta="{% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}"
         data-person-avatar="{{ person.first_name|slice:':1' }}"

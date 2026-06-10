@@ -1,6 +1,22 @@
 from apps.people.models import Person
 
 
+def get_generation_label(person):
+    names = {
+        "Robert": "Generation 1 · Founder",
+        "Margaret": "Generation 1 · Founder",
+        "James": "Generation 2 · Child of Robert & Margaret",
+        "Linda": "Generation 2 · Child of Robert & Margaret",
+        "Michael": "Generation 2 · Child of Robert & Margaret",
+        "Emily": "Generation 3 · Grandchild",
+        "David": "Generation 3 · Grandchild",
+        "Laura": "Generation 3 · Grandchild",
+        "Olivia": "Generation 4 · Great-grandchild",
+        "Noah": "Generation 4 · Great-grandchild",
+    }
+    return names.get(person.first_name, "")
+
+
 def get_demo_generation_rows(family):
     gen1_names = ["Robert", "Margaret"]
     gen2_names = ["James", "Linda", "Michael"]

@@ -18,6 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+document.body.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail.target.id === "person-drawer") {
+        event.detail.target.classList.add("show");
+        document.getElementById("drawer-overlay").classList.add("show");
+    }
+});
+
 function showToast(message) {
     var existing = document.querySelector(".toast");
     if (existing) existing.remove();
@@ -35,9 +42,6 @@ function showToast(message) {
 }
 
 function selectPerson(card) {
-    var name = card.getAttribute("data-person-name") || "";
-    var meta = card.getAttribute("data-person-meta") || "";
-    var avatar = card.getAttribute("data-person-avatar") || "?";
     var nextLane = card.getAttribute("data-next-lane") || "";
     var rowId = card.getAttribute("data-row-id") || "";
     var cardId = card.getAttribute("data-card-id") || "";
@@ -46,25 +50,6 @@ function selectPerson(card) {
         c.classList.remove("selected");
     });
     card.classList.add("selected");
-
-    var drawerAvatar = document.getElementById("drawer-avatar");
-    var drawerName = document.getElementById("drawer-name");
-    var drawerMeta = document.getElementById("drawer-meta");
-
-    if (drawerAvatar) {
-        drawerAvatar.textContent = avatar;
-        drawerAvatar.className = "person-drawer-avatar";
-        var cardAvatar = card.querySelector(".person-card-avatar");
-        if (cardAvatar && cardAvatar.classList.contains("male")) {
-            drawerAvatar.classList.add("male");
-        } else if (cardAvatar && cardAvatar.classList.contains("female")) {
-            drawerAvatar.classList.add("female");
-        }
-    }
-    if (drawerName) drawerName.textContent = name;
-    if (drawerMeta) drawerMeta.textContent = meta;
-
-    openDrawer();
 
     if (nextLane) {
         revealLane(nextLane, rowId, cardId);
@@ -102,12 +87,7 @@ function revealAll() {
     });
 }
 
-function openDrawer() {
-    document.getElementById("person-drawer").classList.add("open");
-    document.getElementById("drawer-overlay").classList.add("open");
-}
-
 function closeDrawer() {
-    document.getElementById("person-drawer").classList.remove("open");
-    document.getElementById("drawer-overlay").classList.remove("open");
+    document.getElementById("person-drawer").classList.remove("show");
+    document.getElementById("drawer-overlay").classList.remove("show");
 }

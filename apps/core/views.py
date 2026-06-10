@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 from apps.families.models import Family
 from apps.people.models import Person
+from apps.people.services import get_demo_generation_rows
 from apps.stories.models import Story
 from apps.social.models import Activity
 
@@ -30,6 +31,7 @@ def home(request):
         "featured_stories": Story.objects.filter(
             family=family, is_featured=True
         )[:3],
+        "generation_rows": get_demo_generation_rows(family),
         "empty_state": False,
     }
 

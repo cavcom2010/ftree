@@ -1,0 +1,15 @@
+<button class="person-card"
+        data-person-name="{{ person.full_name }}"
+        data-person-meta="{% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}"
+        data-person-avatar="{{ person.first_name|slice:':1' }}"
+        data-next-lane="{% if lane.number < 4 %}lane-gen-{{ lane.number|add:'1' }}{% endif %}"
+        data-row-id="row-gen-{{ lane.number }}"
+        data-card-id="card-gen-{{ lane.number }}-{{ person.id }}">
+    <div class="person-card-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% else %}unknown{% endif %}">
+        {{ person.first_name|slice:":1" }}
+    </div>
+    <span class="person-card-name">{{ person.first_name }}</span>
+    <span class="person-card-dates">
+        {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}
+    </span>
+</button>

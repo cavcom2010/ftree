@@ -303,59 +303,241 @@ body {
     font-weight: 500;
 }
 
-/* ===== Tree ===== */
-.tree-card {
+/* ===== Tree Snapshot ===== */
+.tree-snapshot {
     background: var(--white);
     border-radius: var(--radius-md);
-    padding: 16px 12px;
+    padding: 4px 0;
     box-shadow: var(--shadow-sm);
 }
 
-.generation-row {
+.gen-lane {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+}
+
+.gen-lane:last-child {
+    border-bottom: none;
+}
+
+.gen-lane-header {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0 16px 6px;
 }
 
-.generation-row:last-child {
-    margin-bottom: 0;
-}
-
-.gen-label {
+.gen-lane-number {
     font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    width: 40px;
+}
+
+.gen-lane-label {
+    font-size: 12px;
+    color: var(--green-700);
+    font-weight: 500;
+}
+
+.gen-lane-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 0;
+}
+
+.gen-lane-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.gen-lane-pad {
+    flex: 0 0 calc(50vw - 60px);
+    min-width: calc(50vw - 60px);
+}
+
+/* ===== Person Card ===== */
+.person-card {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 80px;
+    padding: 8px 4px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    color: var(--text);
+}
+
+.person-card:active {
+    transform: scale(0.96);
+}
+
+.person-card.selected {
+    border-color: var(--green-500);
+    background: var(--green-50);
+}
+
+.person-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
     flex-shrink: 0;
 }
 
-.person-node {
+.person-card-avatar.male {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.person-card-avatar.female {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+.person-card-avatar.unknown {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
+.person-card-name {
     font-size: 13px;
     font-weight: 600;
-    padding: 6px 12px;
-    border-radius: var(--radius-full);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 76px;
+}
+
+.person-card-dates {
+    font-size: 10px;
+    color: var(--text-muted);
     white-space: nowrap;
 }
 
-.person-node.male {
-    background: #e8f4f8;
-    color: #1a6b8a;
-    border: 1px solid #b3dce8;
+/* ===== Person Drawer ===== */
+.drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(27, 67, 50, 0.3);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
 }
 
-.person-node.female {
-    background: #fce4ec;
-    color: #ad1457;
-    border: 1px solid #f8bbd0;
+.drawer-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
 }
 
-.connector {
+.person-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%;
+    max-width: 430px;
+    background: var(--white);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 24px rgba(27, 67, 50, 0.15);
+    z-index: 310;
+    padding: 12px 20px calc(24px + var(--safe-bottom));
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.person-drawer.open {
+    transform: translateX(-50%) translateY(0);
+}
+
+.person-drawer-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.person-drawer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.person-drawer-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.person-drawer-avatar.male {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.person-drawer-avatar.female {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+.person-drawer-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green-900);
+    margin-bottom: 2px;
+}
+
+.person-drawer-meta {
     font-size: 14px;
-    color: var(--text-muted);
-    margin: 0 2px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.person-drawer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ===== Toast ===== */
+.toast {
+    position: fixed;
+    bottom: calc(120px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green-900);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    z-index: 400;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    white-space: nowrap;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* ===== Prompt ===== */

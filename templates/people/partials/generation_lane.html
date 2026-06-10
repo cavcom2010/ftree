@@ -1,0 +1,13 @@
+<div class="gen-lane" id="lane-gen-{{ lane.number }}"{% if lane.number > 2 %} style="display:none"{% endif %}>
+    <div class="gen-lane-header">
+        <span class="gen-lane-number">Generation {{ lane.number }}</span>
+        <span class="gen-lane-label">{{ lane.label }}</span>
+    </div>
+    <div class="gen-lane-scroll" id="row-gen-{{ lane.number }}">
+        <div class="gen-lane-pad"></div>
+        {% for person in lane.people %}
+            {% include "people/partials/person_card.html" with person=person lane=lane %}
+        {% endfor %}
+        <div class="gen-lane-pad"></div>
+    </div>
+</div>

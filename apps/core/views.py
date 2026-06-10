@@ -1,5 +1,7 @@
+from django.db.models import Count
 from django.shortcuts import render
 
+from apps.achievements.models import UserAchievement
 from apps.families.models import Family
 from apps.people.models import Person
 from apps.people.services import get_demo_generation_rows
@@ -17,6 +19,19 @@ def home(request):
             {"empty_state": True},
         )
 
+    top_achievers = (
+        UserAchievement.objects.filter(family=family)
+        .values("user__username")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:5]
+    )
+
+    latest_achievements = (
+        UserAchievement.objects.filter(family=family)
+        .select_related("user", "achievement")
+        .order_by("-earned_at")[:3]
+    )
+
     context = {
         "family": family,
         "people_count": Person.objects.filter(family=family).count(),
@@ -32,6 +47,8 @@ def home(request):
             family=family, is_featured=True
         )[:3],
         "generation_rows": get_demo_generation_rows(family),
+        "top_achievers": top_achievers,
+        "latest_achievements": latest_achievements,
         "empty_state": False,
     }
 

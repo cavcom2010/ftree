@@ -210,22 +210,28 @@ class Command(BaseCommand):
     def _seed_achievements(self):
         data = [
             {
-                "code": "family_tree_starter",
-                "name": "Family Tree Starter",
-                "description": "Created your first family tree.",
-                "icon": "tree",
+                "code": "memory-keeper",
+                "name": "Memory Keeper",
+                "description": "Uploaded memories that preserve family history.",
+                "icon": "🖼️",
             },
             {
-                "code": "first_story",
-                "name": "First Story",
-                "description": "Published your first family story.",
-                "icon": "book",
+                "code": "story-teller",
+                "name": "Story Teller",
+                "description": "Added family stories for future generations.",
+                "icon": "📝",
             },
             {
-                "code": "family_historian",
+                "code": "family-historian",
                 "name": "Family Historian",
-                "description": "Added 10 people to your family tree.",
-                "icon": "scroll",
+                "description": "Helped build and verify the family tree.",
+                "icon": "🏆",
+            },
+            {
+                "code": "branch-builder",
+                "name": "Branch Builder",
+                "description": "Added relatives and expanded family branches.",
+                "icon": "🌳",
             },
         ]
         for d in data:

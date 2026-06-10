@@ -1431,3 +1431,88 @@ body {
     gap: 8px;
     margin-top: 8px;
 }
+
+/* ===== Family Champions ===== */
+.champions-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.champion-avatar {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-700), var(--green-500));
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.champion-count {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--green-900);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--white);
+}
+
+.latest-achievements {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.latest-ach-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    box-shadow: var(--shadow-sm);
+    font-size: 13px;
+    color: var(--text);
+}
+
+.latest-ach-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.latest-ach-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 4px;
+    align-items: baseline;
+}
+
+.latest-ach-body strong {
+    font-weight: 600;
+}
+
+.latest-ach-body em {
+    font-style: normal;
+    color: var(--green-700);
+}
+
+.latest-ach-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    width: 100%;
+}

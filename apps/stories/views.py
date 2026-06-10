@@ -76,6 +76,9 @@ def story_create(request):
                 story=story,
             )
 
+            from apps.achievements.services import check_story_teller
+            check_story_teller(family, user)
+
             return render(request, "stories/story_list.html", {
                 "family": family,
                 "stories": Story.objects.filter(family=family).order_by("-created_at"),

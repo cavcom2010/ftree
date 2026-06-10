@@ -1,0 +1,29 @@
+<section class="section champions-section">
+    <h2 class="section-title">Family Champions</h2>
+
+    {% if top_achievers %}
+    <div class="champions-row">
+        {% for achiever in top_achievers %}
+        <div class="champion-avatar" title="{{ achiever.user__username }} — {{ achiever.total }} achievement{{ achiever.total|pluralize }}">
+            <span>{{ achiever.user__username|slice:":1"|upper }}</span>
+            <small class="champion-count">{{ achiever.total }}</small>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if latest_achievements %}
+    <div class="latest-achievements">
+        {% for ua in latest_achievements %}
+        <div class="latest-ach-item">
+            <span class="latest-ach-icon">{{ ua.achievement.icon }}</span>
+            <div class="latest-ach-body">
+                <strong>{{ ua.user.username }}</strong> earned
+                <em>{{ ua.achievement.name }}</em>
+                <span class="latest-ach-time">{{ ua.earned_at|timesince }} ago</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>

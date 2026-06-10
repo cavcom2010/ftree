@@ -68,6 +68,9 @@ def person_create(request):
                 person=person,
             )
 
+            from apps.achievements.services import check_branch_builder
+            check_branch_builder(_family(), _user(request))
+
             response = HttpResponse("")
             response["HX-Trigger"] = f'{{"showToast":"{person.full_name} added!"}}'
 

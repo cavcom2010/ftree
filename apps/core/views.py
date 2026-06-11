@@ -5,7 +5,7 @@ from apps.achievements.models import UserAchievement
 from apps.families.models import Family
 from apps.memories.models import Memory
 from apps.people.models import Person
-from apps.people.services import get_demo_generation_rows
+from apps.people.services import get_generation_rows
 from apps.stories.models import Story
 from apps.social.models import Activity
 
@@ -37,11 +37,12 @@ def home(request):
     memories_qs = Memory.objects.filter(family=family).order_by("-created_at")
     stories_qs = Story.objects.filter(family=family)
     photo_memories_qs = memories_qs.filter(memory_type=Memory.Type.PHOTO)
+    generation_rows = get_generation_rows(family)
 
     context = {
         "family": family,
         "people_count": people_qs.count(),
-        "generation_count": 4,
+        "generation_count": len(generation_rows),
         "photo_count": photo_memories_qs.count(),
         "story_count": stories_qs.count(),
         "recent_activities": (
@@ -51,7 +52,7 @@ def home(request):
         ),
         "featured_stories": stories_qs.filter(is_featured=True)[:3],
         "memories": memories_qs,
-        "generation_rows": get_demo_generation_rows(family),
+        "generation_rows": generation_rows,
         "top_achievers": top_achievers,
         "latest_achievements": latest_achievements,
         "empty_state": False,

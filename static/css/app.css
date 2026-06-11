@@ -394,13 +394,15 @@ button {
 }
 
 .tree-scroll {
-    overflow-x: auto;
+    /* The whole tree is no longer the horizontal scroller; rows scroll independently. */
+    overflow: visible;
     margin: 0 -14px;
     padding: 4px 14px 12px;
 }
 
 .tree {
-    min-width: 700px;
+    width: 100%;
+    min-width: 0;
     padding: 4px 0 6px;
 }
 
@@ -409,6 +411,7 @@ button {
     grid-template-columns: 96px 1fr;
     gap: 10px;
     align-items: center;
+    min-width: 0;
     margin: 18px 0;
 }
 
@@ -435,12 +438,48 @@ button {
 }
 
 .people-row {
+    /* Each generation row owns its own horizontal scroll and snap behavior. */
     display: flex;
-    justify-content: center;
     gap: 18px;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-inline: 4px;
+    scroll-padding-inline: 50%;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.people-row::-webkit-scrollbar {
+    display: none;
+}
+
+.people-row::before,
+.people-row::after {
+    content: "";
+    flex: 0 0 max(16px, calc(50% - 84px));
+}
+
+.people-row.compact {
+    justify-content: center;
+    padding-inline: 16px;
+    scroll-padding-inline: 16px;
+}
+
+@supports (justify-content: safe center) {
+    .people-row.compact {
+        justify-content: safe center;
+    }
+}
+
+.people-row.compact::before,
+.people-row.compact::after {
+    display: none;
 }
 
 .person-card {
+    flex: 0 0 auto;
     width: 168px;
     display: grid;
     grid-template-columns: 45px 1fr 28px;
@@ -454,6 +493,7 @@ button {
     box-shadow: 0 10px 24px rgba(19, 32, 25, 0.08);
     transition: 0.18s ease;
     cursor: pointer;
+    scroll-snap-align: center;
 }
 
 .person-card:hover,
@@ -504,6 +544,17 @@ button {
     color: var(--green);
     font-weight: 950;
     font-size: 1rem;
+}
+
+@media (max-width: 620px) {
+    .generation {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .generation-label {
+        padding-inline: 2px;
+    }
 }
 
 /* ===== Prompt ===== */

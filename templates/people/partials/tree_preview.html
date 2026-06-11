@@ -21,7 +21,7 @@
                     <div class="generation-label">
                         Generation {{ lane.number }}<br>{{ lane.label }}
                     </div>
-                    <div class="people-row">
+                    <div class="people-row{% if lane.people|length <= 2 %} compact{% endif %}">
                         {% for person in lane.people %}
                         <button class="person-card {% if lane.number < 4 %}has-kids{% endif %}"
                                 hx-get="/people/{{ person.id }}/drawer/"

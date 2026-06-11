@@ -6,21 +6,22 @@
     <div class="relation-type-tabs">
         <a class="rel-type-tab {% if relation_type == 'parent' %}active{% endif %}"
            hx-get="/people/{{ current_person.id }}/add-relative/parent/"
-           hx-target="#person-drawer" hx-swap="innerHTML">Parent</a>
+           hx-target="#personDrawer" hx-swap="innerHTML">Parent</a>
         <a class="rel-type-tab {% if relation_type == 'child' %}active{% endif %}"
            hx-get="/people/{{ current_person.id }}/add-relative/child/"
-           hx-target="#person-drawer" hx-swap="innerHTML">Child</a>
+           hx-target="#personDrawer" hx-swap="innerHTML">Child</a>
         <a class="rel-type-tab {% if relation_type == 'spouse' %}active{% endif %}"
            hx-get="/people/{{ current_person.id }}/add-relative/spouse/"
-           hx-target="#person-drawer" hx-swap="innerHTML">Spouse</a>
+           hx-target="#personDrawer" hx-swap="innerHTML">Spouse</a>
         <a class="rel-type-tab {% if relation_type == 'sibling' %}active{% endif %}"
            hx-get="/people/{{ current_person.id }}/add-relative/sibling/"
-           hx-target="#person-drawer" hx-swap="innerHTML">Sibling</a>
+           hx-target="#personDrawer" hx-swap="innerHTML">Sibling</a>
     </div>
     <form class="person-form"
           hx-post="/people/{{ current_person.id }}/add-relative/{{ relation_type }}/"
-          hx-target="#person-drawer"
+          hx-target="#personDrawer"
           hx-swap="innerHTML">
+        {% csrf_token %}
         <div class="form-group">
             <label class="form-label" for="id_first_name">First name *</label>
             {{ form.first_name }}
@@ -63,7 +64,7 @@
             </button>
             <button type="button" class="btn btn-ghost btn-block"
                     hx-get="/people/{{ current_person.id }}/drawer/"
-                    hx-target="#person-drawer" hx-swap="innerHTML">
+                    hx-target="#personDrawer" hx-swap="innerHTML">
                 Back to profile
             </button>
         </div>

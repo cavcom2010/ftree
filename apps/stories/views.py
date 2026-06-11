@@ -11,7 +11,12 @@ from apps.stories.models import Story
 User = get_user_model()
 
 
-def _family():
+def _family(request=None):
+    user = getattr(request, "user", None)
+    if getattr(user, "is_authenticated", False):
+        family = Family.objects.filter(memberships__user=user).first()
+        if family:
+            return family
     return Family.objects.first()
 
 
@@ -45,7 +50,7 @@ def _user_reactions(obj, user):
 
 
 def story_list(request):
-    family = _family()
+    family = _family(request)
     user = _user(request)
     stories = Story.objects.filter(family=family).order_by("-created_at")
     _annotate_stories(stories, user)
@@ -57,7 +62,7 @@ def story_list(request):
 
 
 def story_create(request):
-    family = _family()
+    family = _family(request)
     user = _user(request)
 
     if request.method == "POST":
@@ -79,9 +84,11 @@ def story_create(request):
             from apps.achievements.services import check_story_teller
             check_story_teller(family, user)
 
+            stories = Story.objects.filter(family=family).order_by("-created_at")
+            _annotate_stories(stories, user)
             return render(request, "stories/story_list.html", {
                 "family": family,
-                "stories": Story.objects.filter(family=family).order_by("-created_at"),
+                "stories": stories,
             })
 
         return render(

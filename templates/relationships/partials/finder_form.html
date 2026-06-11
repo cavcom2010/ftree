@@ -5,6 +5,7 @@
           hx-post="/relationships/finder/"
           hx-target="#global-sheet"
           hx-swap="innerHTML">
+        {% csrf_token %}
         <div class="form-group">
             <label class="form-label" for="from_person">From</label>
             <select name="from_person" id="from_person">

@@ -12,7 +12,12 @@ User = get_user_model()
 DEFAULT_PROMPT = "What family memory should we preserve today?"
 
 
-def _family():
+def _family(request=None):
+    user = getattr(request, "user", None)
+    if getattr(user, "is_authenticated", False):
+        family = Family.objects.filter(memberships__user=user).first()
+        if family:
+            return family
     return Family.objects.first()
 
 
@@ -26,7 +31,7 @@ def _user(request):
 
 
 def current_prompt(request):
-    family = _family()
+    family = _family(request)
     today = date.today()
     prompt = FamilyPrompt.objects.filter(
         family=family, active_date=today
@@ -49,7 +54,7 @@ def current_prompt(request):
 
 
 def answer_prompt(request, prompt_id):
-    prompt = get_object_or_404(FamilyPrompt, id=prompt_id)
+    prompt = get_object_or_404(FamilyPrompt, id=prompt_id, family=_family(request))
     user = _user(request)
 
     if request.method == "POST":

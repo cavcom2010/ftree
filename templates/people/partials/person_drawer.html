@@ -1,6 +1,12 @@
 <div class="drawer-handle"></div>
 <div class="drawer-main">
-    <div class="drawer-avatar">{{ person.first_name|slice:":1" }}</div>
+    <div class="drawer-avatar">
+        {% if person.profile_photo %}
+            <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+        {% else %}
+            {{ person.first_name|slice:":1" }}
+        {% endif %}
+    </div>
     <div>
         <b>{{ person.full_name }}</b>
         <span>

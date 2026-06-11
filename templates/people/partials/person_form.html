@@ -5,6 +5,7 @@
           hx-post="/people/create/"
           hx-target="#global-sheet"
           hx-swap="innerHTML">
+        {% csrf_token %}
         <div class="form-group">
             <label class="form-label" for="id_first_name">First name *</label>
             {{ form.first_name }}

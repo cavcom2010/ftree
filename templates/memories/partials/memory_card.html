@@ -1,12 +1,16 @@
 <section class="section">
     <div class="story-card">
         <div class="memory-card-inner">
-            {% if memory.file %}
+            {% if memory.file and memory.memory_type == "photo" %}
+            <div class="memory-thumb-large has-image">
+                <img src="{{ memory.file.url }}" alt="{{ memory.title }}">
+            </div>
+            {% elif memory.file %}
             <div class="memory-thumb-large">
                 {{ memory.get_memory_type_display }} 📦
             </div>
             {% else %}
-            <div class="memory-thumb-large memory-thumb-placeholder">
+            <div class="memory-thumb-large">
                 {{ memory.get_memory_type_display }}
             </div>
             {% endif %}

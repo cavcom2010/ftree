@@ -7,7 +7,7 @@ HOME_DIR="$ROOT/.home_nginx"
 RUN_DIR="$HOME_DIR/run"
 NGINX_PID="$RUN_DIR/nginx.pid"
 GUNICORN_PID="$RUN_DIR/gunicorn.pid"
-GUNICORN_PORT_FILE="$RUN_DIR/gunicorn.port"
+LEGACY_DAPHNE_PID="$RUN_DIR/daphne.pid"
 
 echo "Stopping HeritageTree home server..."
 
@@ -23,6 +23,17 @@ if [[ -f "$NGINX_PID" ]]; then
     fi
   fi
   rm -f "$NGINX_PID"
+fi
+
+if [[ -f "$LEGACY_DAPHNE_PID" ]]; then
+  pid="$(cat "$LEGACY_DAPHNE_PID" 2>/dev/null || echo "")"
+  if [[ -n "$pid" ]]; then
+    kill -TERM "$pid" 2>/dev/null || true
+    sleep 0.5
+    kill -9 "$pid" 2>/dev/null || true
+    echo "Legacy Daphne stopped."
+  fi
+  rm -f "$LEGACY_DAPHNE_PID"
 fi
 
 if [[ -f "$GUNICORN_PID" ]]; then
@@ -41,25 +52,14 @@ if [[ -f "$GUNICORN_PID" ]]; then
   rm -f "$GUNICORN_PID"
 fi
 
-gunicorn_port="${HOME_APP_PORT:-8028}"
-if [[ -f "$GUNICORN_PORT_FILE" ]]; then
-  stored_port="$(tr -dc '0-9' < "$GUNICORN_PORT_FILE")"
-  if [[ -n "$stored_port" ]]; then
-    gunicorn_port="$stored_port"
-  fi
-fi
-
 NGINX_PORT="${HOME_PORT:-8008}"
-NGINX_HTTPS_PORT="${HOME_HTTPS_PORT:-8443}"
-GUNICORN_PORT="$gunicorn_port"
+GUNICORN_PORT="${HOME_APP_PORT:-8028}"
 
-pids="$(ss -ltnp "( sport = :${NGINX_PORT} or sport = :${NGINX_HTTPS_PORT} or sport = :${GUNICORN_PORT} )" 2>/dev/null | grep -o 'pid=[0-9]\+' | cut -d= -f2 | sort -u || true)"
+pids="$(ss -ltnp "( sport = :${NGINX_PORT} or sport = :${GUNICORN_PORT} )" 2>/dev/null | grep -o 'pid=[0-9]\+' | cut -d= -f2 | sort -u || true)"
 if [[ -n "$pids" ]]; then
   kill $pids 2>/dev/null || true
   sleep 0.5
   kill -9 $pids 2>/dev/null || true
 fi
-
-rm -f "$GUNICORN_PORT_FILE"
 
 echo "Done."

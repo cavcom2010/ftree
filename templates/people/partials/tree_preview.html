@@ -28,7 +28,13 @@
                                 hx-target="#personDrawer"
                                 hx-swap="innerHTML"
                                 onclick="selectPerson(event, '{{ person.full_name|escapejs }}', '{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %} · {{ lane.label }}', '{{ person.first_name|slice:':1' }}'); {% if lane.number < 4 %}toggleGeneration('gen{{ lane.number|add:'1' }}'){% endif %}">
-                            <span class="avatar">{{ person.first_name|slice:":1" }}</span>
+                            <span class="avatar">
+                                {% if person.profile_photo %}
+                                    <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+                                {% else %}
+                                    {{ person.first_name|slice:":1" }}
+                                {% endif %}
+                            </span>
                             <span class="person-meta">
                                 <b>{{ person.first_name }}</b>
                                 <small>{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}</small>

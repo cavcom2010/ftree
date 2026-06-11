@@ -1,7 +1,7 @@
 <div class="person-card-col">
     <button class="person-card"
             hx-get="/people/{{ person.id }}/drawer/"
-            hx-target="#person-drawer"
+            hx-target="#personDrawer"
             hx-swap="innerHTML"
             data-person-name="{{ person.full_name }}"
             data-person-meta="{% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}{% if person.death_date %} - {{ person.death_date|date:'Y' }}{% endif %}"
@@ -10,7 +10,11 @@
             data-row-id="{{ desc_row|default:'row-gen' }}-{{ desc_parent_id|default:lane.number }}"
             data-card-id="card-{{ desc_row|default:'gen' }}-{{ desc_parent_id|default:lane.number }}-{{ person.id }}">
         <div class="person-card-avatar {% if person.gender == 'male' %}male{% elif person.gender == 'female' %}female{% else %}unknown{% endif %}">
-            {{ person.first_name|slice:":1" }}
+            {% if person.profile_photo %}
+                <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+            {% else %}
+                {{ person.first_name|slice:":1" }}
+            {% endif %}
         </div>
         <span class="person-card-name">{{ person.first_name }}</span>
         <span class="person-card-dates">

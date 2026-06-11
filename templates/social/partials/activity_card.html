@@ -1,6 +1,8 @@
 <div class="activity-card">
     <div class="activity-card-avatar">
-        {% if activity.actor %}
+        {% if activity.person and activity.person.profile_photo %}
+            <img src="{{ activity.person.profile_photo.url }}" alt="{{ activity.person.full_name }}">
+        {% elif activity.actor %}
             {{ activity.actor.username|slice:":1"|upper }}
         {% else %}
             ?
@@ -14,5 +16,7 @@
     <a href="#" class="activity-card-badge">👤</a>
     {% elif activity.story %}
     <a href="/stories/" class="activity-card-badge">📖</a>
+    {% elif activity.memory %}
+    <a href="/memories/" class="activity-card-badge">🖼️</a>
     {% endif %}
 </div>

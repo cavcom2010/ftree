@@ -11,7 +11,12 @@ from apps.stories.models import Story
 User = get_user_model()
 
 
-def _family():
+def _family(request=None):
+    user = getattr(request, "user", None)
+    if getattr(user, "is_authenticated", False):
+        family = Family.objects.filter(memberships__user=user).first()
+        if family:
+            return family
     return Family.objects.first()
 
 
@@ -57,7 +62,7 @@ def _build_reaction_bars(context):
 
 
 def family_feed(request):
-    family = _family()
+    family = _family(request)
     user = _user(request)
 
     activities = Activity.objects.filter(family=family).select_related(
@@ -95,8 +100,13 @@ def family_feed(request):
 
 
 def toggle_reaction(request, content_type, object_id, reaction_type):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if reaction_type not in Reaction.Type.values:
+        return HttpResponse(status=400)
+
     user = _user(request)
-    family = _family()
+    family = _family(request)
 
     if content_type == "story":
         obj = get_object_or_404(Story, id=object_id, family=family)
@@ -139,7 +149,7 @@ def toggle_reaction(request, content_type, object_id, reaction_type):
 
 def add_comment(request, content_type, object_id):
     user = _user(request)
-    family = _family()
+    family = _family(request)
 
     if content_type == "story":
         obj = get_object_or_404(Story, id=object_id, family=family)

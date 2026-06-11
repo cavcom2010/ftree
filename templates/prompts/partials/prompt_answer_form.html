@@ -2,6 +2,7 @@
       hx-post="/prompts/{{ prompt.id }}/answer/"
       hx-target="closest .prompt-card"
       hx-swap="outerHTML">
+    {% csrf_token %}
     <textarea name="body" class="answer-textarea"
               placeholder="Share your memory..."
               rows="3" required></textarea>

@@ -8,13 +8,16 @@
     </div>
     <div class="memory-strip">
         {% for memory in memories|slice:":3" %}
-        <article class="memory-card" onclick="showToast('{{ memory.title|escapejs }} opened')">
-            <span class="label">🖼️ Memory</span>
+        <article class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}" onclick="showToast('{{ memory.title|escapejs }} opened')">
+            {% if memory.file and memory.memory_type == "photo" %}
+                <img src="{{ memory.file.url }}" alt="{{ memory.title }}">
+            {% endif %}
+            <span class="label">{% if memory.memory_type == "photo" %}📷 Photo Story{% else %}🖼️ Memory{% endif %}</span>
             <h3>{{ memory.title }}</h3>
             <p>{{ memory.description|default:"A family memory worth keeping." }}</p>
             <div class="memory-meta">
-                <span>❤️ 0</span>
-                <span>💬 0</span>
+                <span>❤️ {{ memory.reactions.count|default:0 }}</span>
+                <span>💬 {{ memory.comments.count|default:0 }}</span>
             </div>
         </article>
         {% empty %}

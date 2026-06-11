@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -21,7 +23,12 @@ RELATION_LABELS = {
 }
 
 
-def _family():
+def _family(request=None):
+    user = getattr(request, "user", None)
+    if getattr(user, "is_authenticated", False):
+        family = Family.objects.filter(memberships__user=user).first()
+        if family:
+            return family
     return Family.objects.first()
 
 
@@ -35,7 +42,9 @@ def _user(request):
 
 
 def add_relative(request, person_id, relation_type):
-    current_person = get_object_or_404(Person, id=person_id)
+    family = _family(request)
+    user = _user(request)
+    current_person = get_object_or_404(Person, id=person_id, family=family)
 
     if relation_type not in RELATION_LABELS:
         relation_type = "child"
@@ -44,11 +53,9 @@ def add_relative(request, person_id, relation_type):
         form = PersonForm(request.POST)
         if form.is_valid():
             relative = form.save(commit=False)
-            relative.family = _family()
-            relative.created_by = _user(request)
+            relative.family = family
+            relative.created_by = user
             relative.save()
-
-            family = _family()
 
             if relation_type == "child":
                 Relationship.objects.create(
@@ -91,7 +98,7 @@ def add_relative(request, person_id, relation_type):
 
             Activity.objects.create(
                 family=family,
-                actor=_user(request),
+                actor=user,
                 activity_type=Activity.Type.PERSON_ADDED,
                 message=msg,
                 person=relative,
@@ -107,11 +114,10 @@ def add_relative(request, person_id, relation_type):
             )
 
             response = HttpResponse("")
-            response["HX-Trigger"] = f'{{"showToast":"{msg}"}}'
+            response["HX-Trigger"] = json.dumps({"showToast": msg})
 
             close = (
-                f'<div hx-swap-oob="true" id="person-drawer" class="person-drawer"></div>'
-                f'<div hx-swap-oob="true" id="drawer-overlay" class="drawer-overlay"></div>'
+                f'<div hx-swap-oob="true" id="personDrawer" class="person-drawer"></div>'
                 f'<div hx-swap-oob="true" id="descendants-for-{current_person.id}">'
                 f"{descendants_html}"
                 f"</div>"
@@ -144,7 +150,7 @@ def add_relative(request, person_id, relation_type):
 
 
 def relationship_finder(request):
-    family = _family()
+    family = _family(request)
     people = Person.objects.filter(family=family).order_by("first_name")
 
     if request.method == "POST":

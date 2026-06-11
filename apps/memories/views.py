@@ -18,6 +18,15 @@ def _user(request):
     return User.objects.first()
 
 
+def _family(request=None):
+    user = getattr(request, "user", None)
+    if getattr(user, "is_authenticated", False):
+        family = Family.objects.filter(memberships__user=user).first()
+        if family:
+            return family
+    return Family.objects.first()
+
+
 def _annotate_memories(memories, user):
     for m in memories:
         m.reaction_counts = _reaction_counts(m)
@@ -39,7 +48,7 @@ def _user_reactions(obj, user):
 
 
 def memory_list(request):
-    family = Family.objects.first()
+    family = _family(request)
     user = _user(request)
     memories = Memory.objects.filter(family=family).order_by("-created_at")
     _annotate_memories(memories, user)

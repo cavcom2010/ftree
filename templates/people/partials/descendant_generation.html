@@ -1,7 +1,9 @@
 {% if generation and generation.people %}
 <div class="gen-lane gen-lane-descendant" id="descendants-for-{{ person.id }}">
     <div class="gen-lane-header">
-        <span class="gen-lane-number">Generation {{ generation.number }}</span>
+        <span class="gen-lane-number">
+            {% if generation.number %}Generation {{ generation.number }}{% else %}Direct descendants{% endif %}
+        </span>
         <span class="gen-lane-label">{{ generation.label }} of {{ person.first_name }}</span>
     </div>
     <div class="gen-lane-scroll" id="row-desc-{{ person.id }}">

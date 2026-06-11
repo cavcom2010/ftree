@@ -8,6 +8,7 @@ from apps.people.models import Person
 from apps.people.services import (
     get_children,
     get_descendant_generation,
+    get_generation_label,
     get_generation_rows,
 )
 from apps.relationships.models import Relationship
@@ -33,11 +34,11 @@ class PersonFullNameTests(TestCase):
         person = Person.objects.create(
             family=self.family,
             first_name="Bob",
-            middle_name="James",
+            middle_name="Lee",
             last_name="Jones",
             created_by=self.user,
         )
-        self.assertEqual(person.full_name, "Bob James Jones")
+        self.assertEqual(person.full_name, "Bob Lee Jones")
 
     def test_full_name_without_middle(self):
         person = Person.objects.create(
@@ -155,6 +156,8 @@ class GetDescendantGenerationTests(TestCase):
     def test_descendant_generation_has_correct_children(self):
         gen = get_descendant_generation(self.alice)
         self.assertIsNotNone(gen)
+        self.assertIsNone(gen["number"])
+        self.assertEqual(gen["label"], "Children")
         self.assertEqual(len(gen["people"]), 2)
         names = {c.first_name for c in gen["people"]}
         self.assertIn("Charlie", names)
@@ -163,6 +166,12 @@ class GetDescendantGenerationTests(TestCase):
     def test_descendant_generation_is_none_for_childless(self):
         gen = get_descendant_generation(self.charlie)
         self.assertIsNone(gen)
+
+    def test_generation_label_is_founder_for_person_without_parents(self):
+        self.assertEqual(get_generation_label(self.alice), "Founder")
+
+    def test_generation_label_is_descendant_for_person_with_parent(self):
+        self.assertEqual(get_generation_label(self.charlie), "Descendant")
 
 
 class GetGenerationRowsTests(TestCase):

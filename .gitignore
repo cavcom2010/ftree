@@ -24,3 +24,6 @@ media/
 *.swp
 *.swo
 *~
+
+# Home server runtime
+.home_nginx/

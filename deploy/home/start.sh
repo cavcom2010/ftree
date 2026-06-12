@@ -4,683 +4,125 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-PYTHON_BIN="$ROOT/venv/bin/python"
-GUNICORN_BIN="$ROOT/venv/bin/gunicorn"
+detect_home_ip() {
+  local detected_ip=""
 
-print_usage() {
-  cat <<'EOF'
-Usage: ./deploy/home/start.sh [--foreground|--daemon] [--help]
+  if [[ -n "${HOME_INTERFACE:-}" ]]; then
+    detected_ip="$(ip -o -4 addr show dev "${HOME_INTERFACE}" scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -n1 || true)"
+  fi
 
-Options:
-  --foreground  Keep Gunicorn attached to this terminal and stream logs live (default).
-  --daemon      Run Gunicorn detached in the background and write logs to disk.
-  --help        Show this help text.
+  if [[ -z "$detected_ip" ]]; then
+    detected_ip="$(ip -o -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}' || true)"
+  fi
 
-Environment:
-  HOME_FOREGROUND=1  Same as --foreground (default).
-  HOME_FOREGROUND=0  Same as --daemon.
-  HOME_CLIENT_MAX_BODY_SIZE=8m  Nginx request body limit for uploads.
-  HOME_APP_PORT=8028  Internal Gunicorn app port behind Nginx.
+  if [[ -z "$detected_ip" ]]; then
+    detected_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+  fi
 
-Home server for HeritageTree:
-  Public URL: http://<this-computer>:8008/
-  Gunicorn:   http://127.0.0.1:8028/ behind Nginx
-EOF
+  printf '%s' "$detected_ip"
 }
 
-if [[ ! -x "$PYTHON_BIN" ]] || [[ ! -x "$GUNICORN_BIN" ]]; then
-  echo "Missing venv binaries at $ROOT/venv. Activate/create your venv first." >&2
+csv_add_unique() {
+  local csv="$1"
+  local value="$2"
+  printf '%s\n' "${csv},${value}" | tr ',' '\n' | awk 'NF && !seen[$0]++' | paste -sd, -
+}
+
+if [[ ! -x "$ROOT/venv/bin/python" ]]; then
+  echo "Missing venv at $ROOT/venv. Activate/create your venv first." >&2
   exit 1
 fi
 
-case "${HOME_FOREGROUND:-1}" in
-  1|true|TRUE|yes|YES|on|ON)
-    HOME_FOREGROUND_MODE=1
-    ;;
-  0|false|FALSE|no|NO|off|OFF)
-    HOME_FOREGROUND_MODE=0
-    ;;
-  *)
-    echo "Invalid HOME_FOREGROUND value: ${HOME_FOREGROUND}" >&2
-    exit 1
-    ;;
-esac
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --foreground)
-      HOME_FOREGROUND_MODE=1
-      ;;
-    --daemon)
-      HOME_FOREGROUND_MODE=0
-      ;;
-    -h|--help)
-      print_usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown argument: $1" >&2
-      print_usage >&2
-      exit 1
-      ;;
-  esac
-  shift
-done
-
-export DJANGO_SETTINGS_MODULE="${HOME_DJANGO_SETTINGS_MODULE:-${DJANGO_SETTINGS_MODULE:-config.settings.deploy}}"
-export ALLOW_SQLITE_PRODUCTION="${ALLOW_SQLITE_PRODUCTION:-1}"
-export DJANGO_ENFORCE_STRONG_SECRET_KEY="${DJANGO_ENFORCE_STRONG_SECRET_KEY:-0}"
-
-# Intentionally do not source .env here.
-# python-decouple reads .env directly and shell-sourcing can break on non-bash-safe values.
-
-HOME_DIR="$ROOT/.home_nginx"
-LOG_DIR="$HOME_DIR/logs"
-RUN_DIR="$HOME_DIR/run"
-TMP_DIR="$HOME_DIR/tmp"
-HOME_CLIENT_MAX_BODY_SIZE="${HOME_CLIENT_MAX_BODY_SIZE:-8m}"
-
-mkdir -p "$LOG_DIR" "$RUN_DIR"
-mkdir -p "$TMP_DIR/client_body" "$TMP_DIR/proxy" "$TMP_DIR/fastcgi" "$TMP_DIR/uwsgi" "$TMP_DIR/scgi"
-
-detect_lan_ip() {
-  local ip=""
-
-  if [[ -n "${HOME_INTERFACE:-}" ]]; then
-    ip="$(ip -o -4 addr show dev "${HOME_INTERFACE}" scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -n1 || true)"
-  fi
-
-  if [[ -z "$ip" ]]; then
-    ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1; i<NF; i++) if ($i=="src") {print $(i+1); exit}}' || true)"
-  fi
-
-  if [[ -z "$ip" ]]; then
-    ip="$(hostname -I 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i !~ /^127\./) {print $i; exit}}' || true)"
-  fi
-
-  if [[ -z "$ip" ]]; then
-    ip="127.0.0.1"
-  fi
-
-  printf '%s' "$ip"
-}
-
-normalize_csv_unique() {
-  local raw="$1"
-  local out=""
-  local token=""
-  declare -A seen=()
-  IFS=',' read -ra parts <<< "$raw"
-  for token in "${parts[@]}"; do
-    token="${token#"${token%%[![:space:]]*}"}"
-    token="${token%"${token##*[![:space:]]}"}"
-    [[ -z "$token" ]] && continue
-    if [[ -z "${seen[$token]+x}" ]]; then
-      seen["$token"]=1
-      if [[ -z "$out" ]]; then
-        out="$token"
-      else
-        out="${out},${token}"
-      fi
-    fi
-  done
-  printf '%s' "$out"
-}
-
-kill_pid_tree() {
-  local pid="$1"
-  local child_pids=""
-  child_pids="$(pgrep -P "$pid" || true)"
-
-  kill -TERM "$pid" 2>/dev/null || true
-  if [[ -n "$child_pids" ]]; then
-    kill -TERM $child_pids 2>/dev/null || true
-  fi
-
-  for _ in {1..25}; do
-    if ! kill -0 "$pid" 2>/dev/null; then
-      break
-    fi
-    sleep 0.2
-  done
-
-  if kill -0 "$pid" 2>/dev/null; then
-    kill -KILL "$pid" 2>/dev/null || true
-  fi
-
-  if [[ -n "$child_pids" ]]; then
-    for child_pid in $child_pids; do
-      if kill -0 "$child_pid" 2>/dev/null; then
-        kill -KILL "$child_pid" 2>/dev/null || true
-      fi
-    done
-  fi
-}
-
-port_in_use() {
-  ss -ltn "sport = :$1" | awk 'NR>1 {print $4}' | grep -q ":$1$"
-}
-
-describe_port_listener() {
-  local port="$1"
-  ss -ltnpe "sport = :${port}" 2>/dev/null | awk 'NR>1 {print; exit}' || true
-}
-
-kill_orphan_on_port() {
-  local port="$1"
-  local label="${2:-}"
-
-  if ! port_in_use "$port"; then
-    return 0
-  fi
-
-  local pids=""
-  pids="$(ss -ltnp "( sport = :${port} )" 2>/dev/null | grep -o 'pid=[0-9]\+' | cut -d= -f2 | sort -u || true)"
-
-  if [[ -z "$pids" ]]; then
-    pids="$(fuser "${port}/tcp" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)"
-  fi
-
-  if [[ -z "$pids" ]]; then
-    local gui_sudo_cmd=""
-    if [[ -n "${DISPLAY:-}" ]] || [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
-      if command -v zenity >/dev/null 2>&1; then
-        gui_sudo_cmd="gui_sudo_zenity"
-      elif command -v kdialog >/dev/null 2>&1; then
-        gui_sudo_cmd="gui_sudo_kdialog"
-      elif command -v pkexec >/dev/null 2>&1; then
-        gui_sudo_cmd="pkexec"
-      elif command -v gksudo >/dev/null 2>&1; then
-        gui_sudo_cmd="gksudo"
-      elif command -v gksu >/dev/null 2>&1; then
-        gui_sudo_cmd="gksu"
-      fi
-    fi
-
-    if [[ -n "$gui_sudo_cmd" ]]; then
-      case "$gui_sudo_cmd" in
-        gui_sudo_zenity)
-          local password=""
-          password="$(zenity --password --title="Admin password required" --text="Enter your password to free port ${port}:" 2>/dev/null || true)"
-          if [[ -n "$password" ]]; then
-            pids="$(echo "$password" | sudo -S fuser "${port}/tcp" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)"
-          fi
-          ;;
-        gui_sudo_kdialog)
-          local password=""
-          password="$(kdialog --password "Enter your password to free port ${port}:" --title "Admin password required" 2>/dev/null || true)"
-          if [[ -n "$password" ]]; then
-            pids="$(echo "$password" | sudo -S fuser "${port}/tcp" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)"
-          fi
-          ;;
-        pkexec|gksudo|gksu)
-          pids="$($gui_sudo_cmd fuser "${port}/tcp" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)"
-          ;;
-      esac
-    elif command -v sudo >/dev/null 2>&1; then
-      pids="$(sudo fuser "${port}/tcp" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)"
-    fi
-  fi
-
-  if [[ -z "$pids" ]]; then
-    local listener_info=""
-    listener_info="$(describe_port_listener "$port")"
-    if [[ -n "$label" ]]; then
-      echo "Warning: port ${port} is in use but the owning process is not visible." >&2
-      if [[ -n "$listener_info" ]]; then
-        echo "Listener details: ${listener_info}" >&2
-      fi
-      echo "Run 'sudo ss -ltnpe sport = :${port}' to inspect or free the conflicting service." >&2
-    fi
-    return 1
-  fi
-
-  if [[ -n "$label" ]]; then
-    echo "Killing orphan process(es) (pid(s): ${pids}) on port ${port}..."
-  fi
-
-  kill $pids 2>/dev/null || true
-  sleep 1
-
-  if port_in_use "$port"; then
-    kill -9 $pids 2>/dev/null || true
-    sleep 0.5
-  fi
-
-  if port_in_use "$port"; then
-    if [[ -n "$label" ]]; then
-      echo "Warning: port ${port} is still in use after kill. Run 'sudo fuser -k ${port}/tcp' manually." >&2
-    fi
-    return 1
-  fi
-
-  return 0
-}
-
-wait_for_port() {
-  local port="$1"
-
-  for _ in {1..50}; do
-    if port_in_use "$port"; then
-      return 0
-    fi
-    sleep 0.2
-  done
-
-  return 1
-}
-
-read_pid_file() {
-  local pid_file="$1"
-  local pid=""
-
-  [[ -f "$pid_file" ]] || return 1
-  pid="$(tr -dc '0-9' < "$pid_file")"
-  [[ -n "$pid" ]] || return 1
-
-  printf '%s' "$pid"
-}
-
-pid_is_running() {
-  local pid="$1"
-  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
-}
-
-kill_listeners_on_port() {
-  local port="$1"
-  local pids=""
-  pids="$(ss -ltnp "( sport = :${port} )" 2>/dev/null | grep -o 'pid=[0-9]\+' | cut -d= -f2 | sort -u || true)"
-  [[ -z "$pids" ]] && return 0
-
-  kill $pids 2>/dev/null || true
-  sleep 0.5
-
-  local still_up=""
-  still_up="$(ss -ltnp "( sport = :${port} )" 2>/dev/null | grep -o 'pid=[0-9]\+' | cut -d= -f2 | sort -u || true)"
-  [[ -z "$still_up" ]] || kill -9 $still_up 2>/dev/null || true
-}
-
-LAN_IP="${HOME_HOST:-$(detect_lan_ip)}"
-HOME_BIND="${HOME_BIND:-0.0.0.0}"
-
-NGINX_PORT="${HOME_PORT:-8008}"
-GUNICORN_PORT="${HOME_APP_PORT:-8028}"
-GUNICORN_WORKERS="${HOME_GUNICORN_WORKERS:-3}"
-GUNICORN_TIMEOUT="${HOME_GUNICORN_TIMEOUT:-120}"
-APP_MODULE="${HOME_APP_MODULE:-${GUNICORN_APP_MODULE:-config.wsgi:application}}"
-COLLECTSTATIC="${HOME_COLLECTSTATIC:-1}"
-FORCE_RESTART="${HOME_FORCE_RESTART:-1}"
-RUN_MANAGE_CHECK="${HOME_RUN_MANAGE_CHECK:-1}"
-CHECK_MODEL_MIGRATIONS="${HOME_CHECK_MODEL_MIGRATIONS:-1}"
-RUN_MIGRATIONS="${HOME_RUN_MIGRATIONS:-1}"
-
-GUNICORN_PID="$RUN_DIR/gunicorn.pid"
-NGINX_PID="$RUN_DIR/nginx.pid"
-HOME_HOST_FILE="$RUN_DIR/home_host"
-HOME_SCHEME_FILE="$RUN_DIR/home_scheme"
-FOREGROUND_GUNICORN_PID=""
-FOREGROUND_NGINX_TAIL_PID=""
-FOREGROUND_CLEANED_UP=0
-
-stop_foreground_services() {
-  local gunicorn_pid="${FOREGROUND_GUNICORN_PID}"
-
-  [[ "$FOREGROUND_CLEANED_UP" == "1" ]] && return
-  FOREGROUND_CLEANED_UP=1
-
-  if [[ -z "$gunicorn_pid" ]] && [[ -f "$GUNICORN_PID" ]]; then
-    gunicorn_pid="$(tr -dc '0-9' < "$GUNICORN_PID")"
-  fi
-
-  if [[ -n "$gunicorn_pid" ]] && kill -0 "$gunicorn_pid" 2>/dev/null; then
-    echo
-    echo "Stopping foreground Gunicorn (pid ${gunicorn_pid})..."
-    kill_pid_tree "$gunicorn_pid"
-  fi
-  rm -f "$GUNICORN_PID"
-
-  if [[ -f "$NGINX_PID" ]] || port_in_use "$NGINX_PORT"; then
-    echo "Stopping Nginx..."
-    nginx -p "$HOME_DIR" -c "$HOME_DIR/nginx.conf" -s stop 2>/dev/null || true
-    rm -f "$NGINX_PID"
-    kill_listeners_on_port "$NGINX_PORT"
-  fi
-
-  if [[ -n "$FOREGROUND_NGINX_TAIL_PID" ]] && kill -0 "$FOREGROUND_NGINX_TAIL_PID" 2>/dev/null; then
-    kill "$FOREGROUND_NGINX_TAIL_PID" 2>/dev/null || true
-    wait "$FOREGROUND_NGINX_TAIL_PID" 2>/dev/null || true
-  fi
-
-  rm -f "$HOME_HOST_FILE" "$HOME_SCHEME_FILE"
-}
-
-handle_foreground_exit() {
-  stop_foreground_services
-}
-
-handle_foreground_interrupt() {
-  trap - EXIT INT TERM
-  stop_foreground_services
-  exit 130
-}
-
-handle_foreground_term() {
-  trap - EXIT INT TERM
-  stop_foreground_services
-  exit 143
-}
-
-export SECURE_SSL_REDIRECT="${HOME_SECURE_SSL_REDIRECT:-false}"
-export SESSION_COOKIE_SECURE="${HOME_SESSION_COOKIE_SECURE:-false}"
-export CSRF_COOKIE_SECURE="${HOME_CSRF_COOKIE_SECURE:-false}"
-export SECURE_HSTS_SECONDS="${HOME_SECURE_HSTS_SECONDS:-0}"
-export SECURE_HSTS_INCLUDE_SUBDOMAINS="${HOME_SECURE_HSTS_INCLUDE_SUBDOMAINS:-false}"
-export SECURE_HSTS_PRELOAD="${HOME_SECURE_HSTS_PRELOAD:-false}"
-export USE_X_FORWARDED_HOST="${HOME_USE_X_FORWARDED_HOST:-false}"
-export USE_X_FORWARDED_PORT="${HOME_USE_X_FORWARDED_PORT:-false}"
-export SECURE_PROXY_SSL_HEADER="${HOME_SECURE_PROXY_SSL_HEADER:-}"
-
-ALLOWED_BASE="${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}"
-CSRF_BASE="${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost,http://127.0.0.1}"
-LOCAL_HTTP_ORIGINS="http://localhost:${NGINX_PORT},http://127.0.0.1:${NGINX_PORT},http://${LAN_IP}:${NGINX_PORT}"
-
-export DJANGO_ALLOWED_HOSTS="$(normalize_csv_unique "${ALLOWED_BASE},${LAN_IP}")"
-export DJANGO_CSRF_TRUSTED_ORIGINS="$(normalize_csv_unique "${CSRF_BASE},${LOCAL_HTTP_ORIGINS}")"
-
-export ALLOWED_HOSTS="$DJANGO_ALLOWED_HOSTS"
-export CSRF_TRUSTED_ORIGINS="$DJANGO_CSRF_TRUSTED_ORIGINS"
-
-export SITE_PROTO="http"
-export SITE_DOMAIN="${LAN_IP}:${NGINX_PORT}"
-
-describe_server_state() {
-  local gunicorn_pid=""
-  local nginx_pid=""
-  local server_running=1
-
-  if gunicorn_pid="$(read_pid_file "$GUNICORN_PID" 2>/dev/null)" && pid_is_running "$gunicorn_pid"; then
-    server_running=0
-    echo "Gunicorn is running (pid ${gunicorn_pid})."
-  else
-    rm -f "$GUNICORN_PID"
-    echo "Gunicorn is stopped."
-  fi
-
-  if nginx_pid="$(read_pid_file "$NGINX_PID" 2>/dev/null)" && pid_is_running "$nginx_pid"; then
-    server_running=0
-    echo "Nginx is running (pid ${nginx_pid})."
-  else
-    rm -f "$NGINX_PID"
-    echo "Nginx is stopped."
-  fi
-
-  if port_in_use "$GUNICORN_PORT" || port_in_use "$NGINX_PORT"; then
-    server_running=0
-  fi
-
-  if [[ "$server_running" -eq 0 ]]; then
-    echo "Home server listeners are active."
-  else
-    echo "Home server is fully stopped."
-  fi
-}
-
-run_manage_command() {
-  local label="$1"
-  shift
-
-  echo "${label}..."
-  "$PYTHON_BIN" manage.py "$@"
-}
-
-run_preflight_checks() {
-  echo "Running Django preflight before restarting services..."
-
-  if [[ "$RUN_MANAGE_CHECK" == "1" ]]; then
-    run_manage_command "Running python manage.py check" check
-  fi
-
-  if [[ "$CHECK_MODEL_MIGRATIONS" == "1" ]]; then
-    run_manage_command "Checking for missing migration files" makemigrations --check --dry-run
-  fi
-
-  if [[ "$RUN_MIGRATIONS" == "1" ]]; then
-    if "$PYTHON_BIN" manage.py migrate --check --noinput >/dev/null 2>&1; then
-      echo "Database migrations are already applied."
-    else
-      run_manage_command "Applying database migrations" migrate --noinput
-    fi
-  fi
-
-  if [[ "$COLLECTSTATIC" == "1" ]]; then
-    echo "Collecting static files..."
-    "$PYTHON_BIN" manage.py collectstatic --noinput >/dev/null
-  fi
-}
-
-describe_server_state
-run_preflight_checks
-
-if [[ "$FORCE_RESTART" == "1" ]]; then
-  if [[ -f "$NGINX_PID" ]] && pid_is_running "$(cat "$NGINX_PID")"; then
-    echo "Stopping existing home Nginx (pid $(cat "$NGINX_PID"))..."
-    nginx -p "$HOME_DIR" -c "$HOME_DIR/nginx.conf" -s stop 2>/dev/null || true
-    rm -f "$NGINX_PID"
-  fi
-
-  if [[ -f "$GUNICORN_PID" ]] && pid_is_running "$(cat "$GUNICORN_PID")"; then
-    echo "Stopping existing home Gunicorn (pid $(cat "$GUNICORN_PID"))..."
-    kill_pid_tree "$(cat "$GUNICORN_PID")"
-    rm -f "$GUNICORN_PID"
-  fi
-
-  kill_listeners_on_port "$NGINX_PORT"
-  kill_listeners_on_port "$GUNICORN_PORT"
+if [[ ! -x "$ROOT/venv/bin/gunicorn" ]]; then
+  echo "Missing gunicorn at $ROOT/venv/bin/gunicorn. Install requirements in this venv first." >&2
+  exit 1
 fi
 
-if [[ -f "$GUNICORN_PID" ]] && pid_is_running "$(cat "$GUNICORN_PID")"; then
-  PREVIOUS_HOME_HOST=""
-  if [[ -f "$HOME_HOST_FILE" ]]; then
-    PREVIOUS_HOME_HOST="$(cat "$HOME_HOST_FILE" 2>/dev/null || true)"
-  fi
+mkdir -p "$ROOT/.home_nginx/logs" "$ROOT/.home_nginx/run"
+mkdir -p "$ROOT/.home_nginx/tmp/client_body" "$ROOT/.home_nginx/tmp/proxy" "$ROOT/.home_nginx/tmp/fastcgi" "$ROOT/.home_nginx/tmp/uwsgi" "$ROOT/.home_nginx/tmp/scgi"
 
-  if [[ -n "$PREVIOUS_HOME_HOST" && "$PREVIOUS_HOME_HOST" != "$LAN_IP" ]]; then
-    echo "LAN IP changed (${PREVIOUS_HOME_HOST} -> ${LAN_IP}); restarting Gunicorn..."
-    kill_pid_tree "$(cat "$GUNICORN_PID")"
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings.deploy}"
+export DJANGO_ENFORCE_STRONG_SECRET_KEY="${DJANGO_ENFORCE_STRONG_SECRET_KEY:-0}"
+
+echo "Collecting static files..."
+"$ROOT/venv/bin/python" manage.py collectstatic --noinput >/dev/null
+
+set -a
+if [[ -f "$ROOT/.env" ]]; then
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+fi
+set +a
+
+HOME_PORT="${HOME_PORT:-8009}"
+HOME_UPSTREAM_PORT="${HOME_UPSTREAM_PORT:-8028}"
+HOME_IP="${HOME_IP:-$(detect_home_ip)}"
+
+if [[ -z "$HOME_IP" ]]; then
+  echo "Could not auto-detect HOME_IP. Set HOME_IP in your environment or .env." >&2
+  exit 1
+fi
+
+DJANGO_ALLOWED_HOSTS_BASE="${DJANGO_ALLOWED_HOSTS_BASE:-localhost,127.0.0.1}"
+DJANGO_CSRF_TRUSTED_ORIGINS_BASE="${DJANGO_CSRF_TRUSTED_ORIGINS_BASE:-http://localhost:${HOME_PORT}}"
+
+export DJANGO_ALLOWED_HOSTS
+DJANGO_ALLOWED_HOSTS="$(csv_add_unique "$DJANGO_ALLOWED_HOSTS_BASE" "$HOME_IP")"
+
+export DJANGO_CSRF_TRUSTED_ORIGINS
+DJANGO_CSRF_TRUSTED_ORIGINS="$(csv_add_unique "$DJANGO_CSRF_TRUSTED_ORIGINS_BASE" "http://${HOME_IP}:${HOME_PORT}")"
+
+export ALLOWED_HOSTS
+ALLOWED_HOSTS="$(csv_add_unique "${ALLOWED_HOSTS:-127.0.0.1,localhost}" "$HOME_IP")"
+
+export CSRF_TRUSTED_ORIGINS
+CSRF_TRUSTED_ORIGINS="$(csv_add_unique "${CSRF_TRUSTED_ORIGINS:-http://localhost:${HOME_PORT},http://127.0.0.1:${HOME_PORT}}" "http://${HOME_IP}:${HOME_PORT}")"
+
+export SITE_BASE_URL="http://${HOME_IP}:${HOME_PORT}"
+
+GUNICORN_PID="$ROOT/.home_nginx/run/gunicorn.pid"
+HOME_IP_STATE_FILE="$ROOT/.home_nginx/run/home_ip.txt"
+PREV_HOME_IP="$(cat "$HOME_IP_STATE_FILE" 2>/dev/null || true)"
+
+if [[ -f "$GUNICORN_PID" ]] && kill -0 "$(cat "$GUNICORN_PID")" 2>/dev/null; then
+  if [[ -n "$PREV_HOME_IP" && "$PREV_HOME_IP" != "$HOME_IP" ]]; then
+    echo "Home IP changed (${PREV_HOME_IP} -> ${HOME_IP}). Restarting Gunicorn..."
+    kill "$(cat "$GUNICORN_PID")" 2>/dev/null || true
     rm -f "$GUNICORN_PID"
   else
     echo "Gunicorn already running (pid $(cat "$GUNICORN_PID"))."
   fi
 fi
 
-if [[ "$HOME_FOREGROUND_MODE" == "1" ]] && [[ -f "$GUNICORN_PID" ]] && pid_is_running "$(cat "$GUNICORN_PID")"; then
-  echo "Foreground mode requires a fresh Gunicorn process to attach live logs; restarting existing Gunicorn..."
-  kill_pid_tree "$(cat "$GUNICORN_PID")"
-  rm -f "$GUNICORN_PID"
+if [[ ! -f "$GUNICORN_PID" ]] || ! kill -0 "$(cat "$GUNICORN_PID")" 2>/dev/null; then
+  echo "Starting Gunicorn on 127.0.0.1:${HOME_UPSTREAM_PORT}..."
+  "$ROOT/venv/bin/gunicorn" \
+    config.wsgi:application \
+    --bind "127.0.0.1:${HOME_UPSTREAM_PORT}" \
+    --workers 3 \
+    --timeout 120 \
+    --access-logfile "$ROOT/.home_nginx/logs/gunicorn-access.log" \
+    --error-logfile "$ROOT/.home_nginx/logs/gunicorn-error.log" \
+    --capture-output \
+    --log-level info \
+    --daemon \
+    --pid "$GUNICORN_PID"
 fi
 
-if [[ ! -f "$GUNICORN_PID" ]] || ! pid_is_running "$(cat "$GUNICORN_PID")"; then
-  rm -f "$GUNICORN_PID"
+printf '%s\n' "$HOME_IP" >"$HOME_IP_STATE_FILE"
 
-  if port_in_use "$GUNICORN_PORT"; then
-    if ! kill_orphan_on_port "$GUNICORN_PORT" "gunicorn"; then
-      echo "App port ${GUNICORN_PORT} is still in use. Stop the existing process and retry." >&2
-      exit 1
-    fi
-  fi
+NGINX_PREFIX="$ROOT/.home_nginx"
+NGINX_CONF="$ROOT/deploy/home/nginx.conf"
+NGINX_PID="$ROOT/.home_nginx/run/nginx.pid"
 
-  if [[ "$HOME_FOREGROUND_MODE" == "1" ]]; then
-    trap handle_foreground_exit EXIT
-    trap handle_foreground_interrupt INT
-    trap handle_foreground_term TERM
-
-    echo "Starting Gunicorn on 127.0.0.1:${GUNICORN_PORT} in foreground mode..."
-    "$GUNICORN_BIN" \
-      "$APP_MODULE" \
-      --bind "127.0.0.1:${GUNICORN_PORT}" \
-      --workers "$GUNICORN_WORKERS" \
-      --timeout "$GUNICORN_TIMEOUT" \
-      --access-logfile "-" \
-      --error-logfile "-" \
-      --capture-output \
-      --log-level info \
-      --pid "$GUNICORN_PID" &
-    FOREGROUND_GUNICORN_PID="$!"
-
-    if ! wait_for_port "$GUNICORN_PORT"; then
-      echo "Gunicorn did not start listening on 127.0.0.1:${GUNICORN_PORT}." >&2
-      exit 1
-    fi
-  else
-    echo "Starting Gunicorn on 127.0.0.1:${GUNICORN_PORT}..."
-    setsid "$GUNICORN_BIN" \
-      "$APP_MODULE" \
-      --bind "127.0.0.1:${GUNICORN_PORT}" \
-      --workers "$GUNICORN_WORKERS" \
-      --timeout "$GUNICORN_TIMEOUT" \
-      --access-logfile "$LOG_DIR/gunicorn-access.log" \
-      --error-logfile "-" \
-      --capture-output \
-      --log-level info \
-      --pid "$GUNICORN_PID" \
-      >> "$LOG_DIR/gunicorn-error.log" 2>&1 < /dev/null &
-
-    if ! wait_for_port "$GUNICORN_PORT"; then
-      echo "Gunicorn did not start listening on 127.0.0.1:${GUNICORN_PORT}." >&2
-      exit 1
-    fi
-  fi
-fi
-
-STATIC_ROOT="$ROOT/staticfiles"
-if [[ ! -d "$STATIC_ROOT" ]] || [[ -z "$(ls -A "$STATIC_ROOT" 2>/dev/null)" ]]; then
-  STATIC_ROOT="$ROOT/static"
-fi
-
-MEDIA_ROOT="$ROOT/media"
-NGINX_CONF="$HOME_DIR/nginx.conf"
-
-if [[ "$HOME_FOREGROUND_MODE" == "1" ]]; then
-  touch "$LOG_DIR/access.log" "$LOG_DIR/error.log"
-  tail -n 0 -v -F "$LOG_DIR/access.log" "$LOG_DIR/error.log" &
-  FOREGROUND_NGINX_TAIL_PID="$!"
-fi
-
-cat >"$NGINX_CONF" <<EOF_NGINX
-worker_processes  1;
-pid run/nginx.pid;
-
-events {
-  worker_connections  1024;
-}
-
-http {
-  include       /etc/nginx/mime.types;
-  default_type  application/octet-stream;
-
-  # Browsers in HTTPS-first mode may send TLS handshakes to this HTTP-only
-  # home port. Nginx correctly rejects them as 400s; keep those probes out of
-  # the streamed home logs so they do not obscure real app output.
-  map \$status \$home_access_loggable {
-    400 0;
-    default 1;
-  }
-
-  access_log  logs/access.log combined if=\$home_access_loggable;
-  error_log   logs/error.log warn;
-  sendfile    on;
-  keepalive_timeout  65;
-
-  client_body_temp_path tmp/client_body;
-  proxy_temp_path tmp/proxy;
-  fastcgi_temp_path tmp/fastcgi;
-  uwsgi_temp_path tmp/uwsgi;
-  scgi_temp_path tmp/scgi;
-
-  upstream ftree_app {
-    server 127.0.0.1:${GUNICORN_PORT};
-    keepalive 16;
-  }
-
-  server {
-    listen ${HOME_BIND}:${NGINX_PORT};
-    server_name _;
-
-    client_max_body_size ${HOME_CLIENT_MAX_BODY_SIZE};
-
-    location /static/ {
-      alias ${STATIC_ROOT}/;
-      expires 7d;
-      add_header Cache-Control "public, max-age=604800";
-    }
-
-    location /media/ {
-      alias ${MEDIA_ROOT}/;
-      expires 1d;
-      add_header Cache-Control "public, max-age=86400";
-    }
-
-    location / {
-      proxy_pass http://ftree_app;
-      proxy_http_version 1.1;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto \$scheme;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_redirect off;
-      proxy_read_timeout ${GUNICORN_TIMEOUT};
-      proxy_send_timeout ${GUNICORN_TIMEOUT};
-    }
-  }
-
-}
-EOF_NGINX
-
-echo "Starting Nginx on ${HOME_BIND}:${NGINX_PORT}..."
-if [[ -f "$NGINX_PID" ]] && pid_is_running "$(cat "$NGINX_PID")"; then
-  nginx -p "$HOME_DIR" -c "$NGINX_CONF" -s reload
+if [[ -f "$NGINX_PID" ]] && kill -0 "$(cat "$NGINX_PID")" 2>/dev/null; then
+  echo "Nginx already running (pid $(cat "$NGINX_PID")). Reloading config..."
+  nginx -p "$NGINX_PREFIX" -c "$NGINX_CONF" -s reload
 else
-  if port_in_use "$NGINX_PORT"; then
-    if ! kill_orphan_on_port "$NGINX_PORT" "nginx"; then
-      echo "Port ${NGINX_PORT} is still in use. Stop the existing process and retry." >&2
-      exit 1
-    fi
-  fi
-  nginx -p "$HOME_DIR" -c "$NGINX_CONF"
-fi
-
-printf '%s' "$LAN_IP" >"$HOME_HOST_FILE"
-printf 'http' >"$HOME_SCHEME_FILE"
-
-if command -v curl >/dev/null 2>&1; then
-  HEALTHCHECK_HOST="127.0.0.1"
-  if [[ "$HOME_BIND" != "0.0.0.0" && "$HOME_BIND" != "::" ]]; then
-    HEALTHCHECK_HOST="$HOME_BIND"
-  fi
-
-  if ! curl -fsS --max-time 5 "http://${HEALTHCHECK_HOST}:${NGINX_PORT}/" >/dev/null; then
-    echo "HTTP health check failed on ${HEALTHCHECK_HOST}:${NGINX_PORT}." >&2
-    echo "Check .home_nginx/logs/error.log and .home_nginx/logs/gunicorn-error.log" >&2
-    exit 1
-  fi
+  echo "Starting Nginx on 0.0.0.0:${HOME_PORT}..."
+  nginx -p "$NGINX_PREFIX" -c "$NGINX_CONF"
 fi
 
 echo "Done."
-echo "Open local: http://127.0.0.1:${NGINX_PORT}/"
-echo "Open: http://${LAN_IP}:${NGINX_PORT}/"
-echo "Gunicorn is internal only: http://127.0.0.1:${GUNICORN_PORT}/"
-echo "Do not bind Gunicorn directly to ${LAN_IP}:${NGINX_PORT}; Nginx owns the public home port."
-echo "Use the http:// URL exactly; https:// on this local port will show a browser privacy/protocol error."
-
-if [[ "$HOME_FOREGROUND_MODE" == "1" ]]; then
-  echo "Foreground mode active. Gunicorn and Nginx logs will stream in this terminal. Press Ctrl+C to stop Gunicorn and Nginx."
-  set +e
-  wait "$FOREGROUND_GUNICORN_PID"
-  GUNICORN_EXIT_CODE="$?"
-  set -e
-  trap - EXIT INT TERM
-  stop_foreground_services
-  exit "$GUNICORN_EXIT_CODE"
-fi
+echo "Detected HOME_IP: ${HOME_IP}"
+echo "Open: ${SITE_BASE_URL}/"

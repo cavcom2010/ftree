@@ -9,7 +9,9 @@
 
     <div class="people-track">
         {% for person in row.people %}
-            {% include "tree/partials/person_card.html" with person=person %}
+            <div class="people-track-slide">
+                {% include "tree/partials/person_card.html" with person=person %}
+            </div>
         {% endfor %}
     </div>
 </article>

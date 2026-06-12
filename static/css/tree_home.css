@@ -1,6 +1,9 @@
 .tree-home {
     display: grid;
     gap: 16px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
     padding-bottom: 18px;
 }
 
@@ -22,6 +25,8 @@
 .tree-canvas,
 .connect-strip,
 .memory-rails {
+    min-width: 0;
+    max-width: 100%;
     border: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: var(--soft-shadow);
@@ -88,6 +93,7 @@
 .tree-identity-actions {
     display: grid;
     gap: 12px;
+    min-width: 0;
 }
 
 .tree-stats {
@@ -166,9 +172,12 @@
 }
 
 .tree-canvas {
+    min-width: 0;
+    max-width: 100%;
     min-height: 620px;
     border-radius: 26px;
     padding: 14px;
+    overflow: hidden;
 }
 
 .tree-canvas-header,
@@ -181,6 +190,15 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+}
+
+.tree-canvas-header > div,
+.tree-section-heading > div,
+.memory-rail-head > div,
+.relationship-row-head > div,
+.branch-panel-head > div,
+.tree-create-head > div {
+    min-width: 0;
 }
 
 .tree-canvas-header h2,
@@ -205,10 +223,14 @@
 .generation-stack {
     display: grid;
     gap: 12px;
+    min-width: 0;
+    max-width: 100%;
     margin-top: 14px;
 }
 
 .generation-section {
+    min-width: 0;
+    max-width: 100%;
     border: 1px solid #dce8df;
     border-radius: 20px;
     background: linear-gradient(180deg, #fff, #fbfdfc);
@@ -240,6 +262,10 @@
     display: block;
 }
 
+.generation-title {
+    min-width: 0;
+}
+
 .generation-title strong {
     color: var(--ink);
     font-size: 0.98rem;
@@ -269,16 +295,22 @@
 
 .generation-content {
     display: none;
+    min-width: 0;
+    max-width: 100%;
     padding: 0 11px 12px;
 }
 
 .generation-section.is-open .generation-content {
     display: grid;
     gap: 12px;
+    min-width: 0;
 }
 
 .relationship-row {
     position: relative;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: 18px;
     padding: 11px;
@@ -293,6 +325,18 @@
     width: 2px;
     height: 12px;
     background: #cfe2d6;
+}
+
+.relationship-row::after {
+    content: "";
+    position: absolute;
+    top: 72px;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 30px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 82%);
 }
 
 .relationship-row-head h3,
@@ -314,14 +358,37 @@
 }
 
 .people-track {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(185px, 210px);
+    position: relative;
+    z-index: 0;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 10px;
+    min-width: 0;
+    max-width: 100%;
     overflow-x: auto;
-    padding: 12px 1px 2px;
-    scroll-snap-type: x mandatory;
+    overflow-y: hidden;
+    margin-inline: -11px;
+    padding: 12px 11px 6px;
+    scroll-padding-inline: 11px;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+}
+
+.people-track::after {
+    content: "";
+    align-self: stretch;
+    flex: 0 0 18px;
+    min-height: 1px;
+}
+
+.people-track-slide {
+    flex: 0 0 clamp(176px, 72vw, 220px);
+    min-width: 0;
+    max-width: 220px;
+    scroll-snap-align: start;
 }
 
 .people-track::-webkit-scrollbar,
@@ -330,8 +397,8 @@
 }
 
 .tree-person-card {
+    width: 100%;
     min-width: 0;
-    scroll-snap-align: start;
 }
 
 .person-card-button {
@@ -425,6 +492,8 @@
 }
 
 .branch-panel {
+    width: 100%;
+    min-width: 0;
     margin-top: 8px;
     border: 1px solid #caead8;
     border-radius: 18px;
@@ -630,6 +699,11 @@
         grid-template-columns: 90px 1fr 32px;
     }
 
+    .people-track-slide {
+        flex-basis: clamp(200px, 36vw, 250px);
+        max-width: 250px;
+    }
+
     .connect-actions {
         grid-template-columns: repeat(4, 1fr);
     }
@@ -651,7 +725,12 @@
     }
 
     .people-track {
-        grid-auto-columns: minmax(205px, 1fr);
+        padding-bottom: 8px;
+    }
+
+    .people-track-slide {
+        flex-basis: clamp(210px, 18vw, 270px);
+        max-width: 270px;
     }
 
     .memory-track {

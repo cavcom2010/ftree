@@ -2,7 +2,8 @@
     <div class="brand-mark">🌳</div>
     <div class="brand-text">
         <strong>HeritageTree</strong>
-        <span>{{ family.name|default:"Private family tree" }} · {{ stats.generations|default:generation_count|default:0 }} generations</span>
+        {% firstof stats.generations generation_count 0 as header_generation_count %}
+        <span>{{ family.name|default:"Private family tree" }} · {{ header_generation_count }} generations</span>
     </div>
     <button class="icon-btn" aria-label="Search" data-tree-search-trigger>🔎</button>
     <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>＋</button>

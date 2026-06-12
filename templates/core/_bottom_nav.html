@@ -3,20 +3,20 @@
         <span class="nav-icon">🌳</span>
         <span>Tree</span>
     </a>
-    <a href="/feed/" class="{% if request.path == '/feed/' %}active{% endif %}" aria-label="Feed">
-        <span class="nav-icon">❤️</span>
-        <span>Feed</span>
-    </a>
-    <button class="add-main" aria-label="Add" onclick="showToast('Add sheet will open here')">
-        <span class="nav-icon">＋</span>
-        <span>Add</span>
-    </button>
     <a href="/memories/" class="{% if request.path == '/memories/' %}active{% endif %}" aria-label="Memory">
         <span class="nav-icon">🖼️</span>
         <span>Memory</span>
     </a>
-    <a href="/stories/" class="{% if request.path == '/stories/' %}active{% endif %}" aria-label="More">
+    <button class="add-main" aria-label="Connect" data-create-sheet-trigger>
+        <span class="nav-icon">＋</span>
+        <span>Connect</span>
+    </button>
+    <a href="/people/create/" class="{% if request.path == '/people/create/' %}active{% endif %}" aria-label="People">
+        <span class="nav-icon">👤</span>
+        <span>People</span>
+    </a>
+    <a href="/stories/" class="{% if request.path == '/stories/' %}active{% endif %}" aria-label="Menu">
         <span class="nav-icon">☰</span>
-        <span>More</span>
+        <span>Menu</span>
     </a>
 </nav>

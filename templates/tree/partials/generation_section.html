@@ -1,0 +1,16 @@
+<section class="generation-section{% if section.is_open %} is-open{% endif %}" id="{{ section.id }}" data-generation-section>
+    <button class="generation-toggle" type="button" aria-expanded="{% if section.is_open %}true{% else %}false{% endif %}">
+        <span class="generation-label">{{ section.label }}</span>
+        <span class="generation-title">
+            <strong>{{ section.title }}</strong>
+            <small>{{ section.subtitle }}</small>
+        </span>
+        <span class="generation-chevron" aria-hidden="true">v</span>
+    </button>
+
+    <div class="generation-content">
+        {% for row in section.rows %}
+            {% include "tree/partials/relationship_row.html" with row=row %}
+        {% endfor %}
+    </div>
+</section>

@@ -1,0 +1,37 @@
+<aside class="branch-panel" id="{{ panel.id }}" data-branch-panel hidden>
+    <div class="branch-panel-head">
+        <div>
+            <p class="tree-eyebrow">Revealed branch</p>
+            <h4>{{ panel.title }}</h4>
+        </div>
+        <button type="button" data-branch-close="{{ panel.id }}" aria-label="Close {{ panel.title }}">&times;</button>
+    </div>
+
+    <div class="branch-group">
+        <span>Spouse</span>
+        <div class="branch-mini-list">
+            {% for spouse in panel.spouses %}
+                <span>{{ spouse.name }}</span>
+            {% empty %}
+                <button type="button" data-tree-toast="Add spouse placeholder selected.">Add spouse</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="branch-group">
+        <span>Children</span>
+        <div class="branch-mini-list">
+            {% for child in panel.children %}
+                <span>{{ child.name }} · {{ child.relationship_label }}</span>
+            {% empty %}
+                <button type="button" data-tree-toast="Add child placeholder selected.">Add child</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="branch-actions">
+        {% for action in panel.missing_actions %}
+            <button type="button" data-tree-toast="{{ action }} will open for {{ panel.owner.name }}.">{{ action }}</button>
+        {% endfor %}
+    </div>
+</aside>

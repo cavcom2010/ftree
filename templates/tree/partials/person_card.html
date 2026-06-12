@@ -1,0 +1,35 @@
+<article class="tree-person-card{% if person.is_direct_line %} is-direct{% endif %}{% if person.is_side_branch %} is-side{% endif %}{% if person.is_spouse %} is-spouse{% endif %}">
+    <button type="button"
+            class="person-card-button"
+            {% if person.branch_panel %}
+            aria-expanded="false"
+            aria-controls="{{ person.branch_panel.id }}"
+            data-branch-trigger="{{ person.branch_panel.id }}"
+            {% else %}
+            data-tree-toast="{{ person.name }} selected."
+            {% endif %}>
+        <span class="person-avatar">
+            {% if person.avatar_url %}
+                <img src="{{ person.avatar_url }}" alt="">
+            {% else %}
+                {{ person.initials }}
+            {% endif %}
+        </span>
+        <span class="person-copy">
+            <strong>{{ person.name }}</strong>
+            <small>{{ person.relationship_label }}</small>
+        </span>
+        {% if person.branch_panel %}
+            <span class="person-branch-icon" aria-hidden="true">+</span>
+        {% endif %}
+    </button>
+    <div class="person-badges">
+        {% for badge in person.badges %}
+            <span>{{ badge }}</span>
+        {% endfor %}
+    </div>
+</article>
+
+{% if person.branch_panel %}
+    {% include "tree/partials/branch_panel.html" with panel=person.branch_panel %}
+{% endif %}

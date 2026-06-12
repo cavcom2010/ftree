@@ -1,0 +1,15 @@
+<article class="relationship-row">
+    <div class="relationship-row-head">
+        <div>
+            <h3>{{ row.title }}</h3>
+            <p>{{ row.subtitle }}</p>
+        </div>
+        <button type="button" data-tree-toast="{{ row.add_action_label }} will open from this row.">{{ row.add_action_label }}</button>
+    </div>
+
+    <div class="people-track">
+        {% for person in row.people %}
+            {% include "tree/partials/person_card.html" with person=person %}
+        {% endfor %}
+    </div>
+</article>

@@ -1,0 +1,22 @@
+<article class="memory-rail">
+    <div class="memory-rail-head">
+        <div>
+            <h3>{{ rail.title }}</h3>
+            <p>{{ rail.subtitle }}</p>
+        </div>
+        <button type="button" data-tree-toast="{{ rail.title }} will open as a filtered memory view.">View all</button>
+    </div>
+
+    <div class="memory-track">
+        {% for item in rail.items %}
+            <a class="memory-rail-card" href="{{ item.linked_object_url }}">
+                <span class="memory-type">{{ item.memory_type }}</span>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.summary }}</small>
+                <em>{{ item.linked_label }}</em>
+            </a>
+        {% empty %}
+            <button class="memory-empty-card" type="button" data-create-sheet-trigger>Add the first {{ rail.title|lower }}</button>
+        {% endfor %}
+    </div>
+</article>

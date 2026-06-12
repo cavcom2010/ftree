@@ -2,8 +2,8 @@
     <div class="brand-mark">🌳</div>
     <div class="brand-text">
         <strong>HeritageTree</strong>
-        <span>Good morning Calvin · {{ generation_count|default:0 }} generations</span>
+        <span>{{ family.name|default:"Private family tree" }} · {{ stats.generations|default:generation_count|default:0 }} generations</span>
     </div>
-    <button class="icon-btn" aria-label="Search" onclick="showToast('Global search will open here')">🔎</button>
-    <button class="icon-btn" aria-label="Add" onclick="showToast('Add menu will open here')">＋</button>
+    <button class="icon-btn" aria-label="Search" data-tree-search-trigger>🔎</button>
+    <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>＋</button>
 </header>

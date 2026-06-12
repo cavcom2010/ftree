@@ -887,26 +887,50 @@ button {
 .toast {
     position: fixed;
     z-index: 1400;
-    left: 22px;
-    right: 22px;
-    top: calc(76px + env(safe-area-inset-top));
-    transform: translateY(-200%);
+    left: 50%;
+    top: calc(88px + env(safe-area-inset-top));
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    max-width: min(340px, calc(100vw - 32px));
+    min-height: 46px;
+    transform: translate(-50%, -14px);
     opacity: 0;
     visibility: hidden;
-    transition: transform 0.25s ease, opacity 0.25s ease, visibility 0.25s;
-    border-radius: 18px;
-    background: #132019;
-    color: #fff;
-    padding: 13px 14px;
-    box-shadow: 0 16px 38px rgba(19, 32, 25, 0.22);
+    transition: transform 0.22s ease, opacity 0.22s ease, visibility 0.22s;
+    border: 1px solid rgba(226, 235, 229, 0.95);
+    border-left: 4px solid var(--green);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--ink);
+    padding: 11px 14px 11px 12px;
+    box-shadow: 0 14px 34px rgba(19, 32, 25, 0.14);
     font-weight: 800;
-    font-size: 0.88rem;
-    text-align: center;
+    font-size: 0.84rem;
+    line-height: 1.3;
+    text-align: left;
     pointer-events: none;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.toast::before {
+    content: "✓";
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--green-soft);
+    color: var(--green);
+    font-size: 0.78rem;
+    font-weight: 900;
 }
 
 .toast.show {
-    transform: translateY(0);
+    transform: translate(-50%, 0);
     opacity: 1;
     visibility: visible;
 }

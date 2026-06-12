@@ -12,7 +12,7 @@
     {% block head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-    <div class="toast" id="toast">Branch revealed</div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <div class="app-shell">
         {% include "core/_left_sidebar.html" %}

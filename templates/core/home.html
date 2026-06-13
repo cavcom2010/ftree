@@ -1,14 +1,19 @@
+<!-- templates/core/home.html -->
 {% extends "base.html" %}
 {% load static %}
+
+{% block title %}HeritageTree{% endblock %}
 
 {% block content %}
 {% if empty_state %}
 
 <div class="empty-state">
-    <div class="empty-state-icon">🌳</div>
-    <h1>Welcome to HeritageTree</h1>
-    <p>No family tree found yet. Seed the demo data to get started.</p>
-    <code>python manage.py seed_demo_family</code>
+  <div class="empty-card-icon" style="font-size:4rem; margin-bottom:16px;">
+    <i data-lucide="tree-deciduous"></i>
+  </div>
+  <h1>Welcome to HeritageTree</h1>
+  <p>No family tree found yet. Seed the demo data to get started.</p>
+  <code>python manage.py seed_demo_family</code>
 </div>
 
 {% else %}
@@ -24,8 +29,8 @@
 {% include "core/_memories_carousel.html" %}
 
 <div class="feed-columns">
-    {% include "core/_recent_activity.html" %}
-    {% include "core/_family_champions.html" %}
+  {% include "core/_recent_activity.html" %}
+  {% include "core/_family_champions.html" %}
 </div>
 
 {% endif %}

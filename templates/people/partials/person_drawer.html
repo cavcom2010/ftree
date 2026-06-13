@@ -1,28 +1,26 @@
+<!-- templates/people/partials/person_drawer.html -->
 <div class="drawer-handle"></div>
 <div class="drawer-main">
-    <div class="drawer-avatar">
-        {% if person.profile_photo %}
-            <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
-        {% else %}
-            {{ person.first_name|slice:":1" }}
-        {% endif %}
-    </div>
-    <div>
-        <b>{{ person.full_name }}</b>
-        <span>
-            {% if person.birth_date %}{{ person.birth_date|date:'Y' }}{% endif %}
-            {% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}
-            {% if generation_label %} · {{ generation_label }}{% endif %}
-        </span>
-    </div>
-    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button>
+  <div class="drawer-avatar" id="drawerAvatar">
+    {% if person.profile_photo %}
+      <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+    {% else %}
+      {{ person.initials }}
+    {% endif %}
+  </div>
+  <div>
+    <b id="drawerName">{{ person.full_name }}</b>
+    <span id="drawerMeta">{{ generation_label|default:"Family Member" }}</span>
+  </div>
+  <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+    <i data-lucide="x"></i>
+  </button>
 </div>
 <div class="drawer-actions">
-    <button class="btn primary">View Profile</button>
-    <button class="btn"
-            hx-get="/people/{{ person.id }}/add-relative/child/"
-            hx-target="#personDrawer"
-            hx-swap="innerHTML">Add Relative</button>
-    <button class="btn">Timeline</button>
-    <button class="btn soft" onclick="revealAll()">Reveal Branch</button>
+  <a href="/people/{{ person.id }}/" class="btn primary" onclick="showToast('Profile opened')">
+    <i data-lucide="user"></i>View Profile
+  </a>
+  <a href="/people/create/?parent={{ person.id }}" class="btn soft" onclick="showToast('Add relative opened')">
+    <i data-lucide="user-plus"></i>Add Relative
+  </a>
 </div>

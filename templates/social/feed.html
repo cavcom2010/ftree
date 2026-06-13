@@ -1,42 +1,41 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Feed · HeritageTree{% endblock %}
+{% block title %}Activity — HeritageTree{% endblock %}
 
 {% block content %}
+<div class="section-head animate-in">
+  <div>
+    <h2>Recent Activity</h2>
+    <p>What changed since your last visit.</p>
+  </div>
+</div>
 
-<main class="feed-page">
-
-    <section>
-        <div class="tree-top" style="margin-bottom:14px;">
-            <span class="chip active">Family Feed</span>
-            <a href="/stories/" class="chip">Stories</a>
-            <a href="/memories/" class="chip">Memories</a>
-        </div>
-    </section>
-
-    {% for item in feed_items %}
-        {% include "social/partials/activity_card.html" with activity=item %}
-    {% empty %}
-        <section>
-            <div class="empty-card">
-                <div class="empty-card-icon">🌳</div>
-                <p>No family updates yet. Start by adding people to your tree.</p>
-            </div>
-        </section>
-    {% endfor %}
-
-    {% if stories %}
-    <section>
-        <div class="section-head">
-            <div><h2>Recent Stories</h2><p>From your family.</p></div>
-        </div>
-        {% for story in stories|slice:":3" %}
-            {% include "stories/partials/story_card.html" with story=story %}
-        {% endfor %}
-    </section>
-    {% endif %}
-
-</main>
-
+{% if activities %}
+<div class="activity-list animate-in">
+  {% for activity in activities %}
+  <article class="activity-card" onclick="showToast('{{ activity.message|escapejs }}')">
+    <div class="activity-card-avatar" style="background:var(--green-soft);color:var(--green);">
+      {% if activity.actor.profile_photo %}
+        <img src="{{ activity.actor.profile_photo.url }}" alt="{{ activity.actor.username }}">
+      {% else %}
+        {{ activity.actor.username|first|upper }}
+      {% endif %}
+    </div>
+    <div>
+      <p class="activity-card-message">{{ activity.message }}</p>
+      <span class="activity-card-time">{{ activity.created_at|timesince }} ago</span>
+    </div>
+    <a href="{{ activity.get_absolute_url|default:'#' }}" class="activity-card-badge" onclick="event.stopPropagation();">
+      <i data-lucide="chevron-right"></i>
+    </a>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-card animate-in">
+  <div class="empty-card-icon"><i data-lucide="activity"></i></div>
+  <p>No activity yet. Start interacting with your family tree.</p>
+</div>
+{% endif %}
 {% endblock %}

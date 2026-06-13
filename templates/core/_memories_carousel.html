@@ -1,53 +1,59 @@
-<section id="memories">
-    <div class="section-head">
-        <div>
-            <h2>Family Memories</h2>
-            <p>Emotional content, not random scrolling.</p>
-        </div>
-        <a href="/memories/" class="link-btn">Gallery</a>
+<div class="section-head animate-in delay-3" id="memories">
+  <div>
+    <h2>Family Memories</h2>
+    <p>Emotional content, not random scrolling.</p>
+  </div>
+  <a href="/memories/" class="link-btn">
+    Gallery <i data-lucide="chevron-right"></i>
+  </a>
+</div>
+<div class="memory-strip animate-in delay-3">
+  {% for memory in memories|slice:":3" %}
+  <article class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}"
+           onclick="showToast('{{ memory.title|escapejs }} opened')">
+    {% if memory.file and memory.memory_type == "photo" %}
+      <img src="{{ memory.file.url }}" alt="{{ memory.title }}" loading="lazy">
+    {% endif %}
+    <span class="label">
+      {% if memory.memory_type == "photo" %}
+        <i data-lucide="image"></i>Photo Story
+      {% else %}
+        <i data-lucide="file-text"></i>Memory
+      {% endif %}
+    </span>
+    <h3>{{ memory.title }}</h3>
+    <p>{{ memory.description|default:"A family memory worth keeping." }}</p>
+    <div class="memory-meta">
+      <span><i data-lucide="heart"></i> {{ memory.reactions.count|default:0 }}</span>
+      <span><i data-lucide="message-circle"></i> {{ memory.comments.count|default:0 }}</span>
     </div>
-    <div class="memory-strip">
-        {% for memory in memories|slice:":3" %}
-        <article class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}" onclick="showToast('{{ memory.title|escapejs }} opened')">
-            {% if memory.file and memory.memory_type == "photo" %}
-                <img src="{{ memory.file.url }}" alt="{{ memory.title }}">
-            {% endif %}
-            <span class="label">{% if memory.memory_type == "photo" %}📷 Photo Story{% else %}🖼️ Memory{% endif %}</span>
-            <h3>{{ memory.title }}</h3>
-            <p>{{ memory.description|default:"A family memory worth keeping." }}</p>
-            <div class="memory-meta">
-                <span>❤️ {{ memory.reactions.count|default:0 }}</span>
-                <span>💬 {{ memory.comments.count|default:0 }}</span>
-            </div>
-        </article>
-        {% empty %}
-        <article class="memory-card" onclick="showToast('Wedding 1968 opened')">
-            <span class="label">📷 Photo Story</span>
-            <h3>Wedding 1968</h3>
-            <p>New captions added by relatives who remembered the day.</p>
-            <div class="memory-meta">
-                <span>❤️ 32</span>
-                <span>💬 14</span>
-            </div>
-        </article>
-        <article class="memory-card" onclick="showToast('Voice memory opened')">
-            <span class="label">🎤 Voice Memory</span>
-            <h3>Grandma’s Advice</h3>
-            <p>A 2m 34s recording preserved for the next generation.</p>
-            <div class="memory-meta">
-                <span>🙏 41</span>
-                <span>▶ Play</span>
-            </div>
-        </article>
-        <article class="memory-card" onclick="showToast('First house opened')">
-            <span class="label">🏠 Place Memory</span>
-            <h3>The First House</h3>
-            <p>Stories, photos and map location attached to the branch.</p>
-            <div class="memory-meta">
-                <span>❤️ 18</span>
-                <span>💬 7</span>
-            </div>
-        </article>
-        {% endfor %}
+  </article>
+  {% empty %}
+  <article class="memory-card" onclick="showToast('Wedding 1968 opened')">
+    <span class="label"><i data-lucide="image"></i>Photo Story</span>
+    <h3>Wedding 1968</h3>
+    <p>New captions added by relatives who remembered the day.</p>
+    <div class="memory-meta">
+      <span><i data-lucide="heart"></i> 32</span>
+      <span><i data-lucide="message-circle"></i> 14</span>
     </div>
-</section>
+  </article>
+  <article class="memory-card" onclick="showToast('Voice memory opened')">
+    <span class="label"><i data-lucide="mic"></i>Voice Memory</span>
+    <h3>Grandma's Advice</h3>
+    <p>A 2m 34s recording preserved for the next generation.</p>
+    <div class="memory-meta">
+      <span><i data-lucide="play"></i> 41 plays</span>
+    </div>
+  </article>
+  <article class="memory-card" onclick="showToast('First house opened')">
+    <span class="label"><i data-lucide="map-pin"></i>Place Memory</span>
+    <h3>The First House</h3>
+    <p>Stories, photos and map location attached to the branch.</p>
+    <div class="memory-meta">
+      <span><i data-lucide="heart"></i> 18</span>
+      <span><i data-lucide="message-circle"></i> 7</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>

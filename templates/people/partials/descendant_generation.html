@@ -1,21 +1,55 @@
-{% if generation and generation.people %}
-<div class="gen-lane gen-lane-descendant" id="descendants-for-{{ person.id }}">
-    <div class="gen-lane-header">
-        <span class="gen-lane-number">
-            {% if generation.number %}Generation {{ generation.number }}{% else %}Direct descendants{% endif %}
-        </span>
-        <span class="gen-lane-label">{{ generation.label }} of {{ person.first_name }}</span>
-    </div>
-    <div class="gen-lane-scroll" id="row-desc-{{ person.id }}">
-        <div class="gen-lane-pad"></div>
-        {% for child in generation.people %}
-            {% include "people/partials/person_card.html" with person=child lane=generation desc_row="row-desc" desc_parent_id=person.id %}
-        {% endfor %}
-        <div class="gen-lane-pad"></div>
-    </div>
+<!-- templates/people/partials/descendant_generation.html -->
+<div class="drawer-handle"></div>
+<div class="drawer-main">
+  <div class="drawer-avatar" id="drawerAvatar">
+    {% if person.profile_photo %}
+      <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+    {% else %}
+      {{ person.initials }}
+    {% endif %}
+  </div>
+  <div>
+    <b id="drawerName">{{ person.full_name }}</b>
+    <span id="drawerMeta">{{ generation_label|default:"Family Member" }}</span>
+  </div>
+  <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+    <i data-lucide="x"></i>
+  </button>
 </div>
-{% else %}
-<div class="gen-lane-descendant-empty" id="descendants-for-{{ person.id }}">
-    <p class="descendant-empty-text">No children recorded.</p>
+<div class="drawer-actions">
+  <a href="/people/{{ person.id }}/" class="btn primary" onclick="showToast('Profile opened')">
+    <i data-lucide="user"></i>View Profile
+  </a>
+  <a href="/people/create/?parent={{ person.id }}" class="btn soft" onclick="showToast('Add relative opened')">
+    <i data-lucide="user-plus"></i>Add Relative
+  </a>
 </div>
-{% endif %}
+
+<div style="margin-top:16px; max-height:320px; overflow-y:auto;">
+  {% for gen_people in generation %}
+  <div style="margin-bottom:16px;">
+    <div style="font-size:0.72rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">
+      Generation {{ gen_people.number|default:gen_people.generation }}
+    </div>
+    <div class="scroll-container" style="padding-bottom:4px;">
+      {% for p in gen_people.people %}
+      <div class="person-card" style="width:140px;"
+           onclick="openSheet('{{ p.full_name|escapejs }}', '{{ p.role|default:gen_people.label|escapejs }}', '{{ p.initials|escapejs }}', 'linear-gradient(135deg,{{ p.color1|default:'#059669' }},{{ p.color2|default:'#10b981' }})', '{{ p.birth_date|date:'Y'|default:'Unknown' }}', '{{ p.birth_place|default:p.current_place|default:'Unknown'|escapejs }}', '{{ gen_people.label|default:'Descendant' }}', '{{ p.children_count|default:0 }}', 'Relative')"
+           hx-get="/people/{{ p.id }}/drawer/"
+           hx-target="#personDrawer"
+           hx-swap="innerHTML">
+        <div class="card-avatar" style="width:36px; height:36px; font-size:0.9rem; background:linear-gradient(135deg,{{ p.color1|default:'#059669' }},{{ p.color2|default:'#10b981' }});">
+          {% if p.profile_photo %}
+            <img src="{{ p.profile_photo.url }}" alt="{{ p.full_name }}">
+          {% else %}
+            {{ p.initials }}
+          {% endif %}
+        </div>
+        <div class="card-name" style="font-size:0.78rem;">{{ p.first_name }}</div>
+        <div class="card-role" style="font-size:0.68rem;">{{ p.role|default:gen_people.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>

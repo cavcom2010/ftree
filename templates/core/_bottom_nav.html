@@ -1,22 +1,20 @@
-<nav class="bottom-nav" id="bottomNav">
-    <a href="/" class="{% if request.path == '/' %}active{% endif %}" aria-label="Tree">
-        <span class="nav-icon">🌳</span>
-        <span>Tree</span>
+<!-- templates/core/_bottom_nav.html -->
+<div class="bottom-nav-wrapper">
+  <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="Main navigation">
+    <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
+      <i data-lucide="tree-deciduous"></i>Tree
     </a>
-    <a href="/memories/" class="{% if request.path == '/memories/' %}active{% endif %}" aria-label="Memory">
-        <span class="nav-icon">🖼️</span>
-        <span>Memory</span>
+    <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
+      <i data-lucide="image"></i>Memory
     </a>
-    <button class="add-main" aria-label="Connect" data-create-sheet-trigger>
-        <span class="nav-icon">＋</span>
-        <span>Connect</span>
+    <button class="add-main" aria-label="Connect">
+      <i data-lucide="plus"></i>Connect
     </button>
-    <a href="/people/create/" class="{% if request.path == '/people/create/' %}active{% endif %}" aria-label="People">
-        <span class="nav-icon">👤</span>
-        <span>People</span>
+    <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
+      <i data-lucide="users"></i>People
     </a>
-    <a href="/stories/" class="{% if request.path == '/stories/' %}active{% endif %}" aria-label="Menu">
-        <span class="nav-icon">☰</span>
-        <span>Menu</span>
+    <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
+      <i data-lucide="menu"></i>Menu
     </a>
-</nav>
+  </nav>
+</div>

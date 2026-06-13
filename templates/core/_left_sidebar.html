@@ -1,27 +1,44 @@
+<!-- templates/core/_left_sidebar.html -->
 <aside class="desktop-side">
-    <a href="/" class="desk-logo">
-        <div class="brand-mark">🌳</div>
-        <div>Heritage<span style="color:var(--green)">Tree</span></div>
+  <a href="/" class="desk-logo">
+    <i data-lucide="tree-deciduous"></i>
+    <div>Heritage<span style="color:var(--green)">Tree</span></div>
+  </a>
+
+  <div>
+    <div class="side-title">Main</div>
+    <a href="/" class="side-link {% if request.path == '/' %}active{% endif %}">
+      <i data-lucide="home"></i>Home
     </a>
+    <a href="/#tree" class="side-link">
+      <i data-lucide="tree-deciduous"></i>Tree
+    </a>
+    <a href="/memories/" class="side-link {% if request.path == '/memories/' %}active{% endif %}">
+      <i data-lucide="image"></i>Memories
+    </a>
+    <a href="/feed/" class="side-link {% if request.path == '/feed/' %}active{% endif %}">
+      <i data-lucide="activity"></i>Activity
+    </a>
+    <a href="/stories/" class="side-link {% if request.path == '/stories/' %}active{% endif %}">
+      <i data-lucide="file-text"></i>More
+    </a>
+  </div>
 
-    <div>
-        <div class="side-title">Main</div>
-        <a href="/" class="side-link">🏠 Home</a>
-        <a href="/#tree" class="side-link">🌳 Tree</a>
-        <a href="/memories/" class="side-link">🖼️ Memories</a>
-        <a href="/feed/" class="side-link">❤️ Activity</a>
-        <a href="/stories/" class="side-link">☰ More</a>
-    </div>
+  <div>
+    <div class="side-title">Discover</div>
+    <a href="/#today" class="side-link">
+      <i data-lucide="calendar"></i>Today
+    </a>
+    <a href="/#prompt" class="side-link">
+      <i data-lucide="message-circle"></i>Family Prompt
+    </a>
+    <a href="/#champions" class="side-link">
+      <i data-lucide="trophy"></i>Champions
+    </a>
+  </div>
 
-    <div>
-        <div class="side-title">Discover</div>
-        <a href="/#today" class="side-link">✨ Today</a>
-        <a href="/#prompt" class="side-link">💬 Family Prompt</a>
-        <a href="/#champions" class="side-link">🏆 Champions</a>
-    </div>
-
-    <div class="side-memory">
-        <b>Premium rule</b>
-        <p>Powerful features are hidden behind touch-friendly drawers, not scattered all over the screen.</p>
-    </div>
+  <div class="side-memory">
+    <b>Premium rule</b>
+    <p>Powerful features are hidden behind touch-friendly drawers, not scattered all over the screen.</p>
+  </div>
 </aside>

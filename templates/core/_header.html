@@ -1,10 +1,20 @@
+<!-- templates/core/_header.html -->
 <header class="sticky-header">
-    <div class="brand-mark">🌳</div>
-    <div class="brand-text">
-        <strong>HeritageTree</strong>
-        {% firstof stats.generations generation_count 0 as header_generation_count %}
-        <span>{{ family.name|default:"Private family tree" }} · {{ header_generation_count }} generations</span>
-    </div>
-    <button class="icon-btn" aria-label="Search" data-tree-search-trigger>🔎</button>
-    <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>＋</button>
+  <div class="brand-mark">
+    <i data-lucide="tree-deciduous"></i>
+  </div>
+  <div class="brand-text">
+    <strong>HeritageTree</strong>
+    {% if family %}
+      <span>{{ family.name }}{% if generation_count %} • {{ generation_count }} generations{% endif %}</span>
+    {% else %}
+      <span>Your family tree, but alive.</span>
+    {% endif %}
+  </div>
+  <button class="icon-btn" aria-label="Search" data-tree-search-trigger>
+    <i data-lucide="search"></i>
+  </button>
+  <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>
+    <i data-lucide="plus"></i>
+  </button>
 </header>

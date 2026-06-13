@@ -1,50 +1,61 @@
-<section id="activity">
-    <div class="section-head">
-        <div>
-            <h2>Recent Activity</h2>
-            <p>What changed since the last visit.</p>
-        </div>
+<div class="section-head animate-in delay-4" id="activity">
+  <div>
+    <h2>Recent Activity</h2>
+    <p>What changed since your last visit.</p>
+  </div>
+</div>
+<div class="activity-list animate-in delay-4">
+  {% for activity in recent_activities %}
+  <article class="activity" onclick="showToast('{{ activity.message|escapejs }}')">
+    <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
+      {% if "branch" in activity.message|lower or "tree" in activity.message|lower %}
+        <i data-lucide="git-branch"></i>
+      {% elif "story" in activity.message|lower %}
+        <i data-lucide="file-text"></i>
+      {% elif "achievement" in activity.message|lower or "earned" in activity.message|lower %}
+        <i data-lucide="trophy"></i>
+      {% elif "photo" in activity.message|lower or "memory" in activity.message|lower %}
+        <i data-lucide="image"></i>
+      {% elif "comment" in activity.message|lower %}
+        <i data-lucide="message-circle"></i>
+      {% elif "spouse" in activity.message|lower or "child" in activity.message|lower or "added" in activity.message|lower %}
+        <i data-lucide="user-plus"></i>
+      {% else %}
+        <i data-lucide="activity"></i>
+      {% endif %}
     </div>
-    <div class="activity-list">
-        {% for activity in recent_activities %}
-        <article class="activity">
-            <div class="activity-icon">
-                {% if "branch" in activity.message|lower or "tree" in activity.message|lower %}🌳
-                {% elif "story" in activity.message|lower %}📝
-                {% elif "achievement" in activity.message|lower or "earned" in activity.message|lower %}🏆
-                {% elif "photo" in activity.message|lower or "memory" in activity.message|lower %}🖼️
-                {% elif "comment" in activity.message|lower %}💬
-                {% elif "spouse" in activity.message|lower or "child" in activity.message|lower or "added" in activity.message|lower %}🌳
-                {% else %}❤️
-                {% endif %}
-            </div>
-            <div>
-                <b>{{ activity.message }}</b>
-                <p>{{ activity.created_at|timesince }} ago</p>
-            </div>
-        </article>
-        {% empty %}
-        <article class="activity">
-            <div class="activity-icon">🌳</div>
-            <div>
-                <b>New branch opened</b>
-                <p>A relative’s descendants were revealed and new family members were added.</p>
-            </div>
-        </article>
-        <article class="activity">
-            <div class="activity-icon">📝</div>
-            <div>
-                <b>Story added</b>
-                <p>A family story was added and relatives were tagged.</p>
-            </div>
-        </article>
-        <article class="activity">
-            <div class="activity-icon">🏆</div>
-            <div>
-                <b>Achievement earned</b>
-                <p>Calvin became a Memory Keeper after uploading 10 photos.</p>
-            </div>
-        </article>
-        {% endfor %}
+    <div>
+      <b>{{ activity.message }}</b>
+      <p>{{ activity.created_at|timesince }} ago</p>
     </div>
-</section>
+  </article>
+  {% empty %}
+  <article class="activity" onclick="showToast('Branch details opened')">
+    <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
+      <i data-lucide="git-branch"></i>
+    </div>
+    <div>
+      <b>New branch revealed</b>
+      <p>3 descendants of James were added to the tree.</p>
+    </div>
+  </article>
+  <article class="activity" onclick="showToast('Story details opened')">
+    <div class="activity-icon" style="background:var(--blue-soft);color:var(--blue);">
+      <i data-lucide="file-text"></i>
+    </div>
+    <div>
+      <b>Story added</b>
+      <p>"The Journey to UK" was published by Sarah.</p>
+    </div>
+  </article>
+  <article class="activity" onclick="showToast('Achievement details opened')">
+    <div class="activity-icon" style="background:var(--gen1-soft);color:var(--gen1-primary);">
+      <i data-lucide="trophy"></i>
+    </div>
+    <div>
+      <b>Achievement earned</b>
+      <p>David became a Memory Keeper after uploading 10 photos.</p>
+    </div>
+  </article>
+  {% endfor %}
+</div>

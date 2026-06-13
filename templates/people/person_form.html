@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if form.instance.id %}Edit Person{% else %}Add Person{% endif %} — HeritageTree{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="section-head animate-in">
+    <div>
+      <h2>{% if form.instance.id %}Edit Person{% else %}Add Person{% endif %}</h2>
+      <p>{% if form.instance.id %}Update their details.{% else %}Add a new relative to the family tree.{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="tree-card animate-in">
+    {% include "people/partials/person_form.html" with form=form is_sheet=False %}
+  </div>
+</div>
+{% endblock %}

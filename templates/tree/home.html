@@ -1,92 +1,22 @@
+<!-- templates/tree/home.html -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ family.name|default:"HeritageTree" }}{% endblock %}
+{% block title %}Tree · {{ family.name|default:"HeritageTree" }}{% endblock %}
 
-{% block head %}
+{% block body_class %}tree-only-body{% endblock %}
+
+{% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/tree_home.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="tree-home">
-    <section class="tree-identity-card" aria-labelledby="family-tree-title">
-        <div class="tree-identity-main">
-            <p class="tree-eyebrow">Private family tree</p>
-            <h1 id="family-tree-title">{{ family.name }}</h1>
-            <p>{{ family.description|default:"View generations, connect missing relatives, and keep every memory attached to the tree." }}</p>
-            <div class="tree-root-person">
-                <span class="tree-root-avatar">{{ root_person.initials }}</span>
-                <span>
-                    <strong>{{ root_person.name }}</strong>
-                    <small>Root person · {{ root_person.relationship_label }}</small>
-                </span>
-            </div>
-        </div>
-
-        <div class="tree-identity-actions">
-            <div class="tree-stats" aria-label="Family tree stats">
-                <span><strong>{{ stats.generations }}</strong> generations</span>
-                <span><strong>{{ stats.people }}</strong> people</span>
-                <span><strong>{{ stats.memories }}</strong> memories</span>
-                <span><strong>{{ stats.missing }}</strong> missing</span>
-            </div>
-            <form class="tree-search" role="search">
-                <label for="relative-search">Search relatives</label>
-                <div>
-                    <input id="relative-search" type="search" name="q" placeholder="Find a relative or branch">
-                    <button type="button" data-tree-search-trigger>Search</button>
-                </div>
-            </form>
-            <button class="tree-primary-action" type="button" data-create-sheet-trigger>Connect relative</button>
-        </div>
-    </section>
-
-    <section id="tree-canvas" class="tree-canvas" aria-labelledby="tree-canvas-title">
-        <div class="tree-canvas-header">
-            <div>
-                <p class="tree-eyebrow">Family tree canvas</p>
-                <h2 id="tree-canvas-title">Generations and branches</h2>
-                <p>Open each generation, then reveal side branches where cousins and extended relatives belong.</p>
-            </div>
-            <button type="button" class="tree-secondary-action" data-expand-all-generations>Reveal all</button>
-        </div>
-
-        <div class="generation-stack" data-generation-stack>
-            {% for section in generation_sections %}
-                {% include "tree/partials/generation_section.html" with section=section %}
-            {% endfor %}
-        </div>
-    </section>
-
-    <section class="connect-strip" aria-labelledby="connect-strip-title">
-        <div>
-            <p class="tree-eyebrow">Connect missing relatives</p>
-            <h2 id="connect-strip-title">Complete the branches that still have gaps</h2>
-        </div>
-        <div class="connect-actions">
-            <button type="button" data-create-sheet-trigger>Add relative</button>
-            <button type="button" data-tree-toast="Invite flow will open when invitations are ready.">Invite relative</button>
-            <button type="button" data-tree-toast="Pending link review will be added here.">Review pending links</button>
-            <button type="button" data-create-sheet-trigger>Add memory</button>
-        </div>
-    </section>
-
-    <section class="memory-rails" aria-labelledby="memory-rails-title">
-        <div class="tree-section-heading">
-            <div>
-                <p class="tree-eyebrow">Memories below the tree</p>
-                <h2 id="memory-rails-title">Compact rails linked to relatives</h2>
-            </div>
-        </div>
-        {% for rail in memory_rails %}
-            {% include "tree/partials/memory_rail.html" with rail=rail %}
-        {% endfor %}
-    </section>
+<div class="tree-home is-tree-only">
+  {% include "people/partials/tree_preview.html" %}
 </div>
-
 {% include "tree/partials/create_sheet.html" %}
 {% endblock %}
 
-{% block scripts %}
+{% block extra_scripts %}
 <script defer src="{% static 'js/tree_home.js' %}"></script>
 {% endblock %}

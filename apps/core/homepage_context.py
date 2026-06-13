@@ -14,6 +14,13 @@ def build_homepage_context():
     return _build_family_context(family)
 
 
+def build_tree_context():
+    context = build_homepage_context()
+    context["tree_only"] = True
+    context["memory_rails"] = []
+    return context
+
+
 def _build_family_context(family):
     person_qs = Person.objects.filter(family=family).prefetch_related("memories", "stories")
     people = list(person_qs)
@@ -23,6 +30,42 @@ def _build_family_context(family):
     }
     root_person = people[0]
     root_card = person_cards[root_person.id]
+
+    spouse_links = Relationship.objects.filter(
+        family=family,
+        relationship_type=Relationship.Type.SPOUSE,
+        from_person_id__in=person_cards,
+    )
+    people_with_spouses = {link.from_person_id for link in spouse_links}
+
+    child_links = Relationship.objects.filter(
+        family=family,
+        relationship_type=Relationship.Type.PARENT_CHILD,
+        from_person_id__in=person_cards,
+    )
+    children_count_by_parent = {}
+    for link in child_links:
+        children_count_by_parent[link.from_person_id] = children_count_by_parent.get(link.from_person_id, 0) + 1
+
+    generation_rows = []
+    for generation in get_generation_rows(family):
+        enriched_people = [
+            _enrich_person(
+                person,
+                generation["label"],
+                generation["number"],
+                person.id in people_with_spouses,
+                children_count_by_parent.get(person.id, 0),
+            )
+            for person in generation["people"]
+        ]
+        generation_rows.append(
+            {
+                "number": generation["number"],
+                "label": generation["label"],
+                "people": enriched_people,
+            }
+        )
 
     generation_sections = []
     rows = []
@@ -79,6 +122,8 @@ def _build_family_context(family):
     ]
 
     context_people = list(person_cards.values())
+    photo_count = memories.filter(memory_type=Memory.Type.PHOTO).count()
+    story_count = stories.count()
     return {
         "family": family,
         "root_person": root_card,
@@ -89,11 +134,15 @@ def _build_family_context(family):
             "missing": 0,
         },
         "generation_sections": generation_sections,
+        "generation_rows": generation_rows,
         "rows": rows,
         "people": context_people,
         "branch_panels": branch_panels,
         "memory_rails": memory_rails,
         "generation_count": len(generation_sections),
+        "people_count": len(context_people),
+        "photo_count": photo_count,
+        "story_count": story_count,
         "empty_state": False,
     }
 
@@ -296,6 +345,42 @@ def _build_demo_context():
         faith,
     ]
 
+    generation_rows = []
+    gen_number = 1
+    for section in generation_sections:
+        section_people = []
+        for row in section["rows"]:
+            for person in row["people"]:
+                color_primary, color_soft = _generation_colors(gen_number)
+                section_people.append(
+                    {
+                        "id": person["id"],
+                        "first_name": person["name"].split()[0],
+                        "last_name": person["name"].split()[-1],
+                        "full_name": person["name"],
+                        "initials": person["initials"],
+                        "role": person["relationship_label"],
+                        "generation_label": section["title"],
+                        "birth_date": None,
+                        "death_date": None,
+                        "birth_place": "",
+                        "current_place": "",
+                        "profile_photo": "",
+                        "color1": color_primary,
+                        "color2": color_soft,
+                        "has_spouse": person.get("is_spouse", False),
+                        "children_count": person["memory_count"],
+                    }
+                )
+        generation_rows.append(
+            {
+                "number": gen_number,
+                "label": section["title"],
+                "people": section_people,
+            }
+        )
+        gen_number += 1
+
     memory_rails = [
         _memory_rail(
             "Videos",
@@ -324,6 +409,8 @@ def _build_demo_context():
         ),
     ]
 
+    photo_count = len(memory_rails[1]["items"]) if len(memory_rails) > 1 else 0
+    story_count = len(memory_rails[2]["items"]) if len(memory_rails) > 2 else 0
     return {
         "family": family,
         "root_person": calvin,
@@ -334,13 +421,49 @@ def _build_demo_context():
             "missing": 6,
         },
         "generation_sections": generation_sections,
+        "generation_rows": generation_rows,
         "rows": rows,
         "people": people,
         "branch_panels": branch_panels,
         "memory_rails": memory_rails,
         "generation_count": len(generation_sections),
+        "people_count": len(people),
+        "photo_count": photo_count,
+        "story_count": story_count,
         "empty_state": False,
     }
+
+
+def _enrich_person(person, generation_label, generation_number, has_spouse, children_count):
+    color_primary, color_soft = _generation_colors(generation_number)
+    return {
+        "id": person.id,
+        "first_name": person.first_name,
+        "last_name": person.last_name,
+        "full_name": person.full_name,
+        "initials": _initials(person.first_name, person.last_name),
+        "role": generation_label,
+        "generation_label": generation_label,
+        "birth_date": person.birth_date,
+        "death_date": person.death_date,
+        "birth_place": person.birth_place,
+        "current_place": person.current_place,
+        "profile_photo": person.profile_photo,
+        "color1": color_primary,
+        "color2": color_soft,
+        "has_spouse": has_spouse,
+        "children_count": children_count,
+    }
+
+
+def _generation_colors(generation_number):
+    colors = {
+        1: ("#d97706", "#f59e0b"),
+        2: ("#2563eb", "#3b82f6"),
+        3: ("#059669", "#10b981"),
+        4: ("#7c3aed", "#a78bfa"),
+    }
+    return colors.get(generation_number, ("#059669", "#10b981"))
 
 
 def _person_card_from_model(person, relationship_label):

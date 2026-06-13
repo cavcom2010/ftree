@@ -1,29 +1,61 @@
-<section class="section tree-section" id="tree-preview">
-    <h2 class="section-title">Family Tree</h2>
-    <div class="tree-card">
-        <div class="generation-row">
-            <span class="gen-label">Gen 1</span>
-            <div class="person-node male">Founder A</div>
-            <span class="connector">+</span>
-            <div class="person-node female">Founder B</div>
+<section class="tree-card animate-in delay-2" id="tree">
+  <h2 class="section-head" style="margin-top:0;">Family Tree</h2>
+  <div class="tree-top">
+    <button class="chip active">All Family</button>
+    <button class="chip">Generation 4</button>
+    <button class="chip">Ancestors</button>
+    <button class="chip">Descendants</button>
+    <button class="chip" onclick="revealAll()">Highlight Path</button>
+  </div>
+  <div class="tree-scroll">
+    <div class="tree">
+      <div class="generation">
+        <span class="generation-label">Gen 1</span>
+        <div class="people-row compact">
+          <div class="person-card-legacy" onclick="selectPerson(event, 'Founder A', 'Founder', 'FA')">
+            <div class="avatar" style="background:linear-gradient(135deg,#d97706,#f59e0b);">FA</div>
+            <div class="person-meta">
+              <b>Founder A</b>
+              <small>Founder</small>
+            </div>
+            <button class="expand-dot">+</button>
+          </div>
+          <div class="person-card-legacy" onclick="selectPerson(event, 'Founder B', 'Founder', 'FB')">
+            <div class="avatar" style="background:linear-gradient(135deg,#d97706,#fbbf24);">FB</div>
+            <div class="person-meta">
+              <b>Founder B</b>
+              <small>Founder</small>
+            </div>
+            <button class="expand-dot">+</button>
+          </div>
         </div>
-        <div class="generation-row">
-            <span class="gen-label">Gen 2</span>
-            <div class="person-node male">Child A</div>
-            <div class="person-node female">Child B</div>
-            <div class="person-node male">Child C</div>
+      </div>
+      <div class="generation hidden" id="gen2">
+        <span class="generation-label">Gen 2</span>
+        <div class="people-row compact">
+          <div class="person-card-legacy" onclick="selectPerson(event, 'Child A', 'Child', 'CA')">
+            <div class="avatar" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">CA</div>
+            <div class="person-meta">
+              <b>Child A</b>
+              <small>Child</small>
+            </div>
+          </div>
+          <div class="person-card-legacy" onclick="selectPerson(event, 'Child B', 'Child', 'CB')">
+            <div class="avatar" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">CB</div>
+            <div class="person-meta">
+              <b>Child B</b>
+              <small>Child</small>
+            </div>
+          </div>
+          <div class="person-card-legacy" onclick="selectPerson(event, 'Child C', 'Child', 'CC')">
+            <div class="avatar" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">CC</div>
+            <div class="person-meta">
+              <b>Child C</b>
+              <small>Child</small>
+            </div>
+          </div>
         </div>
-        <div class="generation-row">
-            <span class="gen-label">Gen 3</span>
-            <div class="person-node female">Grandchild A</div>
-            <div class="person-node male">Grandchild B</div>
-            <div class="person-node female">Grandchild C</div>
-        </div>
-        <div class="generation-row">
-            <span class="gen-label">Gen 4</span>
-            <div class="person-node female">Descendant A</div>
-            <div class="person-node male">Descendant B</div>
-        </div>
+      </div>
     </div>
-    <a href="#" class="btn btn-outline btn-block">Open Full Tree</a>
+  </div>
 </section>

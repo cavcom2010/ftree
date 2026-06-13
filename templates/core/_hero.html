@@ -1,27 +1,33 @@
-<section class="hero">
-    <span class="pill">✨ Mobile-first family platform</span>
-    <h1>Your family tree, but alive.</h1>
-    <p>A clean social family platform where people reveal branches, preserve memories, answer family prompts, and discover relationships without the clutter of ordinary social media.</p>
-    <div class="hero-actions">
-        <a href="#tree" class="btn primary" onclick="scrollToSection('tree'); return false;">Explore Tree</a>
-        <button class="btn soft" onclick="showToast('Relationship Finder opened')">Find Relationship</button>
+<section class="hero animate-in">
+  <span class="pill">
+    <i data-lucide="sparkles"></i>Mobile-first family platform
+  </span>
+  <h1>Your family tree, but alive.</h1>
+  <p>A clean social family platform where people reveal branches, preserve memories, answer family prompts, and discover relationships without the clutter of ordinary social media.</p>
+  <div class="hero-actions">
+    <a href="#tree" class="btn primary" onclick="event.preventDefault(); scrollToSection('tree'); showToast('Exploring family tree');">
+      <i data-lucide="git-branch"></i>Explore Tree
+    </a>
+    <button class="btn soft" onclick="showToast('Relationship Finder opened')">
+      <i data-lucide="link"></i>Find Link
+    </button>
+  </div>
+  <div class="quick-stats">
+    <div class="stat">
+      <strong>{{ people_count|default:0 }}</strong>
+      <span>People</span>
     </div>
-    <div class="quick-stats">
-        <div class="stat">
-            <strong>{{ people_count|default:0 }}</strong>
-            <span>People</span>
-        </div>
-        <div class="stat">
-            <strong>{{ generation_count|default:0 }}</strong>
-            <span>Generations</span>
-        </div>
-        <div class="stat">
-            <strong>{{ photo_count|default:0 }}</strong>
-            <span>Photos</span>
-        </div>
-        <div class="stat">
-            <strong>{{ story_count|default:0 }}</strong>
-            <span>Stories</span>
-        </div>
+    <div class="stat">
+      <strong>{{ generation_count|default:0 }}</strong>
+      <span>Gens</span>
     </div>
+    <div class="stat">
+      <strong>{{ photo_count|default:0 }}</strong>
+      <span>Photos</span>
+    </div>
+    <div class="stat">
+      <strong>{{ story_count|default:0 }}</strong>
+      <span>Stories</span>
+    </div>
+  </div>
 </section>

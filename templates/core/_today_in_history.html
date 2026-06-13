@@ -1,35 +1,47 @@
-<section id="today">
-    <div class="section-head">
-        <div>
-            <h2>Today in Family History</h2>
-            <p>Small reasons to return every day.</p>
-        </div>
-        <button class="link-btn" onclick="showToast('Today page opened')">View all</button>
+<div class="section-head animate-in delay-1" id="today">
+  <div>
+    <h2>Today in Family History</h2>
+    <p>Small reasons to return every day.</p>
+  </div>
+  <button class="link-btn" onclick="showToast('Today page opened')">
+    View all <i data-lucide="chevron-right"></i>
+  </button>
+</div>
+<div class="today-grid animate-in delay-1">
+  <div class="today-card" onclick="showToast('Birthday memory opened')">
+    <div class="today-icon">
+      <i data-lucide="cake"></i>
     </div>
-    <div class="today-grid">
-        <article class="today-card" onclick="showToast('Birthday memory opened')">
-            <div class="today-icon">🎂</div>
-            <div>
-                <strong>Family Birthday</strong>
-                <span>A remembered birthday from the family archive.</span>
-            </div>
-            <div>›</div>
-        </article>
-        <article class="today-card" onclick="showToast('Wedding anniversary opened')">
-            <div class="today-icon">💍</div>
-            <div>
-                <strong>Family Anniversary</strong>
-                <span>A relationship milestone worth preserving.</span>
-            </div>
-            <div>›</div>
-        </article>
-        <article class="today-card" onclick="showToast('Photo memory opened')">
-            <div class="today-icon">📷</div>
-            <div>
-                <strong>Family Reunion</strong>
-                <span>Memory from 4 years ago.</span>
-            </div>
-            <div>›</div>
-        </article>
+    <div>
+      <strong>Family Birthday</strong>
+      <span>Robert Mazhindu — born 14 June 1952</span>
     </div>
-</section>
+    <div class="arrow">
+      <i data-lucide="chevron-right"></i>
+    </div>
+  </div>
+  <div class="today-card" onclick="showToast('Anniversary memory opened')">
+    <div class="today-icon">
+      <i data-lucide="heart"></i>
+    </div>
+    <div>
+      <strong>Anniversary</strong>
+      <span>Robert & Margaret — 52 years</span>
+    </div>
+    <div class="arrow">
+      <i data-lucide="chevron-right"></i>
+    </div>
+  </div>
+  <div class="today-card" onclick="showToast('Reunion memory opened')">
+    <div class="today-icon">
+      <i data-lucide="camera"></i>
+    </div>
+    <div>
+      <strong>Family Reunion</strong>
+      <span>Harare gathering — 4 years ago today</span>
+    </div>
+    <div class="arrow">
+      <i data-lucide="chevron-right"></i>
+    </div>
+  </div>
+</div>

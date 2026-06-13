@@ -1,35 +1,56 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Stories · HeritageTree{% endblock %}
+{% block title %}Stories — HeritageTree{% endblock %}
 
 {% block content %}
+<div class="section-head animate-in">
+  <div>
+    <h2>Family Stories</h2>
+    <p>Long-form memories that deserve to be read.</p>
+  </div>
+  <a href="/stories/create/" class="btn primary" onclick="showToast('Create story opened')">
+    <i data-lucide="plus"></i>Write Story
+  </a>
+</div>
 
-<main class="stories-page">
-
-    <section>
-        <div class="tree-top" style="margin-bottom:14px;">
-            <a href="/feed/" class="chip">Family Feed</a>
-            <span class="chip active">Stories</span>
-            <a href="/memories/" class="chip">Memories</a>
-        </div>
-    </section>
-
-    <section>
-        <a href="/stories/create/" class="btn primary" style="width:100%;">Tell a Family Story</a>
-    </section>
-
-    {% for story in stories %}
-        {% include "stories/partials/story_card.html" with story=story %}
-    {% empty %}
-    <section>
-        <div class="empty-card">
-            <div class="empty-card-icon">📝</div>
-            <p>No stories written yet. Start sharing your family’s history.</p>
-        </div>
-    </section>
-    {% endfor %}
-
-</main>
-
+{% if stories %}
+<div class="animate-in">
+  {% for story in stories %}
+  <article class="story-card" onclick="showToast('{{ story.title|escapejs }} opened')">
+    <div class="story-card-header">
+      <h3 class="story-card-title">{{ story.title }}</h3>
+      {% if story.is_featured %}
+      <span class="story-featured-badge">
+        <i data-lucide="star"></i>Featured
+      </span>
+      {% endif %}
+    </div>
+    <p class="story-card-excerpt">{{ story.content|truncatewords:30 }}</p>
+    <div class="story-card-meta">
+      By {{ story.author.username }} • {{ story.created_at|timesince }} ago
+    </div>
+    <div class="reaction-bar">
+      <button class="react-btn" onclick="event.stopPropagation(); showToast('Liked {{ story.title|escapejs }}')">
+        <i data-lucide="heart"></i> {{ story.reactions.count|default:0 }}
+      </button>
+      <button class="react-btn" onclick="event.stopPropagation(); showToast('Comment on {{ story.title|escapejs }}')">
+        <i data-lucide="message-circle"></i> {{ story.comments.count|default:0 }}
+      </button>
+      <button class="react-btn" onclick="event.stopPropagation(); showToast('Shared {{ story.title|escapejs }}')">
+        <i data-lucide="share-2"></i>Share
+      </button>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-card animate-in">
+  <div class="empty-card-icon"><i data-lucide="file-text"></i></div>
+  <p>No stories yet. Start writing your family's history.</p>
+  <a href="/stories/create/" class="btn primary" style="margin-top:12px;">
+    <i data-lucide="plus"></i>Write First Story
+  </a>
+</div>
+{% endif %}
 {% endblock %}

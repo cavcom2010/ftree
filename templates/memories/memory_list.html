@@ -1,31 +1,55 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Memories · HeritageTree{% endblock %}
+{% block title %}Memories — HeritageTree{% endblock %}
 
 {% block content %}
+<div class="section-head animate-in">
+  <div>
+    <h2>Family Memories</h2>
+    <p>Emotional content, not random scrolling.</p>
+  </div>
+  <a href="/memories/create/" class="btn primary" onclick="showToast('Create memory opened')">
+    <i data-lucide="plus"></i>Add Memory
+  </a>
+</div>
 
-<main class="memories-page">
-
-    <section>
-        <div class="tree-top" style="margin-bottom:14px;">
-            <a href="/feed/" class="chip">Family Feed</a>
-            <a href="/stories/" class="chip">Stories</a>
-            <span class="chip active">Memories</span>
-        </div>
-    </section>
-
-    {% for memory in memories %}
-        {% include "memories/partials/memory_card.html" with memory=memory %}
-    {% empty %}
-    <section>
-        <div class="empty-card">
-            <div class="empty-card-icon">🖼️</div>
-            <p>No memories preserved yet. Add photos and documents to your family tree.</p>
-        </div>
-    </section>
-    {% endfor %}
-
-</main>
-
+{% if memories %}
+<div class="memory-strip animate-in" style="grid-template-columns:1fr; grid-auto-flow:row; grid-auto-columns:initial; overflow:visible;">
+  {% for memory in memories %}
+  <article class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}"
+           style="min-height:180px;"
+           onclick="showToast('{{ memory.title|escapejs }} opened')">
+    {% if memory.file and memory.memory_type == "photo" %}
+      <img src="{{ memory.file.url }}" alt="{{ memory.title }}" loading="lazy">
+    {% endif %}
+    <span class="label">
+      {% if memory.memory_type == "photo" %}
+        <i data-lucide="image"></i>Photo Story
+      {% elif memory.memory_type == "video" %}
+        <i data-lucide="video"></i>Video
+      {% elif memory.memory_type == "audio" %}
+        <i data-lucide="mic"></i>Voice Memory
+      {% else %}
+        <i data-lucide="file-text"></i>Memory
+      {% endif %}
+    </span>
+    <h3>{{ memory.title }}</h3>
+    <p>{{ memory.description|default:"A family memory worth keeping." }}</p>
+    <div class="memory-meta">
+      <span><i data-lucide="heart"></i> {{ memory.reactions.count|default:0 }}</span>
+      <span><i data-lucide="message-circle"></i> {{ memory.comments.count|default:0 }}</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-card animate-in">
+  <div class="empty-card-icon"><i data-lucide="image-off"></i></div>
+  <p>No memories yet. Be the first to add a family photo or story.</p>
+  <a href="/memories/create/" class="btn primary" style="margin-top:12px;">
+    <i data-lucide="plus"></i>Add Memory
+  </a>
+</div>
+{% endif %}
 {% endblock %}

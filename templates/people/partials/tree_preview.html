@@ -1,53 +1,88 @@
-<section id="tree">
-    <div class="section-head">
-        <div>
-            <h2>Interactive Tree</h2>
-            <p>Tap a name to reveal descendants.</p>
-        </div>
-        <button class="link-btn" onclick="revealAll()">Reveal all</button>
-    </div>
-    <div class="tree-card">
-        <div class="tree-top">
-            <button class="chip active">All Family</button>
-            <button class="chip">Generation 4</button>
-            <button class="chip">Ancestors</button>
-            <button class="chip">Descendants</button>
-            <button class="chip">Highlight Path</button>
-        </div>
-        <div class="tree-scroll">
-            <div class="tree">
-                {% for lane in generation_rows %}
-                <div class="generation {% if lane.number > 2 %}hidden{% else %}revealed{% endif %}" id="gen{{ lane.number }}">
-                    <div class="generation-label">
-                        Generation {{ lane.number }}<br>{{ lane.label }}
-                    </div>
-                    <div class="people-row{% if lane.people|length <= 2 %} compact{% endif %}">
-                        {% for person in lane.people %}
-                        <button class="person-card {% if lane.number < 4 %}has-kids{% endif %}"
-                                hx-get="/people/{{ person.id }}/drawer/"
-                                hx-target="#personDrawer"
-                                hx-swap="innerHTML"
-                                onclick="selectPerson(event, '{{ person.full_name|escapejs }}', '{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %} · {{ lane.label }}', '{{ person.first_name|slice:':1' }}'); {% if lane.number < 4 %}toggleGeneration('gen{{ lane.number|add:'1' }}'){% endif %}">
-                            <span class="avatar">
-                                {% if person.profile_photo %}
-                                    <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
-                                {% else %}
-                                    {{ person.first_name|slice:":1" }}
-                                {% endif %}
-                            </span>
-                            <span class="person-meta">
-                                <b>{{ person.first_name }}</b>
-                                <small>{{ person.birth_date|date:'Y'|default:'' }}{% if person.death_date %} – {{ person.death_date|date:'Y' }}{% endif %}</small>
-                            </span>
-                            {% if lane.number < 4 %}
-                            <span class="expand-dot">+</span>
-                            {% endif %}
-                        </button>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+<!-- templates/people/partials/tree_preview.html -->
+<section class="tree-legend animate-in delay-2" id="tree">
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--gen1-primary)"></span>
+    Gen 1 Founders
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--gen2-primary)"></span>
+    Gen 2 Children
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--gen3-primary)"></span>
+    Gen 3 Grandchildren
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--gen4-primary)"></span>
+    Gen 4 Descendants
+  </div>
 </section>
+
+{% for lane in generation_rows %}
+<div class="gen-band animate-in delay-{{ forloop.counter|add:1 }}" data-gen="{{ lane.number }}">
+  <div class="gen-header">
+    <span class="gen-badge">
+      {% if lane.number == 1 %}
+        <i data-lucide="crown"></i>
+      {% elif lane.number == 2 %}
+        <i data-lucide="users"></i>
+      {% elif lane.number == 3 %}
+        <i data-lucide="baby"></i>
+      {% else %}
+        <i data-lucide="sparkles"></i>
+      {% endif %}
+      Generation {{ lane.number }}
+    </span>
+    <span class="gen-title">{{ lane.label }}</span>
+    <span class="gen-count">{{ lane.people|length }} people</span>
+  </div>
+
+  <div class="scroll-container">
+    {% for person in lane.people %}
+    <div class="person-card"
+         onclick="openSheet('{{ person.full_name|escapejs }}', '{{ person.role|default:lane.label|escapejs }}', '{{ person.initials|escapejs }}', 'linear-gradient(135deg,{{ person.color1|default:'#d97706' }},{{ person.color2|default:'#f59e0b' }})', '{{ person.birth_date|date:'Y'|default:'Unknown' }}', '{{ person.birth_place|default:person.current_place|default:'Unknown'|escapejs }}', '{{ lane.label }}', '{{ person.children_count|default:0 }}', 'Relative')"
+         hx-get="/people/{{ person.id }}/drawer/"
+         hx-target="#personDrawer"
+         hx-swap="innerHTML">
+      <div class="card-avatar" style="background:linear-gradient(135deg,{{ person.color1|default:'#d97706' }},{{ person.color2|default:'#f59e0b' }});">
+        <span class="card-avatar-fallback">{{ person.initials }}</span>
+        {% if person.profile_photo %}
+          <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}" onerror="this.style.display='none'">
+        {% endif %}
+        {% if person.has_spouse %}
+        <span class="spouse-indicator"><i data-lucide="heart"></i></span>
+        {% endif %}
+      </div>
+      <div class="card-name">{{ person.first_name }}</div>
+      <div class="card-role">{{ person.role|default:lane.label }}</div>
+      <div class="card-dates">
+        {% if person.birth_date %}{{ person.birth_date|date:"Y" }}{% endif %}
+        {% if person.death_date %} – {{ person.death_date|date:"Y" }}{% endif %}
+      </div>
+      <div class="card-actions">
+        <button class="card-btn" onclick="event.stopPropagation(); showToast('Viewing {{ person.first_name|escapejs }}')">
+          <i data-lucide="user"></i>View
+        </button>
+        <button class="card-btn" onclick="event.stopPropagation(); showToast('Add relative to {{ person.first_name|escapejs }}')">
+          <i data-lucide="user-plus"></i>Add
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if not forloop.last %}
+<div class="gen-connector animate-in delay-{{ forloop.counter|add:1 }}">
+  <div class="gen-connector-line"></div>
+</div>
+{% endif %}
+{% empty %}
+<div class="empty-card animate-in">
+  <div class="empty-card-icon"><i data-lucide="tree-deciduous"></i></div>
+  <p>No family members yet. Start building your tree.</p>
+  <a href="/people/create/" class="btn primary" style="margin-top:12px;">
+    <i data-lucide="user-plus"></i>Add First Person
+  </a>
+</div>
+{% endfor %}

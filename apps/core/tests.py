@@ -27,20 +27,58 @@ class HomepageShellTests(TestCase):
     def test_homepage_contains_tree_canvas(self):
         response = self.client.get("/")
 
-        self.assertContains(response, 'id="tree-canvas"')
+        self.assertContains(response, 'id="tree"')
 
     def test_homepage_contains_generation_sections(self):
         response = self.client.get("/")
 
-        self.assertContains(response, "generation-section")
-        self.assertContains(response, "Gen -2")
+        self.assertContains(response, "gen-band")
+        self.assertContains(response, "Generation 1")
 
     def test_homepage_contains_memory_rails_below_tree(self):
         response = self.client.get("/")
         content = response.content.decode()
 
-        self.assertContains(response, "memory-rails")
-        self.assertLess(content.index('id="tree-canvas"'), content.index("memory-rails"))
+        self.assertContains(response, "memory-strip")
+        self.assertLess(content.index('id="tree"'), content.index("memory-strip"))
+
+
+@override_settings(ALLOWED_HOSTS=["testserver"])
+class TreePageTests(TestCase):
+    def test_tree_page_returns_http_200(self):
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_page_contains_tree_canvas(self):
+        response = self.client.get("/tree/")
+
+        self.assertContains(response, 'id="tree"')
+        self.assertContains(response, "is-tree-only")
+
+    def test_tree_page_contains_generation_sections(self):
+        response = self.client.get("/tree/")
+
+        self.assertContains(response, "gen-band")
+        self.assertContains(response, "Grandparents")
+
+    def test_tree_page_excludes_homepage_memory_rails(self):
+        response = self.client.get("/tree/")
+
+        self.assertNotContains(response, "memory-rails")
+        self.assertNotContains(response, "Memories below the tree")
+
+    def test_tree_page_excludes_standalone_connect_strip(self):
+        response = self.client.get("/tree/")
+
+        self.assertNotContains(response, "connect-strip")
+        self.assertNotContains(response, "Add memory")
+
+    def test_tree_page_excludes_desktop_side_panels(self):
+        response = self.client.get("/tree/")
+
+        self.assertNotContains(response, "desktop-side")
+        self.assertNotContains(response, "desktop-panel")
 
 
 class SeedDemoMediaCommandTests(TestCase):

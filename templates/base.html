@@ -1,57 +1,117 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>{% block title %}HeritageTree{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
-    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-    {% block head %}{% endblock %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#087c3d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{% block title %}HeritageTree{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  {% block extra_head %}{% endblock %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
-    <div class="app-shell">
-        {% include "core/_left_sidebar.html" %}
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i data-lucide="check-circle"></i>
+    <span id="toastText">Action completed</span>
+  </div>
 
-        <div class="app-main">
-            {% include "core/_header.html" %}
+  <!-- Detail Sheet Overlay -->
+  <div class="sheet-overlay" id="detailSheetOverlay" onclick="closeSheet()"></div>
 
-            <main class="page">
-                {% block content %}{% endblock %}
-            </main>
-        </div>
+  <!-- Person Detail Sheet -->
+  <div class="detail-sheet" id="detailSheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet()" aria-label="Close">
+      <i data-lucide="x"></i>
+    </button>
+    <div class="sheet-header">
+      <div class="sheet-avatar" id="sheetAvatar" style="background:linear-gradient(135deg,#d97706,#f59e0b);">RM</div>
+      <div class="sheet-title">
+        <h3 id="sheetName">Robert Mazhindu</h3>
+        <p id="sheetMeta">Founder • Generation 1</p>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="sheet-action" onclick="showToast('Profile opened')">
+        <i data-lucide="user"></i>Profile
+      </button>
+      <button class="sheet-action" onclick="showToast('Add relative opened')">
+        <i data-lucide="user-plus"></i>Add
+      </button>
+      <button class="sheet-action" onclick="showToast('Timeline opened')">
+        <i data-lucide="clock"></i>Timeline
+      </button>
+    </div>
+    <div class="sheet-section">
+      <h4>Details</h4>
+      <div class="sheet-info-row"><span>Born</span><span id="sheetBorn">14 June 1952</span></div>
+      <div class="sheet-info-row"><span>Location</span><span id="sheetLocation">Bulawayo, Zimbabwe</span></div>
+      <div class="sheet-info-row"><span>Generation</span><span id="sheetGen">1st Generation</span></div>
+      <div class="sheet-info-row"><span>Children</span><span id="sheetChildren">3</span></div>
+    </div>
+    <div class="sheet-section">
+      <h4>Relationship</h4>
+      <div class="sheet-info-row"><span>To you</span><span id="sheetRelation">Grandfather</span></div>
+    </div>
+  </div>
 
-        {% include "core/_right_sidebar.html" %}
+  <div class="app-shell">
+    {% if not tree_only %}
+      {% include "core/_left_sidebar.html" %}
+    {% endif %}
+
+    <div class="app-main">
+      {% include "core/_header.html" %}
+
+      <main class="page">
+        {% block content %}{% endblock %}
+      </main>
     </div>
 
-    {% include "core/_bottom_nav.html" %}
+    {% if not tree_only %}
+      {% include "core/_right_sidebar.html" %}
+    {% endif %}
+  </div>
 
-    <section class="person-drawer" id="personDrawer">
-        <div class="drawer-handle"></div>
-        <div class="drawer-main">
-            <div class="drawer-avatar" id="drawerAvatar">👤</div>
-            <div>
-                <b id="drawerName">Person</b>
-                <span id="drawerMeta">Select someone</span>
-            </div>
-            <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button>
-        </div>
-        <div class="drawer-actions">
-            <button class="btn primary" onclick="showToast('Profile opened')">View Profile</button>
-            <button class="btn" onclick="showToast('Add relative opened')">Add Relative</button>
-            <button class="btn" onclick="showToast('Timeline opened')">Timeline</button>
-            <button class="btn soft" onclick="revealAll()">Reveal Branch</button>
-        </div>
-    </section>
+  {% include "core/_bottom_nav.html" %}
 
-    <section id="global-sheet" class="global-sheet"></section>
-    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+  <section class="person-drawer" id="personDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-main">
+      <div class="drawer-avatar" id="drawerAvatar">
+        <i data-lucide="user"></i>
+      </div>
+      <div>
+        <b id="drawerName">Person</b>
+        <span id="drawerMeta">Select someone</span>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn primary" onclick="showToast('Profile opened')">
+        <i data-lucide="user"></i>View Profile
+      </button>
+      <button class="btn soft" onclick="showToast('Add relative opened')">
+        <i data-lucide="user-plus"></i>Add Relative
+      </button>
+    </div>
+  </section>
 
-    <script defer src="{% static 'js/app.js' %}"></script>
-    {% block scripts %}{% endblock %}
+  <section id="global-sheet" class="global-sheet"></section>
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+
+  <script defer src="{% static 'js/app.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>

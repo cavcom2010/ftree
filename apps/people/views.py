@@ -98,9 +98,10 @@ def person_create(request):
     form = PersonForm()
     return render(
         request,
-        "people/partials/person_form.html",
+        "people/person_form.html",
         {
             "form": form,
+            "family": family,
             "title": "Add Person",
         },
     )

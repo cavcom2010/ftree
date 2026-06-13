@@ -59,6 +59,18 @@
             return;
         }
 
+        var collapseAll = event.target.closest("[data-collapse-all-generations]");
+        if (collapseAll) {
+            document.querySelectorAll("[data-generation-section]").forEach(function (section, index) {
+                var shouldOpen = index === 0;
+                section.classList.toggle("is-open", shouldOpen);
+                var button = section.querySelector(".generation-toggle");
+                if (button) button.setAttribute("aria-expanded", String(shouldOpen));
+            });
+            notify("Focused on the root branch");
+            return;
+        }
+
         var branchTrigger = event.target.closest("[data-branch-trigger]");
         if (branchTrigger) {
             openBranch(branchTrigger);

@@ -10,10 +10,9 @@
             {% endif %}>
         <span class="person-avatar">
             {% if person.avatar_url %}
-                <img src="{{ person.avatar_url }}" alt="">
-            {% else %}
-                {{ person.initials }}
+                <img src="{{ person.avatar_url }}" alt="" onerror="this.style.display='none'">
             {% endif %}
+            <span class="person-avatar-fallback" aria-hidden="true">{{ person.initials }}</span>
         </span>
         <span class="person-copy">
             <strong>{{ person.name }}</strong>

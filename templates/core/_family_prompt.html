@@ -1,18 +1,18 @@
-<section id="prompt">
-    <div class="section-head">
-        <div>
-            <h2>Family Prompt</h2>
-            <p>Turns quiet relatives into contributors.</p>
-        </div>
-    </div>
-    <div hx-get="/prompts/current/" hx-trigger="load" hx-swap="innerHTML">
-        <div class="prompt-card">
-            <div class="mini">TODAY’S QUESTION</div>
-            <h3>Loading today’s question...</h3>
-            <div class="prompt-actions">
-                <button class="btn primary">Answer</button>
-                <button class="btn">Share</button>
-            </div>
-        </div>
-    </div>
-</section>
+<div class="section-head animate-in delay-3" id="prompt">
+  <div>
+    <h2>Family Prompt</h2>
+    <p>Turns quiet relatives into contributors.</p>
+  </div>
+</div>
+<div class="prompt-card animate-in delay-3">
+  <div class="mini">TODAY'S QUESTION</div>
+  <h3>What is the best piece of advice your grandmother ever gave you?</h3>
+  <div class="prompt-actions">
+    <button class="btn primary" onclick="showToast('Answer sheet opened')">
+      <i data-lucide="message-square"></i>Answer
+    </button>
+    <button class="btn soft" onclick="showToast('Shared with family')">
+      <i data-lucide="share-2"></i>Share
+    </button>
+  </div>
+</div>

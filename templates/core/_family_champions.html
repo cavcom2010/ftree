@@ -1,46 +1,46 @@
-<section id="champions">
-    <div class="section-head">
-        <div>
-            <h2>Family Champions</h2>
-            <p>Meaningful contribution, not fake points.</p>
-        </div>
+<div class="section-head animate-in delay-4" id="champions">
+  <div>
+    <h2>Champions</h2>
+    <p>Meaningful contribution, not fake points.</p>
+  </div>
+</div>
+<div class="activity-list animate-in delay-4">
+  {% for achiever in top_achievers %}
+  <div class="champion">
+    <div class="champion-rank
+      {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% else %}bronze{% endif %}">
+      {% if forloop.counter == 1 %}1st{% elif forloop.counter == 2 %}2nd{% else %}3rd{% endif %}
     </div>
-    <div class="activity-list">
-        {% for achiever in top_achievers %}
-        <article class="activity">
-            <div class="activity-icon">
-                {% if forloop.counter == 1 %}🥇
-                {% elif forloop.counter == 2 %}🥈
-                {% elif forloop.counter == 3 %}🥉
-                {% else %}🏅{% endif %}
-            </div>
-            <div>
-                <b>{{ achiever.user__username }}</b>
-                <p>{{ achiever.total }} achievement{{ achiever.total|pluralize }}</p>
-            </div>
-        </article>
-        {% empty %}
-        <article class="activity">
-            <div class="activity-icon">🥇</div>
-            <div>
-                <b>Barbara</b>
-                <p>Memory Keeper · +80 points</p>
-            </div>
-        </article>
-        <article class="activity">
-            <div class="activity-icon">🥈</div>
-            <div>
-                <b>Calvin</b>
-                <p>Family Historian · +65 points</p>
-            </div>
-        </article>
-        <article class="activity">
-            <div class="activity-icon">🥉</div>
-            <div>
-                <b>Muno</b>
-                <p>Story Teller · +42 points</p>
-            </div>
-        </article>
-        {% endfor %}
+    <div class="champion-info">
+      <b>{{ achiever.user__username }}</b>
+      <p>{{ achiever.total }} achievement{{ achiever.total|pluralize }}</p>
     </div>
-</section>
+    <div class="champion-points">+{{ achiever.total }}</div>
+  </div>
+  {% empty %}
+  <div class="champion">
+    <div class="champion-rank gold">1st</div>
+    <div class="champion-info">
+      <b>Sarah Mazhindu</b>
+      <p>Memory Keeper • 12 stories</p>
+    </div>
+    <div class="champion-points">+120</div>
+  </div>
+  <div class="champion">
+    <div class="champion-rank silver">2nd</div>
+    <div class="champion-info">
+      <b>David Mazhindu</b>
+      <p>Family Historian • 8 stories</p>
+    </div>
+    <div class="champion-points">+95</div>
+  </div>
+  <div class="champion">
+    <div class="champion-rank bronze">3rd</div>
+    <div class="champion-info">
+      <b>James Mazhindu</b>
+      <p>Story Teller • 5 stories</p>
+    </div>
+    <div class="champion-points">+64</div>
+  </div>
+  {% endfor %}
+</div>

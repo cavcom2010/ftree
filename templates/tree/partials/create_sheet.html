@@ -8,10 +8,17 @@
         <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
     </div>
     <div class="tree-create-actions">
-        <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
-        <button type="button" data-tree-toast="Photo memory flow will open here.">Add photo memory</button>
-        <button type="button" data-tree-toast="Story editor will open here.">Write story</button>
-        <button type="button" data-tree-toast="Video memory flow will open here.">Add video</button>
+        {% if tree_only %}
+            <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
+            <button type="button" data-tree-toast="Add parent flow will open here.">Add parent</button>
+            <button type="button" data-tree-toast="Add partner flow will open here.">Add partner</button>
+            <button type="button" data-tree-toast="Invite relative flow will open here.">Invite relative</button>
+        {% else %}
+            <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
+            <button type="button" data-tree-toast="Photo memory flow will open here.">Add photo memory</button>
+            <button type="button" data-tree-toast="Story editor will open here.">Write story</button>
+            <button type="button" data-tree-toast="Video memory flow will open here.">Add video</button>
+        {% endif %}
     </div>
 </section>
 <div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hidden></div>

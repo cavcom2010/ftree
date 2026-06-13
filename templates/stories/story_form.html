@@ -1,37 +1,55 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Write a Story · HeritageTree{% endblock %}
+{% block title %}{% if form.instance.id %}Edit Story{% else %}Write Story{% endif %} — HeritageTree{% endblock %}
 
 {% block content %}
+<div class="section-head animate-in">
+  <div>
+    <h2>{% if form.instance.id %}Edit Story{% else %}Write a Story{% endif %}</h2>
+    <p>Preserve a memory for future generations.</p>
+  </div>
+</div>
 
-<main class="main">
-
-    <section class="section">
-        <h2 class="section-title">{{ title|default:"Tell a Family Story" }}</h2>
-        <form class="person-form" method="post" action="/stories/create/">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label" for="id_title">Title *</label>
-                {{ form.title }}
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="id_body">Your story *</label>
-                {{ form.body }}
-            </div>
-            <div class="form-group form-group-check">
-                {{ form.is_featured }}
-                <label class="form-label form-label-check" for="id_is_featured">
-                    Feature this story at the top
-                </label>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary btn-block">Publish Story</button>
-                <a href="/stories/" class="btn btn-ghost btn-block">Cancel</a>
-            </div>
-        </form>
-    </section>
-
-</main>
-
+<form class="animate-in" method="post" enctype="multipart/form-data" style="background:#fff; border:1px solid var(--line); border-radius:24px; padding:20px; box-shadow:var(--shadow-sm);">
+  {% csrf_token %}
+  <div class="form-group" style="margin-bottom:14px;">
+    <label class="form-label" for="id_title">Title</label>
+    {{ form.title }}
+    {% if form.title.errors %}
+      <span style="color:#ef4444;font-size:0.78rem;">{{ form.title.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  <div class="form-group" style="margin-bottom:14px;">
+    <label class="form-label" for="id_content">Content</label>
+    {{ form.content }}
+    {% if form.content.errors %}
+      <span style="color:#ef4444;font-size:0.78rem;">{{ form.content.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  <div class="form-group" style="margin-bottom:14px;">
+    <label class="form-label" for="id_cover_image">Cover Image</label>
+    {{ form.cover_image }}
+    {% if form.cover_image.errors %}
+      <span style="color:#ef4444;font-size:0.78rem;">{{ form.cover_image.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  <div class="form-group" style="margin-bottom:14px;">
+    <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+      {{ form.is_featured }}
+      <span>Feature this story on the homepage</span>
+    </label>
+    {% if form.is_featured.errors %}
+      <span style="color:#ef4444;font-size:0.78rem;">{{ form.is_featured.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  <div class="form-actions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+    <button type="submit" class="btn primary btn-block">
+      <i data-lucide="check"></i>{% if form.instance.id %}Save Changes{% else %}Publish Story{% endif %}
+    </button>
+    <a href="/stories/" class="btn btn-ghost btn-block" style="text-align:center;">
+      Cancel
+    </a>
+  </div>
+</form>
 {% endblock %}

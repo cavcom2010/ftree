@@ -132,7 +132,7 @@ class TreePageTests(TestCase):
         self.assertContains(response, "Set Gen 0")
         self.assertContains(response, "Who are you in this family tree?")
         self.assertContains(response, person.full_name)
-        self.assertContains(response, f'action="/family/tree/people/{person.id}/set-anchor/"')
+        self.assertContains(response, f'action="/tree/people/{person.id}/set-anchor/"')
 
     def test_anchor_chooser_saves_membership_person(self):
         user = User.objects.create_user(username="chooser", password="demo12345")
@@ -151,7 +151,7 @@ class TreePageTests(TestCase):
         self.client.force_login(user)
 
         response = self.client.post(
-            f"/family/tree/people/{person.id}/set-anchor/",
+            f"/tree/people/{person.id}/set-anchor/",
             {"family": family.slug},
         )
 

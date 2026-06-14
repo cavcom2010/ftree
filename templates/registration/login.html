@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in · HeritageTree{% endblock %}
+
+{% block content %}
+<section class="tree-card animate-in">
+  <div class="section-head">
+    <div>
+      <h2>Sign in</h2>
+      <p>Open your family trees and invitations.</p>
+    </div>
+  </div>
+  <form method="post" class="person-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="form-actions">
+      <button class="btn primary" type="submit">Sign in</button>
+      <a class="btn soft" href="{% url 'signup' %}">Create account</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

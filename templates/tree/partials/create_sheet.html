@@ -9,10 +9,10 @@
     </div>
     <div class="tree-create-actions">
         {% if tree_only %}
-            <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
-            <button type="button" data-tree-toast="Add parent flow will open here.">Add parent</button>
-            <button type="button" data-tree-toast="Add partner flow will open here.">Add partner</button>
-            <button type="button" data-tree-toast="Invite relative flow will open here.">Invite relative</button>
+            <button type="button" data-tree-scroll-anchor data-create-sheet-close>Choose a person in the tree</button>
+            <button type="button" data-tree-toast="Open a person card, then use Parents, Partners, Children, Siblings, or Details to invite the right relative.">Invite from person card</button>
+            <button type="button" data-tree-toast="Pending invites show on person cards until accepted, declined, or ignored.">Review invite status</button>
+            <button type="button" data-tree-toast="Accepted invitations connect users through their claimed family-tree person.">Connected users</button>
         {% else %}
             <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
             <button type="button" data-tree-toast="Photo memory flow will open here.">Add photo memory</button>

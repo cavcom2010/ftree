@@ -4,6 +4,13 @@ from django.conf import settings
 
 from apps.core.homepage_context import build_homepage_context
 from apps.families.models import Family
+from apps.families.services import (
+    can_invite,
+    current_family_for_user,
+    invitation_counts_for_people,
+    memberships_by_person,
+    pending_invitations_for_user,
+)
 from apps.people.models import Person
 from apps.relationships.models import Relationship
 
@@ -11,19 +18,25 @@ from apps.relationships.models import Relationship
 MAX_TREE_DEPTH = 4
 
 
-def build_tree_context(user):
-    family = _family_for_user(user)
+def build_tree_context(user, family_slug=None):
+    family = _family_for_user(user, family_slug=family_slug)
     if not family or not Person.objects.filter(family=family).exists():
         return _tree_from_demo_context(build_homepage_context())
 
     people = list(Person.objects.filter(family=family).order_by("birth_date", "first_name", "last_name", "id"))
     anchor = _anchor_for_user(family, user)
+    available_families = _available_families(user)
+    received_invitations = list(pending_invitations_for_user(user)[:8])
+    user_can_invite = can_invite(family, user)
     if not anchor:
         return {
             "family": family,
             "tree_only": True,
             "tree_anchor": None,
             "anchor_choices": [_person_choice(person) for person in people],
+            "available_families": available_families,
+            "received_invitations": received_invitations,
+            "can_invite_relatives": user_can_invite,
             "relative_generation_rows": [],
             "generation_count": 0,
             "people_count": len(people),
@@ -32,7 +45,16 @@ def build_tree_context(user):
         }
 
     graph = _relationship_graph(family, people)
-    rows = _relative_generation_rows(anchor, graph)
+    invite_map = invitation_counts_for_people(family, people)
+    membership_map = memberships_by_person(family, people)
+    rows = _relative_generation_rows(
+        anchor,
+        graph,
+        membership_map=membership_map,
+        invite_map=invite_map,
+        current_user=user,
+        can_invite_relatives=user_can_invite,
+    )
     cards = {
         card["id"]: card
         for row in rows
@@ -42,9 +64,21 @@ def build_tree_context(user):
     return {
         "family": family,
         "tree_only": True,
-        "tree_anchor": _person_card(anchor, graph, 0, "Me"),
+        "tree_anchor": _person_card(
+            anchor,
+            graph,
+            0,
+            "Me",
+            membership_map=membership_map,
+            invite_map=invite_map,
+            current_user=user,
+            can_invite_relatives=user_can_invite,
+        ),
         "relative_generation_rows": rows,
         "person_cards": cards,
+        "available_families": available_families,
+        "received_invitations": received_invitations,
+        "can_invite_relatives": user_can_invite,
         "generation_count": len(rows),
         "people_count": len(people),
         "empty_state": False,
@@ -52,16 +86,14 @@ def build_tree_context(user):
     }
 
 
-def _family_for_user(user):
-    if getattr(user, "is_authenticated", False):
-        membership = (
-            Family.objects.filter(memberships__user=user)
-            .order_by("memberships__joined_at", "name")
-            .first()
-        )
-        if membership:
-            return membership
-    return Family.objects.order_by("name").first()
+def _family_for_user(user, family_slug=None):
+    return current_family_for_user(user, family_slug=family_slug)
+
+
+def _available_families(user):
+    if not getattr(user, "is_authenticated", False):
+        return []
+    return list(Family.objects.filter(memberships__user=user).order_by("name").distinct())
 
 
 def _anchor_for_user(family, user):
@@ -118,7 +150,7 @@ def _relationship_graph(family, people):
     }
 
 
-def _relative_generation_rows(anchor, graph):
+def _relative_generation_rows(anchor, graph, membership_map, invite_map, current_user, can_invite_relatives):
     people_by_id = graph["people_by_id"]
     rows_by_number = {0: _gen_zero_people(anchor, graph)}
 
@@ -155,6 +187,10 @@ def _relative_generation_rows(anchor, graph):
                         graph,
                         generation_number,
                         _relationship_label(generation_number, person.id == anchor.id),
+                        membership_map=membership_map,
+                        invite_map=invite_map,
+                        current_user=current_user,
+                        can_invite_relatives=can_invite_relatives,
                     )
                     for person in people
                 ],
@@ -194,11 +230,29 @@ def _person_order(person):
     )
 
 
-def _person_card(person, graph, generation_number, relationship_label):
+def _person_card(
+    person,
+    graph,
+    generation_number,
+    relationship_label,
+    membership_map=None,
+    invite_map=None,
+    current_user=None,
+    can_invite_relatives=False,
+):
     parent_ids = graph["parents_by_child"].get(person.id, set())
     partner_ids = graph["partners_by_person"].get(person.id, set())
     child_ids = graph["children_by_parent"].get(person.id, set())
     sibling_ids = graph["siblings_by_person"].get(person.id, set())
+    membership_map = membership_map or {}
+    invite_map = invite_map or {}
+    membership = membership_map.get(person.id)
+    invitation = invite_map.get(person.id)
+    is_current_user = bool(
+        membership
+        and getattr(current_user, "is_authenticated", False)
+        and membership.user_id == current_user.id
+    )
 
     return {
         "id": person.id,
@@ -211,6 +265,13 @@ def _person_card(person, graph, generation_number, relationship_label):
         "location": person.current_place or person.birth_place or "Location unknown",
         "avatar_url": _profile_photo_url(person),
         "is_anchor": relationship_label == "Me",
+        "is_connected": bool(membership),
+        "is_current_user": is_current_user,
+        "connected_user": membership.user.username if membership else "",
+        "connection_label": _connection_label(membership, invitation, is_current_user),
+        "has_pending_invite": bool(invitation),
+        "pending_invite_label": invitation.invitee_label if invitation else "",
+        "can_invite": can_invite_relatives and not membership and not invitation,
         "parents": [_mini_person(graph["people_by_id"][person_id]) for person_id in parent_ids if person_id in graph["people_by_id"]],
         "partners": [_mini_person(graph["people_by_id"][person_id]) for person_id in partner_ids if person_id in graph["people_by_id"]],
         "children": [_mini_person(graph["people_by_id"][person_id]) for person_id in child_ids if person_id in graph["people_by_id"]],
@@ -220,6 +281,16 @@ def _person_card(person, graph, generation_number, relationship_label):
         "child_count": len(child_ids),
         "sibling_count": len(sibling_ids),
     }
+
+
+def _connection_label(membership, invitation, is_current_user):
+    if is_current_user:
+        return "You"
+    if membership:
+        return f"Connected to {membership.user.username}"
+    if invitation:
+        return f"Pending invite to {invitation.invitee_label}"
+    return "Unclaimed"
 
 
 def _mini_person(person):
@@ -334,6 +405,9 @@ def _tree_from_demo_context(context):
             "tree_anchor": _demo_person_card(context["root_person"], "Gen 0"),
             "relative_generation_rows": rows,
             "needs_anchor_choice": False,
+            "available_families": [],
+            "received_invitations": [],
+            "can_invite_relatives": False,
         }
     )
     return context
@@ -351,6 +425,13 @@ def _demo_person_card(person, generation_label):
         "location": "Family tree",
         "avatar_url": _safe_demo_avatar_url(person.get("avatar_url", "")),
         "is_anchor": person["relationship_label"] == "Root person",
+        "is_connected": False,
+        "is_current_user": False,
+        "connected_user": "",
+        "connection_label": "Demo relative",
+        "has_pending_invite": False,
+        "pending_invite_label": "",
+        "can_invite": False,
         "parents": [],
         "partners": [],
         "children": [],

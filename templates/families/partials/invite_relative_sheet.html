@@ -1,0 +1,53 @@
+<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head">
+    <div>
+      <p class="tree-eyebrow">Invite {{ relation_label }}</p>
+      <h2 id="tree-create-title">Add {{ relation_label|lower }} for {{ anchor_person.first_name }}</h2>
+    </div>
+    <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+  </div>
+  <form class="tree-invite-form" method="post" hx-post="{% url 'family_invite_relative' anchor_person.id relation_type %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="tree-form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="tree-form-grid">
+      <label>
+        <span>{{ form.first_name.label }}</span>
+        {{ form.first_name }}
+      </label>
+      <label>
+        <span>{{ form.last_name.label }}</span>
+        {{ form.last_name }}
+      </label>
+    </div>
+    <div class="tree-form-grid">
+      <label>
+        <span>{{ form.gender.label }}</span>
+        {{ form.gender }}
+      </label>
+      <label>
+        <span>{{ form.birth_date.label }}</span>
+        {{ form.birth_date }}
+      </label>
+    </div>
+    <label>
+      <span>{{ form.invitee.label }}</span>
+      {{ form.invitee }}
+    </label>
+    <label>
+      <span>{{ form.role.label }}</span>
+      {{ form.role }}
+    </label>
+    <label>
+      <span>{{ form.message.label }}</span>
+      {{ form.message }}
+    </label>
+    <div class="tree-create-actions">
+      <button type="submit">{{ submit_label }}</button>
+      <button type="button" data-create-sheet-close>Cancel</button>
+    </div>
+  </form>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

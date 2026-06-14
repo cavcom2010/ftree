@@ -1,0 +1,22 @@
+<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head">
+    <div>
+      <p class="tree-eyebrow">Invite sent</p>
+      <h2 id="tree-create-title">{{ invitation.person.full_name }} is pending</h2>
+    </div>
+    <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+  </div>
+  <div class="tree-invite-success">
+    <p>{{ invitation.invitee_label }} can accept, decline, or ignore the family connection.</p>
+    <label>
+      <span>Invite link</span>
+      <input value="{{ invitation_url }}" readonly>
+    </label>
+  </div>
+  <div class="tree-create-actions">
+    <a href="{% url 'tree' %}" class="tree-action-link">Refresh tree</a>
+    <button type="button" data-create-sheet-close>Done</button>
+  </div>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

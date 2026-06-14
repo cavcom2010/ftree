@@ -39,6 +39,12 @@ class Relationship(models.Model):
             models.Index(fields=["family", "to_person"]),
             models.Index(fields=["relationship_type"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["family", "from_person", "to_person", "relationship_type"],
+                name="unique_family_relationship_edge",
+            ),
+        ]
 
     def __str__(self):
         return (

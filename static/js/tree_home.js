@@ -233,11 +233,6 @@
       return;
     }
 
-    if (event.target.closest("[data-tree-scroll-anchor]")) {
-      focusAnchorRow();
-      return;
-    }
-
     var createTrigger = event.target.closest("[data-create-sheet-trigger]");
     if (createTrigger) {
       openCreateSheet(createTrigger);
@@ -246,6 +241,14 @@
 
     if (event.target.closest("[data-create-sheet-close]")) {
       closeCreateSheet();
+      if (event.target.closest("[data-tree-scroll-anchor]")) {
+        focusAnchorRow();
+      }
+      return;
+    }
+
+    if (event.target.closest("[data-tree-scroll-anchor]")) {
+      focusAnchorRow();
       return;
     }
 
@@ -281,5 +284,12 @@
 
   window.addEventListener("resize", updateAllRows);
   window.addEventListener("load", updateAllRows);
+  document.body.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail && event.detail.target && event.detail.target.id === "tree-create-sheet") {
+      syncModalLock();
+      focusSafely(qs("[data-create-sheet-close]", event.detail.target) || qs("button", event.detail.target));
+    }
+    updateAllRows();
+  });
   updateAllRows();
 })();

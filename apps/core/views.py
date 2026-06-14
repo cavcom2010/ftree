@@ -9,4 +9,7 @@ def home(request):
 
 
 def tree(request):
-    return render(request, "tree/home.html", build_tree_context(request.user))
+    family_slug = request.GET.get("family") or request.session.get("current_family_slug")
+    if request.GET.get("family"):
+        request.session["current_family_slug"] = request.GET["family"]
+    return render(request, "tree/home.html", build_tree_context(request.user, family_slug=family_slug))

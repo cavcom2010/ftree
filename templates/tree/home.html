@@ -29,6 +29,17 @@
       </button>
     </header>
 
+    {% if received_invitations %}
+      <section class="tree-invite-strip" aria-label="Pending family invitations">
+        <strong>{{ received_invitations|length }} pending invite{{ received_invitations|length|pluralize }}</strong>
+        {% for invitation in received_invitations %}
+          <a href="{% url 'family_invitation_detail' invitation.token %}">
+            {{ invitation.family.name }} · {{ invitation.person.full_name }}
+          </a>
+        {% endfor %}
+      </section>
+    {% endif %}
+
     {% if needs_anchor_choice %}
       <section class="tree-anchor-card" aria-labelledby="anchor-title">
         <p class="tree-kicker">Set Gen 0</p>
@@ -60,6 +71,19 @@
         </button>
       </section>
 
+      {% if available_families|length > 1 %}
+        <section class="tree-family-switcher" aria-label="Switch family">
+          {% for available_family in available_families %}
+            <form method="post" action="{% url 'family_switch' available_family.slug %}">
+              {% csrf_token %}
+              <button type="submit" {% if available_family.id == family.id %}class="is-active" aria-current="true"{% endif %}>
+                {{ available_family.name }}
+              </button>
+            </form>
+          {% endfor %}
+        </section>
+      {% endif %}
+
       <section class="tree-generation-stack" aria-label="Relative generations">
         {% for row in relative_generation_rows %}
           <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}">
@@ -88,7 +112,7 @@
               <div class="tree-person-track" data-tree-row-track tabindex="0" aria-label="{{ row.label }} relatives">
                 {% for person in row.people %}
                   <button
-                    class="tree-person-card{% if person.is_anchor %} is-anchor{% endif %}"
+                    class="tree-person-card{% if person.is_anchor %} is-anchor{% endif %}{% if person.is_connected %} is-connected{% endif %}{% if person.has_pending_invite %} is-pending{% endif %}"
                     type="button"
                     data-person-reveal="{{ person.id }}"
                     aria-controls="tree-reveal-{{ person.id }}"
@@ -105,6 +129,7 @@
                       <small>{{ person.relationship_label }} · {{ person.generation_label }}</small>
                     </span>
                     <span class="tree-card-meta">
+                      <em>{{ person.connection_label }}</em>
                       {% if person.child_count %}<em>{{ person.child_count }} child{{ person.child_count|pluralize }}</em>{% endif %}
                       {% if person.partner_count %}<em>{{ person.partner_count }} partner{{ person.partner_count|pluralize }}</em>{% endif %}
                     </span>
@@ -140,6 +165,7 @@
               <p class="tree-kicker">{{ person.generation_label }}</p>
               <h2 id="tree-reveal-title-{{ person.id }}">{{ person.full_name }}</h2>
               <p>{{ person.relationship_label }}{% if person.life_years %} · {{ person.life_years }}{% endif %}</p>
+              <p>{{ person.connection_label }}</p>
             </div>
             <button type="button" data-tree-reveal-close aria-label="Close {{ person.full_name }}">
               <i data-lucide="x"></i>
@@ -158,28 +184,44 @@
             {% for relative in person.parents %}
               <span>{{ relative.full_name }}</span>
             {% empty %}
-              <button type="button" data-tree-toast="Add parent for {{ person.full_name }}">Add parent</button>
+              {% if can_invite_relatives %}
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite parent</button>
+              {% else %}
+                <span>No parent connected</span>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="tree-reveal-panel" id="partners-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
             {% for relative in person.partners %}
               <span>{{ relative.full_name }}</span>
             {% empty %}
-              <button type="button" data-tree-toast="Add partner for {{ person.full_name }}">Add partner</button>
+              {% if can_invite_relatives %}
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite partner</button>
+              {% else %}
+                <span>No partner connected</span>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="tree-reveal-panel" id="children-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
             {% for relative in person.children %}
               <span>{{ relative.full_name }}</span>
             {% empty %}
-              <button type="button" data-tree-toast="Add child for {{ person.full_name }}">Add child</button>
+              {% if can_invite_relatives %}
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite child</button>
+              {% else %}
+                <span>No child connected</span>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="tree-reveal-panel" id="siblings-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
             {% for relative in person.siblings %}
               <span>{{ relative.full_name }}</span>
             {% empty %}
-              <button type="button" data-tree-toast="Invite sibling for {{ person.full_name }}">Invite sibling</button>
+              {% if can_invite_relatives %}
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite sibling</button>
+              {% else %}
+                <span>No sibling connected</span>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="tree-reveal-panel" id="details-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
@@ -187,7 +229,11 @@
               <div><dt>Place</dt><dd>{{ person.location }}</dd></div>
               <div><dt>Life</dt><dd>{{ person.life_years|default:"Not recorded" }}</dd></div>
               <div><dt>Children</dt><dd>{{ person.child_count }}</dd></div>
+              <div><dt>Status</dt><dd>{{ person.connection_label }}</dd></div>
             </dl>
+            {% if person.can_invite %}
+              <button type="button" hx-get="{% url 'family_invite_person' person.id %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite this person</button>
+            {% endif %}
           </div>
         </aside>
       {% endfor %}

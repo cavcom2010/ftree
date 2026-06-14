@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Family Invitation · HeritageTree{% endblock %}
+
+{% block content %}
+<section class="tree-card animate-in">
+  <div class="section-head">
+    <div>
+      <h2>{{ invitation.family.name }} invitation</h2>
+      <p>{{ invitation.inviter|default:"A family member" }} invited you to connect as {{ invitation.person.full_name }}.</p>
+    </div>
+  </div>
+
+  {% if invitation.message %}
+    <p>{{ invitation.message }}</p>
+  {% endif %}
+
+  <div class="form-actions">
+    {% if user.is_authenticated and invitation.status == "pending" %}
+      <form method="post" action="{{ accept_url }}">
+        {% csrf_token %}
+        <button class="btn primary" type="submit">Accept</button>
+      </form>
+      <form method="post" action="{{ decline_url }}">
+        {% csrf_token %}
+        <button class="btn soft" type="submit">Decline</button>
+      </form>
+      <form method="post" action="{{ ignore_url }}">
+        {% csrf_token %}
+        <button class="btn soft" type="submit">Ignore</button>
+      </form>
+    {% elif not user.is_authenticated %}
+      <a class="btn primary" href="{% url 'login' %}?next={{ request.path }}">Sign in to respond</a>
+      <a class="btn soft" href="{% url 'signup' %}">Create account</a>
+    {% else %}
+      <p>This invitation is {{ invitation.get_status_display|lower }}.</p>
+      <a class="btn primary" href="{% url 'tree' %}">Open tree</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

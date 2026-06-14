@@ -15,14 +15,17 @@
     <label>
       <span>{{ form.invitee.label }}</span>
       {{ form.invitee }}
+      {{ form.invitee.errors }}
     </label>
     <label>
       <span>{{ form.role.label }}</span>
       {{ form.role }}
+      {{ form.role.errors }}
     </label>
     <label>
       <span>{{ form.message.label }}</span>
       {{ form.message }}
+      {{ form.message.errors }}
     </label>
     <div class="tree-create-actions">
       <button type="submit">{{ submit_label }}</button>

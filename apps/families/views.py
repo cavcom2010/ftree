@@ -11,7 +11,7 @@ from apps.families.models import Family, FamilyInvitation
 from apps.families.services import (
     accept_invitation,
     create_invitation,
-    create_relative_invitation,
+    create_relative_with_optional_invite,
     current_family_for_user,
     decline_invitation,
     ignore_invitation,
@@ -75,7 +75,7 @@ def invite_relative(request, person_id, relation_type):
         form = InviteRelativeForm(request.POST)
         if form.is_valid():
             try:
-                invitation = create_relative_invitation(
+                person, invitation = create_relative_with_optional_invite(
                     family=family,
                     inviter=request.user,
                     anchor_person=anchor_person,
@@ -93,7 +93,7 @@ def invite_relative(request, person_id, relation_type):
             except (ValidationError, PermissionDenied) as exc:
                 _add_form_error(form, exc)
             else:
-                return _render_invite_success(request, invitation)
+                return _render_relative_success(request, person, invitation)
     else:
         form = InviteRelativeForm()
 
@@ -106,7 +106,7 @@ def invite_relative(request, person_id, relation_type):
             "anchor_person": anchor_person,
             "relation_type": relation_type,
             "relation_label": RELATION_LABELS[relation_type],
-            "submit_label": f"Create pending {RELATION_LABELS[relation_type].lower()} invite",
+            "submit_label": f"Add {RELATION_LABELS[relation_type].lower()}",
         },
     )
 
@@ -221,6 +221,23 @@ def _render_invite_success(request, invitation):
         request,
         "families/partials/invite_success_sheet.html",
         {
+            "invitation": invitation,
+            "invitation_url": invitation_url,
+        },
+    )
+
+
+def _render_relative_success(request, person, invitation=None):
+    invitation_url = ""
+    if invitation:
+        invitation_url = request.build_absolute_uri(
+            reverse("family_invitation_detail", args=[invitation.token])
+        )
+    return render(
+        request,
+        "families/partials/relative_success_sheet.html",
+        {
+            "person": person,
             "invitation": invitation,
             "invitation_url": invitation_url,
         },

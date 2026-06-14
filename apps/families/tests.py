@@ -6,7 +6,9 @@ from apps.families.models import Family, FamilyInvitation, FamilyMembership
 from apps.families.services import (
     accept_invitation,
     create_invitation,
+    create_relative,
     create_relative_invitation,
+    create_relative_with_optional_invite,
     decline_invitation,
 )
 from apps.people.models import Person
@@ -146,6 +148,138 @@ class FamilyInvitationServiceTests(TestCase):
             ).exists()
         )
 
+    def test_create_relative_without_invite_adds_unclaimed_person_and_relationship(self):
+        person, relationship_type = create_relative(
+            family=self.family,
+            inviter=self.owner,
+            anchor_person=self.anchor,
+            relation_type="child",
+            person_data={
+                "first_name": "Mia",
+                "last_name": "Johnson",
+                "gender": Person.Gender.FEMALE,
+                "birth_date": None,
+            },
+        )
+
+        self.assertEqual(person.first_name, "Mia")
+        self.assertEqual(relationship_type, Relationship.Type.PARENT_CHILD)
+        self.assertFalse(FamilyInvitation.objects.filter(person=person).exists())
+        self.assertFalse(FamilyMembership.objects.filter(person=person).exists())
+        self.assertTrue(
+            Relationship.objects.filter(
+                family=self.family,
+                from_person=self.anchor,
+                to_person=person,
+                relationship_type=Relationship.Type.PARENT_CHILD,
+            ).exists()
+        )
+
+    def test_create_relative_parent_uses_parent_to_child_direction(self):
+        person, _ = create_relative(
+            family=self.family,
+            inviter=self.owner,
+            anchor_person=self.anchor,
+            relation_type="parent",
+            person_data={
+                "first_name": "Ellen",
+                "last_name": "Johnson",
+                "gender": Person.Gender.FEMALE,
+                "birth_date": None,
+            },
+        )
+
+        self.assertTrue(
+            Relationship.objects.filter(
+                family=self.family,
+                from_person=person,
+                to_person=self.anchor,
+                relationship_type=Relationship.Type.PARENT_CHILD,
+            ).exists()
+        )
+
+    def test_create_relative_partner_uses_spouse_relationship(self):
+        person, relationship_type = create_relative(
+            family=self.family,
+            inviter=self.owner,
+            anchor_person=self.anchor,
+            relation_type="partner",
+            person_data={
+                "first_name": "Sam",
+                "last_name": "Johnson",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": None,
+            },
+        )
+
+        self.assertEqual(relationship_type, Relationship.Type.SPOUSE)
+        self.assertTrue(
+            Relationship.objects.filter(
+                family=self.family,
+                from_person=self.anchor,
+                to_person=person,
+                relationship_type=Relationship.Type.SPOUSE,
+            ).exists()
+        )
+
+    def test_create_relative_with_optional_invite_can_add_without_invitation(self):
+        person, invitation = create_relative_with_optional_invite(
+            family=self.family,
+            inviter=self.owner,
+            anchor_person=self.anchor,
+            relation_type="child",
+            person_data={
+                "first_name": "Blank",
+                "last_name": "Invite",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": None,
+            },
+            invitee_identifier="",
+        )
+
+        self.assertIsNone(invitation)
+        self.assertFalse(FamilyInvitation.objects.filter(person=person).exists())
+
+    def test_create_relative_with_optional_invite_rolls_back_invalid_invite(self):
+        with self.assertRaisesMessage(ValidationError, "Enter an email address"):
+            create_relative_with_optional_invite(
+                family=self.family,
+                inviter=self.owner,
+                anchor_person=self.anchor,
+                relation_type="child",
+                person_data={
+                    "first_name": "Rollback",
+                    "last_name": "Invite",
+                    "gender": Person.Gender.UNKNOWN,
+                    "birth_date": None,
+                },
+                invitee_identifier="not-a-user",
+            )
+
+        self.assertFalse(Person.objects.filter(first_name="Rollback", family=self.family).exists())
+
+    def test_viewer_cannot_create_relative(self):
+        viewer = User.objects.create_user(username="limited", email="limited@example.com", password="secret")
+        FamilyMembership.objects.create(
+            family=self.family,
+            user=viewer,
+            role=FamilyMembership.Role.VIEWER,
+        )
+
+        with self.assertRaises(PermissionDenied):
+            create_relative(
+                family=self.family,
+                inviter=viewer,
+                anchor_person=self.anchor,
+                relation_type="child",
+                person_data={
+                    "first_name": "Blocked",
+                    "last_name": "Person",
+                    "gender": Person.Gender.UNKNOWN,
+                    "birth_date": None,
+                },
+            )
+
 
 class FamilyInvitationViewTests(TestCase):
     def setUp(self):
@@ -194,7 +328,7 @@ class FamilyInvitationViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Invite sent")
+        self.assertContains(response, "Relative added")
         invitation = FamilyInvitation.objects.get(invitee_email="young@example.com")
         self.assertEqual(invitation.person.first_name, "Young")
         self.assertTrue(
@@ -205,6 +339,55 @@ class FamilyInvitationViewTests(TestCase):
                 relationship_type=Relationship.Type.PARENT_CHILD,
             ).exists()
         )
+
+    def test_tree_invite_relative_endpoint_can_add_without_invitation(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/partner/",
+            {
+                "first_name": "No",
+                "last_name": "Invite",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "invitee": "",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relative added")
+        person = Person.objects.get(first_name="No", last_name="Invite")
+        self.assertFalse(FamilyInvitation.objects.filter(person=person).exists())
+        self.assertTrue(
+            Relationship.objects.filter(
+                family=self.family,
+                from_person=self.anchor,
+                to_person=person,
+                relationship_type=Relationship.Type.SPOUSE,
+            ).exists()
+        )
+
+    def test_tree_invite_relative_endpoint_shows_errors_without_creating_person(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/child/",
+            {
+                "first_name": "Bad",
+                "last_name": "Invite",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "invitee": "unknown-username",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter an email address")
+        self.assertFalse(Person.objects.filter(first_name="Bad", family=self.family).exists())
 
     def test_accept_invitation_view_connects_user(self):
         invitation = create_invitation(

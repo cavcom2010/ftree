@@ -926,6 +926,13 @@
   font-weight: 850;
 }
 
+.tree-invite-form small {
+  color: var(--tree-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .tree-invite-form input,
 .tree-invite-form select,
 .tree-invite-form textarea,
@@ -952,6 +959,15 @@
   color: #6b4f11;
   background: #fff6d9;
   font-weight: 800;
+}
+
+.tree-invite-form .errorlist {
+  margin: 0;
+  padding: 0;
+  color: #8a5d08;
+  font-size: 0.76rem;
+  font-weight: 800;
+  list-style: none;
 }
 
 .tree-invite-success p {

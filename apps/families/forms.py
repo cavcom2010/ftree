@@ -26,6 +26,13 @@ class InvitePersonForm(forms.Form):
 
 
 class InviteRelativeForm(InvitePersonForm):
+    invitee = forms.CharField(
+        label="Invite username or email",
+        max_length=254,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Optional username or email"}),
+        help_text="Optional. Leave blank to add a family-tree profile without inviting an account yet.",
+    )
     first_name = forms.CharField(max_length=100)
     last_name = forms.CharField(max_length=100)
     gender = forms.ChoiceField(

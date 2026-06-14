@@ -185,7 +185,7 @@
               <span>{{ relative.full_name }}</span>
             {% empty %}
               {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite parent</button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Add parent</button>
               {% else %}
                 <span>No parent connected</span>
               {% endif %}
@@ -196,7 +196,7 @@
               <span>{{ relative.full_name }}</span>
             {% empty %}
               {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite partner</button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Add partner</button>
               {% else %}
                 <span>No partner connected</span>
               {% endif %}
@@ -207,7 +207,7 @@
               <span>{{ relative.full_name }}</span>
             {% empty %}
               {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite child</button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Add child</button>
               {% else %}
                 <span>No child connected</span>
               {% endif %}
@@ -218,7 +218,7 @@
               <span>{{ relative.full_name }}</span>
             {% empty %}
               {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite sibling</button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Add sibling</button>
               {% else %}
                 <span>No sibling connected</span>
               {% endif %}

@@ -144,16 +144,13 @@ def create_invitation(
 
 
 @transaction.atomic
-def create_relative_invitation(
+def create_relative(
     *,
     family,
     inviter,
     anchor_person,
     relation_type,
     person_data,
-    invitee_identifier,
-    role=FamilyMembership.Role.MEMBER,
-    message="",
 ):
     require_invite_permission(family, inviter)
     if anchor_person.family_id != family.id:
@@ -168,6 +165,72 @@ def create_relative_invitation(
         birth_date=person_data.get("birth_date"),
     )
     relationship_type = create_relationship_for_relative(family, anchor_person, person, relation_type)
+    Activity.objects.create(
+        family=family,
+        actor=inviter,
+        activity_type=Activity.Type.PERSON_ADDED,
+        message=f"Added {person.full_name} to the family tree",
+        person=person,
+    )
+    return person, relationship_type
+
+
+@transaction.atomic
+def create_relative_with_optional_invite(
+    *,
+    family,
+    inviter,
+    anchor_person,
+    relation_type,
+    person_data,
+    invitee_identifier="",
+    role=FamilyMembership.Role.MEMBER,
+    message="",
+):
+    person, relationship_type = create_relative(
+        family=family,
+        inviter=inviter,
+        anchor_person=anchor_person,
+        relation_type=relation_type,
+        person_data=person_data,
+    )
+    if not (invitee_identifier or "").strip():
+        return person, None
+
+    invitation = create_invitation(
+        family=family,
+        inviter=inviter,
+        person=person,
+        invitee_identifier=invitee_identifier,
+        role=role,
+        message=message,
+        anchor_person=anchor_person,
+        relationship_type=relationship_type,
+    )
+    return person, invitation
+
+
+@transaction.atomic
+def create_relative_invitation(
+    *,
+    family,
+    inviter,
+    anchor_person,
+    relation_type,
+    person_data,
+    invitee_identifier,
+    role=FamilyMembership.Role.MEMBER,
+    message="",
+):
+    if not (invitee_identifier or "").strip():
+        raise ValidationError("Enter a username or email address.")
+    person, relationship_type = create_relative(
+        family=family,
+        inviter=inviter,
+        anchor_person=anchor_person,
+        relation_type=relation_type,
+        person_data=person_data,
+    )
     return create_invitation(
         family=family,
         inviter=inviter,

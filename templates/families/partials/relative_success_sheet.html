@@ -1,0 +1,26 @@
+<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head">
+    <div>
+      <p class="tree-eyebrow">Relative added</p>
+      <h2 id="tree-create-title">{{ person.full_name }} is now in the tree</h2>
+    </div>
+    <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+  </div>
+  <div class="tree-invite-success">
+    {% if invitation %}
+      <p>{{ invitation.invitee_label }} can use this link to claim {{ person.full_name }}.</p>
+      <label>
+        <span>Invite link</span>
+        <input value="{{ invitation_url }}" readonly>
+      </label>
+    {% else %}
+      <p>{{ person.full_name }} was added as an unclaimed family profile. You can invite someone to claim this person later.</p>
+    {% endif %}
+  </div>
+  <div class="tree-create-actions">
+    <a href="{% url 'tree' %}" class="tree-action-link">Refresh tree</a>
+    <button type="button" data-create-sheet-close>Done</button>
+  </div>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

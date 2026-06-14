@@ -16,6 +16,17 @@ from apps.relationships.models import Relationship
 
 
 MAX_TREE_DEPTH = 4
+PARENT_TREE_TYPES = {
+    Relationship.Type.PARENT_CHILD,
+    Relationship.Type.ADOPTIVE_PARENT,
+    Relationship.Type.STEP_PARENT,
+    Relationship.Type.GUARDIAN,
+}
+PARTNER_TREE_TYPES = {
+    Relationship.Type.SPOUSE,
+    Relationship.Type.PARTNER,
+    Relationship.Type.EX_PARTNER,
+}
 
 
 def build_tree_context(user, family_slug=None):
@@ -125,10 +136,10 @@ def _relationship_graph(family, people):
     ).values_list("from_person_id", "to_person_id", "relationship_type")
 
     for from_id, to_id, relationship_type in relationships:
-        if relationship_type == Relationship.Type.PARENT_CHILD:
+        if relationship_type in PARENT_TREE_TYPES:
             children_by_parent[from_id].add(to_id)
             parents_by_child[to_id].add(from_id)
-        elif relationship_type == Relationship.Type.SPOUSE:
+        elif relationship_type in PARTNER_TREE_TYPES:
             partners_by_person[from_id].add(to_id)
             partners_by_person[to_id].add(from_id)
         elif relationship_type == Relationship.Type.SIBLING:

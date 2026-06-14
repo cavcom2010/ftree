@@ -1,9 +1,25 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from apps.families.models import FamilyMembership
 from apps.people.models import Person
+from apps.relationships.models import Relationship
+
+
+PARENT_RELATIONSHIP_CHOICES = [
+    (Relationship.Type.PARENT_CHILD, "Parent"),
+    (Relationship.Type.ADOPTIVE_PARENT, "Adoptive parent"),
+    (Relationship.Type.STEP_PARENT, "Step-parent"),
+    (Relationship.Type.GUARDIAN, "Guardian"),
+]
+
+PARTNER_RELATIONSHIP_CHOICES = [
+    (Relationship.Type.SPOUSE, "Spouse"),
+    (Relationship.Type.PARTNER, "Partner"),
+    (Relationship.Type.EX_PARTNER, "Ex-partner"),
+]
 
 
 class InvitePersonForm(forms.Form):
@@ -44,6 +60,78 @@ class InviteRelativeForm(InvitePersonForm):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+    parent_relationship_type = forms.ChoiceField(
+        label="Parent type",
+        choices=PARENT_RELATIONSHIP_CHOICES,
+        required=False,
+        initial=Relationship.Type.PARENT_CHILD,
+    )
+    partner_relationship_type = forms.ChoiceField(
+        label="Partner type",
+        choices=PARTNER_RELATIONSHIP_CHOICES,
+        required=False,
+        initial=Relationship.Type.SPOUSE,
+    )
+    other_parent = forms.ModelChoiceField(
+        label="Other parent",
+        queryset=Person.objects.none(),
+        required=False,
+        empty_label="No other parent selected",
+    )
+    shared_parents = forms.ModelMultipleChoiceField(
+        label="Shared parents",
+        queryset=Person.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    def __init__(self, *args, family=None, anchor_person=None, relation_type="", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.family = family
+        self.anchor_person = anchor_person
+        self.relation_type = relation_type
+        if family and anchor_person:
+            self.fields["other_parent"].queryset = _partners_for_person(family, anchor_person)
+            shared_parent_queryset = _parents_for_person(family, anchor_person)
+            self.fields["shared_parents"].queryset = shared_parent_queryset
+            if not self.is_bound:
+                self.initial["shared_parents"] = list(shared_parent_queryset.values_list("id", flat=True))
+
+
+def _partners_for_person(family, person):
+    partner_types = [
+        Relationship.Type.SPOUSE,
+        Relationship.Type.PARTNER,
+        Relationship.Type.EX_PARTNER,
+    ]
+    relationships = Relationship.objects.filter(
+        Q(from_person=person) | Q(to_person=person),
+        family=family,
+        relationship_type__in=partner_types,
+    )
+    partner_ids = []
+    for relationship in relationships:
+        partner_ids.append(
+            relationship.to_person_id
+            if relationship.from_person_id == person.id
+            else relationship.from_person_id
+        )
+    return Person.objects.filter(family=family, id__in=partner_ids).order_by("first_name", "last_name")
+
+
+def _parents_for_person(family, person):
+    parent_types = [
+        Relationship.Type.PARENT_CHILD,
+        Relationship.Type.ADOPTIVE_PARENT,
+        Relationship.Type.STEP_PARENT,
+        Relationship.Type.GUARDIAN,
+    ]
+    parent_ids = Relationship.objects.filter(
+        family=family,
+        to_person=person,
+        relationship_type__in=parent_types,
+    ).values_list("from_person_id", flat=True)
+    return Person.objects.filter(family=family, id__in=parent_ids).order_by("first_name", "last_name")
 
 
 class SignupForm(UserCreationForm):

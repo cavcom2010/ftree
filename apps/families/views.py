@@ -70,9 +70,14 @@ def invite_relative(request, person_id, relation_type):
     family = _current_family(request)
     anchor_person = get_object_or_404(Person, id=person_id, family=family)
     relation_type = relation_type if relation_type in RELATION_LABELS else "child"
+    form_kwargs = {
+        "family": family,
+        "anchor_person": anchor_person,
+        "relation_type": relation_type,
+    }
 
     if request.method == "POST":
-        form = InviteRelativeForm(request.POST)
+        form = InviteRelativeForm(request.POST, **form_kwargs)
         if form.is_valid():
             try:
                 person, invitation = create_relative_with_optional_invite(
@@ -89,13 +94,17 @@ def invite_relative(request, person_id, relation_type):
                     invitee_identifier=form.cleaned_data["invitee"],
                     role=form.cleaned_data["role"],
                     message=form.cleaned_data["message"],
+                    parent_relationship_type=form.cleaned_data["parent_relationship_type"],
+                    partner_relationship_type=form.cleaned_data["partner_relationship_type"],
+                    other_parent=form.cleaned_data["other_parent"],
+                    shared_parents=form.cleaned_data["shared_parents"],
                 )
             except (ValidationError, PermissionDenied) as exc:
                 _add_form_error(form, exc)
             else:
                 return _render_relative_success(request, person, invitation)
     else:
-        form = InviteRelativeForm()
+        form = InviteRelativeForm(**form_kwargs)
 
     return render(
         request,

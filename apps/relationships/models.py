@@ -5,8 +5,11 @@ class Relationship(models.Model):
     class Type(models.TextChoices):
         PARENT_CHILD = "parent_child", "Parent → Child"
         SPOUSE = "spouse", "Spouse"
+        PARTNER = "partner", "Partner"
+        EX_PARTNER = "ex_partner", "Ex-partner"
         SIBLING = "sibling", "Sibling"
         ADOPTIVE_PARENT = "adoptive_parent", "Adoptive Parent"
+        STEP_PARENT = "step_parent", "Step-parent"
         GUARDIAN = "guardian", "Guardian"
 
     family = models.ForeignKey(

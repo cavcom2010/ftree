@@ -22,6 +22,19 @@ INVITE_ROLES = {
 }
 
 
+PARENT_RELATIONSHIP_TYPES = {
+    Relationship.Type.PARENT_CHILD,
+    Relationship.Type.ADOPTIVE_PARENT,
+    Relationship.Type.STEP_PARENT,
+    Relationship.Type.GUARDIAN,
+}
+
+PARTNER_RELATIONSHIP_TYPES = {
+    Relationship.Type.SPOUSE,
+    Relationship.Type.PARTNER,
+    Relationship.Type.EX_PARTNER,
+}
+
 RELATIONSHIP_DIRECTIONS = {
     "parent": Relationship.Type.PARENT_CHILD,
     "child": Relationship.Type.PARENT_CHILD,
@@ -151,10 +164,25 @@ def create_relative(
     anchor_person,
     relation_type,
     person_data,
+    parent_relationship_type=Relationship.Type.PARENT_CHILD,
+    partner_relationship_type=Relationship.Type.SPOUSE,
+    other_parent=None,
+    shared_parents=None,
 ):
     require_invite_permission(family, inviter)
     if anchor_person.family_id != family.id:
         raise ValidationError("Anchor person must belong to this family.")
+    if other_parent and other_parent.family_id != family.id:
+        raise ValidationError("Other parent must belong to this family.")
+    shared_parents = list(shared_parents or [])
+    if any(parent.family_id != family.id for parent in shared_parents):
+        raise ValidationError("Shared parents must belong to this family.")
+    if relation_type == "child" and other_parent and not _people_are_partners(family, anchor_person, other_parent):
+        raise ValidationError("Other parent must be a known partner for this person.")
+    if relation_type == "sibling":
+        valid_parent_ids = _parent_ids_for_person(family, anchor_person)
+        if any(parent.id not in valid_parent_ids for parent in shared_parents):
+            raise ValidationError("Shared parents must already be parents of this person.")
 
     person = Person.objects.create(
         family=family,
@@ -164,7 +192,16 @@ def create_relative(
         gender=person_data.get("gender") or Person.Gender.UNKNOWN,
         birth_date=person_data.get("birth_date"),
     )
-    relationship_type = create_relationship_for_relative(family, anchor_person, person, relation_type)
+    relationship_type = create_relationship_for_relative(
+        family,
+        anchor_person,
+        person,
+        relation_type,
+        parent_relationship_type=parent_relationship_type,
+        partner_relationship_type=partner_relationship_type,
+        other_parent=other_parent,
+        shared_parents=shared_parents,
+    )
     Activity.objects.create(
         family=family,
         actor=inviter,
@@ -186,6 +223,10 @@ def create_relative_with_optional_invite(
     invitee_identifier="",
     role=FamilyMembership.Role.MEMBER,
     message="",
+    parent_relationship_type=Relationship.Type.PARENT_CHILD,
+    partner_relationship_type=Relationship.Type.SPOUSE,
+    other_parent=None,
+    shared_parents=None,
 ):
     person, relationship_type = create_relative(
         family=family,
@@ -193,6 +234,10 @@ def create_relative_with_optional_invite(
         anchor_person=anchor_person,
         relation_type=relation_type,
         person_data=person_data,
+        parent_relationship_type=parent_relationship_type,
+        partner_relationship_type=partner_relationship_type,
+        other_parent=other_parent,
+        shared_parents=shared_parents,
     )
     if not (invitee_identifier or "").strip():
         return person, None
@@ -221,6 +266,10 @@ def create_relative_invitation(
     invitee_identifier,
     role=FamilyMembership.Role.MEMBER,
     message="",
+    parent_relationship_type=Relationship.Type.PARENT_CHILD,
+    partner_relationship_type=Relationship.Type.SPOUSE,
+    other_parent=None,
+    shared_parents=None,
 ):
     if not (invitee_identifier or "").strip():
         raise ValidationError("Enter a username or email address.")
@@ -230,6 +279,10 @@ def create_relative_invitation(
         anchor_person=anchor_person,
         relation_type=relation_type,
         person_data=person_data,
+        parent_relationship_type=parent_relationship_type,
+        partner_relationship_type=partner_relationship_type,
+        other_parent=other_parent,
+        shared_parents=shared_parents,
     )
     return create_invitation(
         family=family,
@@ -243,21 +296,92 @@ def create_relative_invitation(
     )
 
 
-def create_relationship_for_relative(family, anchor_person, relative, relation_type):
+def create_relationship_for_relative(
+    family,
+    anchor_person,
+    relative,
+    relation_type,
+    parent_relationship_type=Relationship.Type.PARENT_CHILD,
+    partner_relationship_type=Relationship.Type.SPOUSE,
+    other_parent=None,
+    shared_parents=None,
+):
     normalized = relation_type if relation_type in RELATIONSHIP_DIRECTIONS else "child"
-    relationship_type = RELATIONSHIP_DIRECTIONS[normalized]
+    relationship_type = _relationship_type_for_relative(
+        normalized,
+        parent_relationship_type=parent_relationship_type,
+        partner_relationship_type=partner_relationship_type,
+    )
     if normalized == "parent":
         from_person, to_person = relative, anchor_person
     else:
         from_person, to_person = anchor_person, relative
 
+    _create_relationship_edge(family, from_person, to_person, relationship_type)
+    if normalized == "child" and other_parent:
+        _create_relationship_edge(
+            family,
+            other_parent,
+            relative,
+            Relationship.Type.PARENT_CHILD,
+        )
+    if normalized == "sibling":
+        for shared_parent in shared_parents or []:
+            _create_relationship_edge(
+                family,
+                shared_parent,
+                relative,
+                Relationship.Type.PARENT_CHILD,
+            )
+    return relationship_type
+
+
+def _relationship_type_for_relative(
+    relation_type,
+    parent_relationship_type=Relationship.Type.PARENT_CHILD,
+    partner_relationship_type=Relationship.Type.SPOUSE,
+):
+    if relation_type == "parent":
+        return (
+            parent_relationship_type
+            if parent_relationship_type in PARENT_RELATIONSHIP_TYPES
+            else Relationship.Type.PARENT_CHILD
+        )
+    if relation_type in {"partner", "spouse"}:
+        return (
+            partner_relationship_type
+            if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
+            else Relationship.Type.SPOUSE
+        )
+    return RELATIONSHIP_DIRECTIONS.get(relation_type, Relationship.Type.PARENT_CHILD)
+
+
+def _create_relationship_edge(family, from_person, to_person, relationship_type):
     Relationship.objects.get_or_create(
         family=family,
         from_person=from_person,
         to_person=to_person,
         relationship_type=relationship_type,
     )
-    return relationship_type
+
+
+def _people_are_partners(family, first_person, second_person):
+    return Relationship.objects.filter(
+        Q(from_person=first_person, to_person=second_person)
+        | Q(from_person=second_person, to_person=first_person),
+        family=family,
+        relationship_type__in=PARTNER_RELATIONSHIP_TYPES,
+    ).exists()
+
+
+def _parent_ids_for_person(family, person):
+    return set(
+        Relationship.objects.filter(
+            family=family,
+            to_person=person,
+            relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+        ).values_list("from_person_id", flat=True)
+    )
 
 
 @transaction.atomic

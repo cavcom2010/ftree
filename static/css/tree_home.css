@@ -933,6 +933,41 @@
   line-height: 1.35;
 }
 
+.tree-check-list {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid rgba(202, 222, 211, 0.95);
+  border-radius: 16px;
+  padding: 10px;
+  color: #506a5d;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.tree-check-list legend {
+  padding-inline: 4px;
+  color: var(--tree-ink);
+  font-weight: 900;
+}
+
+.tree-check-list ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-check-list label {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
 .tree-invite-form input,
 .tree-invite-form select,
 .tree-invite-form textarea,

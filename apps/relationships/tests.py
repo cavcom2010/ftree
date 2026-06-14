@@ -30,3 +30,21 @@ class RelationshipValidationTests(TestCase):
                 to_person=person,
                 relationship_type=Relationship.Type.PARENT_CHILD,
             )
+
+    def test_validation_rejects_reverse_symmetric_duplicate(self):
+        first = self.make_person("First")
+        second = self.make_person("Second")
+        Relationship.objects.create(
+            family=self.family,
+            from_person=first,
+            to_person=second,
+            relationship_type=Relationship.Type.SPOUSE,
+        )
+
+        with self.assertRaises(ValidationError):
+            Relationship.objects.create(
+                family=self.family,
+                from_person=second,
+                to_person=first,
+                relationship_type=Relationship.Type.SPOUSE,
+            )

@@ -47,11 +47,15 @@
         <p>For a production family tree, Gen 0 should be explicitly linked to your account. Pick one person from this family to anchor the tree.</p>
         <div class="anchor-choice-grid">
           {% for choice in anchor_choices %}
-            <button type="button" data-tree-toast="{{ choice.full_name }} can be set as your Gen 0 person from account settings.">
-              <span>{{ choice.initials }}</span>
-              <strong>{{ choice.full_name }}</strong>
-              {% if choice.life_years %}<small>{{ choice.life_years }}</small>{% endif %}
-            </button>
+            <form method="post" action="{% url 'family_set_tree_anchor' choice.id %}">
+              {% csrf_token %}
+              {% if family %}<input type="hidden" name="family" value="{{ family.slug }}">{% endif %}
+              <button type="submit">
+                <span>{{ choice.initials }}</span>
+                <strong>{{ choice.full_name }}</strong>
+                {% if choice.life_years %}<small>{{ choice.life_years }}</small>{% endif %}
+              </button>
+            </form>
           {% endfor %}
         </div>
       </section>

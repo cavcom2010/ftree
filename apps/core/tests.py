@@ -48,6 +48,16 @@ class HomepageShellTests(TestCase):
 class TreePageTests(TestCase):
     def setUp(self):
         call_command("seed_demo_family", verbosity=0)
+        self.demo_user = User.objects.get(username="demo")
+        self.client.force_login(self.demo_user)
+
+    def test_tree_page_requires_login(self):
+        self.client.logout()
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
 
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
@@ -122,6 +132,32 @@ class TreePageTests(TestCase):
         self.assertContains(response, "Set Gen 0")
         self.assertContains(response, "Who are you in this family tree?")
         self.assertContains(response, person.full_name)
+        self.assertContains(response, f'action="/family/tree/people/{person.id}/set-anchor/"')
+
+    def test_anchor_chooser_saves_membership_person(self):
+        user = User.objects.create_user(username="chooser", password="demo12345")
+        family = Family.objects.create(name="Chooser Family", slug="chooser-family", created_by=user)
+        person = Person.objects.create(
+            family=family,
+            first_name="Morgan",
+            last_name="Tree",
+            created_by=user,
+        )
+        membership = FamilyMembership.objects.create(
+            family=family,
+            user=user,
+            role=FamilyMembership.Role.OWNER,
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            f"/family/tree/people/{person.id}/set-anchor/",
+            {"family": family.slug},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        membership.refresh_from_db()
+        self.assertEqual(membership.person, person)
 
 
 class SeedDemoMediaCommandTests(TestCase):

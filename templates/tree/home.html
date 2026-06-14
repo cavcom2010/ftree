@@ -1,9 +1,7 @@
-<!-- templates/tree/home.html -->
 {% extends "base.html" %}
 {% load static %}
 
 {% block title %}Tree · {{ family.name|default:"HeritageTree" }}{% endblock %}
-
 {% block body_class %}tree-only-body{% endblock %}
 
 {% block extra_head %}
@@ -11,9 +9,192 @@
 {% endblock %}
 
 {% block content %}
-<div class="tree-home is-tree-only">
-  {% include "people/partials/tree_preview.html" %}
-</div>
+<main class="tree-home" id="tree" data-tree-page>
+  <section class="tree-stage" id="tree-canvas" aria-labelledby="tree-title">
+    <header class="tree-stage-header">
+      <a class="tree-home-link" href="/" aria-label="Back to home">
+        <i data-lucide="chevron-left"></i>
+      </a>
+      <div class="tree-title-block">
+        <p class="tree-kicker">Family Tree</p>
+        <h1 id="tree-title">{{ family.name }}</h1>
+        {% if tree_anchor %}
+          <p>Centred on {{ tree_anchor.full_name }}. Each generation row scrolls independently.</p>
+        {% else %}
+          <p>Choose who represents you so the tree can place parents, siblings, and descendants correctly.</p>
+        {% endif %}
+      </div>
+      <button class="tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
+        <i data-lucide="user-plus"></i>
+      </button>
+    </header>
+
+    {% if needs_anchor_choice %}
+      <section class="tree-anchor-card" aria-labelledby="anchor-title">
+        <p class="tree-kicker">Set Gen 0</p>
+        <h2 id="anchor-title">Who are you in this family tree?</h2>
+        <p>For a production family tree, Gen 0 should be explicitly linked to your account. Pick one person from this family to anchor the tree.</p>
+        <div class="anchor-choice-grid">
+          {% for choice in anchor_choices %}
+            <button type="button" data-tree-toast="{{ choice.full_name }} can be set as your Gen 0 person from account settings.">
+              <span>{{ choice.initials }}</span>
+              <strong>{{ choice.full_name }}</strong>
+              {% if choice.life_years %}<small>{{ choice.life_years }}</small>{% endif %}
+            </button>
+          {% endfor %}
+        </div>
+      </section>
+    {% else %}
+      <section class="tree-toolbar" aria-label="Tree controls">
+        <div>
+          <strong>{{ generation_count }}</strong>
+          <span>generation rows</span>
+        </div>
+        <div>
+          <strong>{{ people_count }}</strong>
+          <span>people</span>
+        </div>
+        <button type="button" data-tree-scroll-anchor>
+          <i data-lucide="target"></i>
+          Gen 0
+        </button>
+      </section>
+
+      <section class="tree-generation-stack" aria-label="Relative generations">
+        {% for row in relative_generation_rows %}
+          <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}">
+            <button
+              class="tree-generation-head"
+              type="button"
+              data-generation-toggle
+              aria-expanded="true"
+              aria-controls="tree-row-content-{{ forloop.counter }}">
+              <span class="tree-generation-copy">
+                <span class="tree-generation-pill">{{ row.label }}</span>
+                <span class="tree-generation-title">{{ row.title }}</span>
+                <span class="tree-generation-subtitle">{{ row.subtitle }}</span>
+              </span>
+              <span class="tree-head-meta">
+                <span class="tree-row-count">{{ row.people|length }} people</span>
+                <i data-lucide="chevron-down" aria-hidden="true"></i>
+              </span>
+            </button>
+
+            <div class="tree-row-content" id="tree-row-content-{{ forloop.counter }}" data-generation-content>
+            <div class="tree-row-shell" data-row-shell>
+              <button class="tree-row-nav is-left" type="button" data-row-scroll="left" aria-label="Scroll {{ row.label }} left">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <div class="tree-person-track" data-tree-row-track tabindex="0" aria-label="{{ row.label }} relatives">
+                {% for person in row.people %}
+                  <button
+                    class="tree-person-card{% if person.is_anchor %} is-anchor{% endif %}"
+                    type="button"
+                    data-person-reveal="{{ person.id }}"
+                    aria-controls="tree-reveal-{{ person.id }}"
+                    aria-expanded="false"
+                    aria-label="Open {{ person.full_name }} details">
+                    <span class="tree-avatar">
+                      {% if person.avatar_url %}
+                        <img src="{{ person.avatar_url }}" alt="" loading="lazy" onerror="this.style.display='none'">
+                      {% endif %}
+                      <span class="tree-avatar-fallback" aria-hidden="true">{{ person.initials }}</span>
+                    </span>
+                    <span class="tree-card-copy">
+                      <strong>{{ person.full_name }}</strong>
+                      <small>{{ person.relationship_label }} · {{ person.generation_label }}</small>
+                    </span>
+                    <span class="tree-card-meta">
+                      {% if person.child_count %}<em>{{ person.child_count }} child{{ person.child_count|pluralize }}</em>{% endif %}
+                      {% if person.partner_count %}<em>{{ person.partner_count }} partner{{ person.partner_count|pluralize }}</em>{% endif %}
+                    </span>
+                  </button>
+                {% endfor %}
+              </div>
+              <button class="tree-row-nav is-right" type="button" data-row-scroll="right" aria-label="Scroll {{ row.label }} right">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+            <div class="tree-row-progress" aria-hidden="true"><span data-row-progress></span></div>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    {% endif %}
+  </section>
+
+  {% if not needs_anchor_choice %}
+    <div class="tree-reveal-backdrop" data-tree-reveal-close hidden></div>
+    {% for row in relative_generation_rows %}
+      {% for person in row.people %}
+        <aside class="tree-reveal-drawer" id="tree-reveal-{{ person.id }}" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tree-reveal-title-{{ person.id }}">
+          <div class="tree-reveal-handle"></div>
+          <div class="tree-reveal-head">
+            <span class="tree-avatar is-large">
+              {% if person.avatar_url %}
+                <img src="{{ person.avatar_url }}" alt="" loading="lazy" onerror="this.style.display='none'">
+              {% endif %}
+              <span class="tree-avatar-fallback" aria-hidden="true">{{ person.initials }}</span>
+            </span>
+            <div>
+              <p class="tree-kicker">{{ person.generation_label }}</p>
+              <h2 id="tree-reveal-title-{{ person.id }}">{{ person.full_name }}</h2>
+              <p>{{ person.relationship_label }}{% if person.life_years %} · {{ person.life_years }}{% endif %}</p>
+            </div>
+            <button type="button" data-tree-reveal-close aria-label="Close {{ person.full_name }}">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+
+          <div class="tree-reveal-pills" role="tablist" aria-label="{{ person.full_name }} relationship groups">
+            <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="parents-{{ person.id }}" data-reveal-tab="parents-{{ person.id }}">Parents</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="partners-{{ person.id }}" data-reveal-tab="partners-{{ person.id }}">Partners</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="children-{{ person.id }}" data-reveal-tab="children-{{ person.id }}">Children</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="siblings-{{ person.id }}" data-reveal-tab="siblings-{{ person.id }}">Siblings</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="details-{{ person.id }}" data-reveal-tab="details-{{ person.id }}">Details</button>
+          </div>
+
+          <div class="tree-reveal-panel is-active" id="parents-{{ person.id }}" role="tabpanel" data-reveal-panel>
+            {% for relative in person.parents %}
+              <span>{{ relative.full_name }}</span>
+            {% empty %}
+              <button type="button" data-tree-toast="Add parent for {{ person.full_name }}">Add parent</button>
+            {% endfor %}
+          </div>
+          <div class="tree-reveal-panel" id="partners-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
+            {% for relative in person.partners %}
+              <span>{{ relative.full_name }}</span>
+            {% empty %}
+              <button type="button" data-tree-toast="Add partner for {{ person.full_name }}">Add partner</button>
+            {% endfor %}
+          </div>
+          <div class="tree-reveal-panel" id="children-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
+            {% for relative in person.children %}
+              <span>{{ relative.full_name }}</span>
+            {% empty %}
+              <button type="button" data-tree-toast="Add child for {{ person.full_name }}">Add child</button>
+            {% endfor %}
+          </div>
+          <div class="tree-reveal-panel" id="siblings-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
+            {% for relative in person.siblings %}
+              <span>{{ relative.full_name }}</span>
+            {% empty %}
+              <button type="button" data-tree-toast="Invite sibling for {{ person.full_name }}">Invite sibling</button>
+            {% endfor %}
+          </div>
+          <div class="tree-reveal-panel" id="details-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
+            <dl>
+              <div><dt>Place</dt><dd>{{ person.location }}</dd></div>
+              <div><dt>Life</dt><dd>{{ person.life_years|default:"Not recorded" }}</dd></div>
+              <div><dt>Children</dt><dd>{{ person.child_count }}</dd></div>
+            </dl>
+          </div>
+        </aside>
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+</main>
+
 {% include "tree/partials/create_sheet.html" %}
 {% endblock %}
 

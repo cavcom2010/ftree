@@ -2,6 +2,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from decouple import UndefinedValueError
+from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -11,7 +12,7 @@ from apps.core.management.commands.seed_demo_media import (
     STORY_ARTICLE_SEEDS,
     VIDEO_MEMORY_SEEDS,
 )
-from apps.families.models import Family
+from apps.families.models import Family, FamilyMembership
 from apps.memories.models import Memory
 from apps.people.models import Person
 from apps.stories.models import Story
@@ -45,6 +46,9 @@ class HomepageShellTests(TestCase):
 
 @override_settings(ALLOWED_HOSTS=["testserver"])
 class TreePageTests(TestCase):
+    def setUp(self):
+        call_command("seed_demo_family", verbosity=0)
+
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
 
@@ -53,32 +57,71 @@ class TreePageTests(TestCase):
     def test_tree_page_contains_tree_canvas(self):
         response = self.client.get("/tree/")
 
-        self.assertContains(response, 'id="tree"')
-        self.assertContains(response, "is-tree-only")
+        self.assertContains(response, 'id="tree-canvas"')
+        self.assertContains(response, 'data-tree-page')
 
-    def test_tree_page_contains_generation_sections(self):
+    def test_tree_page_contains_relative_generation_rows(self):
         response = self.client.get("/tree/")
 
-        self.assertContains(response, "gen-band")
-        self.assertContains(response, "Grandparents")
+        self.assertContains(response, "Gen -2")
+        self.assertContains(response, "Gen -1")
+        self.assertContains(response, "Gen 0")
+        self.assertContains(response, "Gen +1")
 
-    def test_tree_page_excludes_homepage_memory_rails(self):
+    def test_tree_page_has_independent_horizontal_scroll_rows(self):
         response = self.client.get("/tree/")
 
-        self.assertNotContains(response, "memory-rails")
-        self.assertNotContains(response, "Memories below the tree")
+        self.assertContains(response, 'data-tree-row-track', count=4)
+        self.assertContains(response, 'data-generation-row="Gen 0"')
 
-    def test_tree_page_excludes_standalone_connect_strip(self):
+    def test_tree_page_contains_reveal_drawer_pills(self):
         response = self.client.get("/tree/")
 
-        self.assertNotContains(response, "connect-strip")
-        self.assertNotContains(response, "Add memory")
+        self.assertContains(response, "Parents")
+        self.assertContains(response, "Partners")
+        self.assertContains(response, "Children")
+        self.assertContains(response, "Siblings")
+        self.assertContains(response, "Details")
 
-    def test_tree_page_excludes_desktop_side_panels(self):
+    def test_tree_page_excludes_homepage_and_social_content(self):
         response = self.client.get("/tree/")
 
+        self.assertNotContains(response, "hero")
+        self.assertNotContains(response, "Family Prompt")
+        self.assertNotContains(response, "memory-strip")
+        self.assertNotContains(response, "Recent Activity")
+        self.assertNotContains(response, "bottom-nav")
         self.assertNotContains(response, "desktop-side")
         self.assertNotContains(response, "desktop-panel")
+
+    def test_tree_page_anchor_uses_membership_person(self):
+        membership = FamilyMembership.objects.select_related("person").get(user__username="demo")
+
+        self.assertEqual(membership.person.first_name, "David")
+
+        response = self.client.get("/tree/")
+
+        self.assertContains(response, "Centred on David Johnson")
+        self.assertContains(response, "David Johnson")
+        self.assertContains(response, "Me · Gen 0")
+
+    def test_tree_page_shows_anchor_chooser_without_membership_person(self):
+        user = User.objects.create_user(username="anchorless", password="demo12345")
+        family = Family.objects.create(name="Anchorless Family", slug="anchorless", created_by=user)
+        person = Person.objects.create(
+            family=family,
+            first_name="Alex",
+            last_name="Stone",
+            created_by=user,
+        )
+        FamilyMembership.objects.create(family=family, user=user, role=FamilyMembership.Role.OWNER)
+        self.client.force_login(user)
+
+        response = self.client.get("/tree/")
+
+        self.assertContains(response, "Set Gen 0")
+        self.assertContains(response, "Who are you in this family tree?")
+        self.assertContains(response, person.full_name)
 
 
 class SeedDemoMediaCommandTests(TestCase):

@@ -16,19 +16,25 @@ class Command(BaseCommand):
     help = "Seed a demo Johnson family with people, relationships, stories, and achievements."
 
     def handle(self, *args, **options):
+        self.verbosity = options["verbosity"]
         with transaction.atomic():
             self._seed_user()
             self._seed_family()
             self._seed_membership()
             self._seed_achievements()
             people = self._seed_people()
+            self._seed_membership_person(people["David"])
             self._seed_relationships(people)
             self._seed_stories(people)
             self._seed_activities(people)
             self._seed_user_achievements()
             self._seed_prompt()
 
-        self.stdout.write(self.style.SUCCESS("Demo family seeded successfully."))
+        self._write(self.style.SUCCESS("Demo family seeded successfully."))
+
+    def _write(self, message):
+        if self.verbosity > 0:
+            self.stdout.write(message)
 
     @property
     def user(self):
@@ -54,9 +60,9 @@ class Command(BaseCommand):
         if created:
             user.set_password("demo12345")
             user.save()
-            self.stdout.write(f"  Created demo user")
+            self._write(f"  Created demo user")
         else:
-            self.stdout.write(f"  Demo user already exists")
+            self._write(f"  Demo user already exists")
 
     def _seed_family(self):
         family, created = Family.objects.get_or_create(
@@ -68,9 +74,9 @@ class Command(BaseCommand):
             },
         )
         if created:
-            self.stdout.write(f"  Created Johnson Family")
+            self._write(f"  Created Johnson Family")
         else:
-            self.stdout.write(f"  Johnson Family already exists")
+            self._write(f"  Johnson Family already exists")
 
     def _seed_membership(self):
         membership, created = FamilyMembership.objects.get_or_create(
@@ -79,9 +85,19 @@ class Command(BaseCommand):
             defaults={"role": FamilyMembership.Role.OWNER},
         )
         if created:
-            self.stdout.write(f"  Added demo as owner of Johnson Family")
+            self._write(f"  Added demo as owner of Johnson Family")
         else:
-            self.stdout.write(f"  Demo membership already exists")
+            self._write(f"  Demo membership already exists")
+
+    def _seed_membership_person(self, person):
+        membership = FamilyMembership.objects.get(family=self.family, user=self.user)
+        if membership.person_id == person.id:
+            self._write(f"  Demo Gen 0 person already set to {person.full_name}")
+            return
+
+        membership.person = person
+        membership.save(update_fields=["person"])
+        self._write(f"  Set demo Gen 0 person to {person.full_name}")
 
     def _seed_people(self):
         people_data = [
@@ -174,9 +190,9 @@ class Command(BaseCommand):
             key = first_name
             people[key] = person
             if created:
-                self.stdout.write(f"  Created {person.full_name}")
+                self._write(f"  Created {person.full_name}")
             else:
-                self.stdout.write(f"  {person.full_name} already exists")
+                self._write(f"  {person.full_name} already exists")
 
         return people
 
@@ -203,9 +219,9 @@ class Command(BaseCommand):
                 relationship_type=rel_type,
             )
             if created:
-                self.stdout.write(f"  Linked {from_name} → {to_name} ({rel_type.label})")
+                self._write(f"  Linked {from_name} → {to_name} ({rel_type.label})")
             else:
-                self.stdout.write(f"  Relationship {from_name} → {to_name} already exists")
+                self._write(f"  Relationship {from_name} → {to_name} already exists")
 
     def _seed_achievements(self):
         data = [
@@ -240,9 +256,9 @@ class Command(BaseCommand):
                 defaults=d,
             )
             if created:
-                self.stdout.write(f"  Created achievement: {ach.name}")
+                self._write(f"  Created achievement: {ach.name}")
             else:
-                self.stdout.write(f"  Achievement {ach.name} already exists")
+                self._write(f"  Achievement {ach.name} already exists")
 
     def _seed_stories(self, people):
         stories_data = [
@@ -288,15 +304,15 @@ class Command(BaseCommand):
             )
             if created and person_names:
                 story.people.add(*[people[n] for n in person_names])
-                self.stdout.write(f"  Created story: {story.title}")
+                self._write(f"  Created story: {story.title}")
             elif created:
-                self.stdout.write(f"  Created story: {story.title}")
+                self._write(f"  Created story: {story.title}")
             else:
-                self.stdout.write(f"  Story {story.title} already exists")
+                self._write(f"  Story {story.title} already exists")
 
     def _seed_activities(self, people):
         if Activity.objects.filter(family=self.family).exists():
-            self.stdout.write(f"  Activities already exist, skipping")
+            self._write(f"  Activities already exist, skipping")
             return
 
         activities = [
@@ -316,7 +332,7 @@ class Command(BaseCommand):
                 memory=memory,
                 story=story,
             )
-        self.stdout.write(f"  Created {len(activities)} activities")
+        self._write(f"  Created {len(activities)} activities")
 
     def _seed_user_achievements(self):
         achievements = Achievement.objects.all()
@@ -331,9 +347,9 @@ class Command(BaseCommand):
                 count += 1
 
         if count:
-            self.stdout.write(f"  Awarded {count} achievements to demo user")
+            self._write(f"  Awarded {count} achievements to demo user")
         else:
-            self.stdout.write(f"  User achievements already exist")
+            self._write(f"  User achievements already exist")
 
     def _seed_prompt(self):
         today = date.today()
@@ -345,6 +361,6 @@ class Command(BaseCommand):
             },
         )
         if created:
-            self.stdout.write(f"  Created today's family prompt")
+            self._write(f"  Created today's family prompt")
         else:
-            self.stdout.write(f"  Today's prompt already exists")
+            self._write(f"  Today's prompt already exists")

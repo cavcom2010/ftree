@@ -1,114 +1,285 @@
 (function () {
-    function notify(message) {
-        if (typeof window.showToast === "function") {
-            window.showToast(message);
-        }
+  var activeRevealTrigger = null;
+  var activeCreateTrigger = null;
+  var rowUpdateTimers = new WeakMap();
+
+  function qs(selector, root) {
+    return (root || document).querySelector(selector);
+  }
+
+  function qsa(selector, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(selector));
+  }
+
+  function notify(message) {
+    if (typeof window.showToast === "function") {
+      window.showToast(message);
     }
+  }
 
-    function openCreateSheet() {
-        var sheet = document.getElementById("tree-create-sheet");
-        var backdrop = document.getElementById("tree-sheet-backdrop");
-        if (!sheet || !backdrop) return;
-        sheet.classList.add("is-open");
-        sheet.setAttribute("aria-hidden", "false");
-        backdrop.hidden = false;
+  function hasOpenModal() {
+    return !!qs(".tree-reveal-drawer.is-open") || !!qs("#tree-create-sheet.is-open");
+  }
+
+  function syncModalLock() {
+    document.body.classList.toggle("is-tree-modal-open", hasOpenModal());
+  }
+
+  function focusSafely(element) {
+    if (element && typeof element.focus === "function") {
+      element.focus({ preventScroll: true });
     }
+  }
 
-    function closeCreateSheet() {
-        var sheet = document.getElementById("tree-create-sheet");
-        var backdrop = document.getElementById("tree-sheet-backdrop");
-        if (!sheet || !backdrop) return;
-        sheet.classList.remove("is-open");
-        sheet.setAttribute("aria-hidden", "true");
-        backdrop.hidden = true;
+  function updateRowState(track) {
+    if (!track) return;
+    var shell = track.closest("[data-row-shell]");
+    if (!shell) return;
+
+    var maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    var atStart = track.scrollLeft <= 2;
+    var atEnd = maxScroll <= 2 || track.scrollLeft >= maxScroll - 2;
+    var leftButton = qs('[data-row-scroll="left"]', shell);
+    var rightButton = qs('[data-row-scroll="right"]', shell);
+    var rowContent = shell.parentElement;
+    var progress = qs("[data-row-progress]", rowContent);
+    var visibleRatio = track.scrollWidth ? Math.min(1, track.clientWidth / track.scrollWidth) : 1;
+    var travelRatio = maxScroll ? track.scrollLeft / maxScroll : 0;
+
+    shell.classList.toggle("is-at-start", atStart);
+    shell.classList.toggle("is-at-end", atEnd);
+    if (rowContent) rowContent.classList.toggle("is-scrollable", maxScroll > 2);
+    if (leftButton) leftButton.disabled = atStart;
+    if (rightButton) rightButton.disabled = atEnd;
+    if (progress) {
+      progress.style.width = Math.max(18, visibleRatio * 100) + "%";
+      progress.style.transform = "translateX(" + travelRatio * (100 / Math.max(visibleRatio, 0.01) - 100) + "%)";
     }
+  }
 
-    function toggleGeneration(button) {
-        var section = button.closest("[data-generation-section]");
-        if (!section) return;
-        var isOpen = section.classList.toggle("is-open");
-        button.setAttribute("aria-expanded", String(isOpen));
-        notify(isOpen ? "Generation opened" : "Generation collapsed");
+  function scheduleRowUpdate(track) {
+    window.clearTimeout(rowUpdateTimers.get(track));
+    rowUpdateTimers.set(track, window.setTimeout(function () {
+      updateRowState(track);
+    }, 60));
+  }
+
+  function updateAllRows() {
+    qsa("[data-tree-row-track]").forEach(updateRowState);
+  }
+
+  function openCreateSheet(trigger) {
+    var sheet = qs("#tree-create-sheet");
+    var backdrop = qs("#tree-sheet-backdrop");
+    if (!sheet || !backdrop) return;
+
+    closeRevealDrawers(false);
+    activeCreateTrigger = trigger || null;
+    sheet.classList.add("is-open");
+    sheet.setAttribute("aria-hidden", "false");
+    backdrop.hidden = false;
+    syncModalLock();
+
+    window.setTimeout(function () {
+      focusSafely(qs("[data-create-sheet-close]", sheet) || qs("button", sheet));
+    }, 80);
+  }
+
+  function closeCreateSheet(restoreFocus) {
+    var sheet = qs("#tree-create-sheet");
+    var backdrop = qs("#tree-sheet-backdrop");
+    if (!sheet || !backdrop) return;
+
+    sheet.classList.remove("is-open");
+    sheet.setAttribute("aria-hidden", "true");
+    backdrop.hidden = true;
+    syncModalLock();
+
+    if (restoreFocus !== false) {
+      focusSafely(activeCreateTrigger);
     }
+    activeCreateTrigger = null;
+  }
 
-    function openBranch(trigger) {
-        var panelId = trigger.getAttribute("data-branch-trigger");
-        var panel = document.getElementById(panelId);
-        if (!panel) return;
-        var shouldOpen = panel.hidden;
-        panel.hidden = !shouldOpen;
-        trigger.setAttribute("aria-expanded", String(shouldOpen));
-        notify(shouldOpen ? "Branch revealed" : "Branch hidden");
-    }
-
-    document.addEventListener("click", function (event) {
-        var generationToggle = event.target.closest(".generation-toggle");
-        if (generationToggle) {
-            toggleGeneration(generationToggle);
-            return;
-        }
-
-        var expandAll = event.target.closest("[data-expand-all-generations]");
-        if (expandAll) {
-            document.querySelectorAll("[data-generation-section]").forEach(function (section) {
-                section.classList.add("is-open");
-                var button = section.querySelector(".generation-toggle");
-                if (button) button.setAttribute("aria-expanded", "true");
-            });
-            notify("All generations revealed");
-            return;
-        }
-
-        var collapseAll = event.target.closest("[data-collapse-all-generations]");
-        if (collapseAll) {
-            document.querySelectorAll("[data-generation-section]").forEach(function (section, index) {
-                var shouldOpen = index === 0;
-                section.classList.toggle("is-open", shouldOpen);
-                var button = section.querySelector(".generation-toggle");
-                if (button) button.setAttribute("aria-expanded", String(shouldOpen));
-            });
-            notify("Focused on the root branch");
-            return;
-        }
-
-        var branchTrigger = event.target.closest("[data-branch-trigger]");
-        if (branchTrigger) {
-            openBranch(branchTrigger);
-            return;
-        }
-
-        var branchClose = event.target.closest("[data-branch-close]");
-        if (branchClose) {
-            var closePanel = document.getElementById(branchClose.getAttribute("data-branch-close"));
-            if (closePanel) closePanel.hidden = true;
-            notify("Branch hidden");
-            return;
-        }
-
-        if (event.target.closest("[data-create-sheet-trigger]")) {
-            openCreateSheet();
-            return;
-        }
-
-        if (event.target.closest("[data-create-sheet-close]")) {
-            closeCreateSheet();
-            return;
-        }
-
-        var toastTarget = event.target.closest("[data-tree-toast]");
-        if (toastTarget) {
-            notify(toastTarget.getAttribute("data-tree-toast"));
-            return;
-        }
-
-        if (event.target.closest("[data-tree-search-trigger]")) {
-            notify("Relative search is ready for backend search.");
-        }
+  function closeRevealDrawers(restoreFocus) {
+    qsa(".tree-reveal-drawer.is-open").forEach(function (drawer) {
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
+    });
+    qsa("[data-person-reveal][aria-expanded='true']").forEach(function (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.classList.remove("is-selected");
     });
 
-    document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-            closeCreateSheet();
-        }
+    var backdrop = qs(".tree-reveal-backdrop");
+    if (backdrop) backdrop.hidden = true;
+    syncModalLock();
+
+    if (restoreFocus !== false) {
+      focusSafely(activeRevealTrigger);
+    }
+    activeRevealTrigger = null;
+  }
+
+  function openRevealDrawer(trigger) {
+    var personId = trigger.getAttribute("data-person-reveal");
+    var drawer = qs("#tree-reveal-" + personId);
+    var backdrop = qs(".tree-reveal-backdrop");
+    if (!drawer) return;
+
+    closeCreateSheet(false);
+    closeRevealDrawers(false);
+    activeRevealTrigger = trigger;
+    drawer.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    trigger.setAttribute("aria-expanded", "true");
+    trigger.classList.add("is-selected");
+    if (backdrop) backdrop.hidden = false;
+    syncModalLock();
+    notify(trigger.querySelector("strong") ? trigger.querySelector("strong").textContent + " opened" : "Relative opened");
+
+    window.setTimeout(function () {
+      focusSafely(qs("[data-tree-reveal-close]", drawer) || drawer);
+    }, 80);
+  }
+
+  function activateRevealTab(button) {
+    var drawer = button.closest(".tree-reveal-drawer");
+    var panelId = button.getAttribute("data-reveal-tab");
+    if (!drawer || !panelId) return;
+
+    qsa("[data-reveal-tab]", drawer).forEach(function (tab) {
+      var isActive = tab === button;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
+
+    qsa("[data-reveal-panel]", drawer).forEach(function (panel) {
+      var isActive = panel.id === panelId;
+      panel.classList.toggle("is-active", isActive);
+      panel.hidden = !isActive;
+    });
+  }
+
+  function scrollRow(button) {
+    var shell = button.closest("[data-row-shell]");
+    var track = shell ? qs("[data-tree-row-track]", shell) : null;
+    if (!track) return;
+
+    var direction = button.getAttribute("data-row-scroll") === "left" ? -1 : 1;
+    track.scrollBy({ left: direction * Math.round(track.clientWidth * 0.82), behavior: "smooth" });
+    scheduleRowUpdate(track);
+  }
+
+  function scrollFocusedTrack(track, direction) {
+    track.scrollBy({ left: direction * Math.round(track.clientWidth * 0.72), behavior: "smooth" });
+    scheduleRowUpdate(track);
+  }
+
+  function focusAnchorRow() {
+    var anchorRow = qs(".tree-generation-row.is-anchor-row");
+    if (anchorRow) {
+      anchorRow.scrollIntoView({ behavior: "smooth", block: "center" });
+      anchorRow.classList.add("is-selected-row");
+      window.setTimeout(function () {
+        anchorRow.classList.remove("is-selected-row");
+      }, 1100);
+      notify("Focused on Gen 0");
+    }
+  }
+
+  function toggleGeneration(button) {
+    var row = button.closest(".tree-generation-row");
+    var contentId = button.getAttribute("aria-controls");
+    var content = contentId ? qs("#" + contentId) : qs("[data-generation-content]", row);
+    if (!row || !content) return;
+
+    var shouldOpen = button.getAttribute("aria-expanded") !== "true";
+    button.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    row.classList.toggle("is-collapsed", !shouldOpen);
+    content.hidden = !shouldOpen;
+    if (shouldOpen) {
+      qsa("[data-tree-row-track]", content).forEach(updateRowState);
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    var revealTrigger = event.target.closest("[data-person-reveal]");
+    if (revealTrigger) {
+      openRevealDrawer(revealTrigger);
+      return;
+    }
+
+    var revealTab = event.target.closest("[data-reveal-tab]");
+    if (revealTab) {
+      activateRevealTab(revealTab);
+      return;
+    }
+
+    if (event.target.closest("[data-tree-reveal-close]")) {
+      closeRevealDrawers();
+      return;
+    }
+
+    var rowScroll = event.target.closest("[data-row-scroll]");
+    if (rowScroll) {
+      scrollRow(rowScroll);
+      return;
+    }
+
+    var generationToggle = event.target.closest("[data-generation-toggle]");
+    if (generationToggle) {
+      toggleGeneration(generationToggle);
+      return;
+    }
+
+    if (event.target.closest("[data-tree-scroll-anchor]")) {
+      focusAnchorRow();
+      return;
+    }
+
+    var createTrigger = event.target.closest("[data-create-sheet-trigger]");
+    if (createTrigger) {
+      openCreateSheet(createTrigger);
+      return;
+    }
+
+    if (event.target.closest("[data-create-sheet-close]")) {
+      closeCreateSheet();
+      return;
+    }
+
+    var toastTarget = event.target.closest("[data-tree-toast]");
+    if (toastTarget) {
+      notify(toastTarget.getAttribute("data-tree-toast"));
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeCreateSheet();
+      closeRevealDrawers();
+      return;
+    }
+
+    var track = event.target.closest ? event.target.closest("[data-tree-row-track]") : null;
+    if (!track) return;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      scrollFocusedTrack(track, -1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      scrollFocusedTrack(track, 1);
+    }
+  });
+
+  qsa("[data-tree-row-track]").forEach(function (track) {
+    track.addEventListener("scroll", function () {
+      scheduleRowUpdate(track);
+    }, { passive: true });
+  });
+
+  window.addEventListener("resize", updateAllRows);
+  window.addEventListener("load", updateAllRows);
+  updateAllRows();
 })();

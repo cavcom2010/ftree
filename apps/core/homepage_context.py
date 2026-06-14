@@ -14,13 +14,6 @@ def build_homepage_context():
     return _build_family_context(family)
 
 
-def build_tree_context():
-    context = build_homepage_context()
-    context["tree_only"] = True
-    context["memory_rails"] = []
-    return context
-
-
 def _build_family_context(family):
     person_qs = Person.objects.filter(family=family).prefetch_related("memories", "stories")
     people = list(person_qs)

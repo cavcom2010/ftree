@@ -80,7 +80,7 @@ button {
 
 .tree-only-body .app-shell {
   display: block;
-  max-width: 800px;
+  max-width: none;
   margin: 0 auto;
 }
 

@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
-from apps.core.homepage_context import build_homepage_context, build_tree_context
+from apps.core.homepage_context import build_homepage_context
+from apps.core.tree_context import build_tree_context
 
 
 def home(request):
@@ -8,4 +9,4 @@ def home(request):
 
 
 def tree(request):
-    return render(request, "tree/home.html", build_tree_context())
+    return render(request, "tree/home.html", build_tree_context(request.user))

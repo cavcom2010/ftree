@@ -10,7 +10,7 @@
     <a href="/" class="side-link {% if request.path == '/' %}active{% endif %}">
       <i data-lucide="home"></i>Home
     </a>
-    <a href="/#tree" class="side-link">
+    <a href="/tree/" class="side-link {% if request.path == '/tree/' %}active{% endif %}">
       <i data-lucide="tree-deciduous"></i>Tree
     </a>
     <a href="/memories/" class="side-link {% if request.path == '/memories/' %}active{% endif %}">

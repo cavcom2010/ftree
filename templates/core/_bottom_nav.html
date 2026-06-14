@@ -1,7 +1,7 @@
 <!-- templates/core/_bottom_nav.html -->
 <div class="bottom-nav-wrapper">
   <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="Main navigation">
-    <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
+    <a href="/tree/" {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
       <i data-lucide="tree-deciduous"></i>Tree
     </a>
     <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>

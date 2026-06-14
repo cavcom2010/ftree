@@ -12,6 +12,6 @@ class FamilyAdmin(admin.ModelAdmin):
 
 @admin.register(FamilyMembership)
 class FamilyMembershipAdmin(admin.ModelAdmin):
-    list_display = ["family", "user", "role", "joined_at"]
+    list_display = ["family", "user", "person", "role", "joined_at"]
     list_filter = ["role", "family"]
-    search_fields = ["user__username", "family__name"]
+    search_fields = ["user__username", "family__name", "person__first_name", "person__last_name"]

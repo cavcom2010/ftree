@@ -7,12 +7,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.families.forms import InvitePersonForm, InviteRelativeForm, SignupForm
-from apps.families.models import Family, FamilyInvitation
+from apps.families.models import Family, FamilyInvitation, FamilyMembership
 from apps.families.services import (
     accept_invitation,
     create_invitation,
     create_relative_invitation,
-    current_family_for_user,
     decline_invitation,
     ignore_invitation,
 )
@@ -181,6 +180,32 @@ def switch_family(request, slug):
     return redirect(f"{reverse('tree')}?family={family.slug}")
 
 
+@login_required
+def set_tree_anchor(request, person_id):
+    if request.method != "POST":
+        return HttpResponseBadRequest("Use POST to set your tree anchor.")
+
+    family = _current_family(request)
+    person = get_object_or_404(Person, id=person_id, family=family)
+    membership = get_object_or_404(FamilyMembership, family=family, user=request.user)
+
+    claimed_by_someone_else = (
+        FamilyMembership.objects.filter(family=family, person=person)
+        .exclude(pk=membership.pk)
+        .exists()
+    )
+    if claimed_by_someone_else:
+        messages.error(request, f"{person.full_name} is already connected to another account.")
+        return redirect(f"{reverse('tree')}?family={family.slug}")
+
+    membership.person = person
+    membership.full_clean()
+    membership.save(update_fields=["person"])
+    request.session["current_family_slug"] = family.slug
+    messages.success(request, f"{person.full_name} is now your Gen 0 anchor.")
+    return redirect(f"{reverse('tree')}?family={family.slug}")
+
+
 def signup(request):
     if request.method == "POST":
         form = SignupForm(request.POST)
@@ -196,13 +221,21 @@ def signup(request):
 
 
 def _current_family(request):
-    family = current_family_for_user(
-        request.user,
-        request.GET.get("family") or request.session.get("current_family_slug"),
+    family_slug = (
+        request.POST.get("family")
+        or request.GET.get("family")
+        or request.session.get("current_family_slug")
     )
-    if not family:
+    memberships = (
+        FamilyMembership.objects.select_related("family", "person")
+        .filter(user=request.user)
+        .order_by("joined_at", "family__name")
+    )
+    membership = memberships.filter(family__slug=family_slug).first() if family_slug else memberships.first()
+    if not membership:
         raise Http404("Family not found.")
-    return family
+    request.session["current_family_slug"] = membership.family.slug
+    return membership.family
 
 
 def _add_form_error(form, exc):
@@ -217,7 +250,7 @@ def _render_invite_success(request, invitation):
     invitation_url = request.build_absolute_uri(
         reverse("family_invitation_detail", args=[invitation.token])
     )
-    return render(
+    response = render(
         request,
         "families/partials/invite_success_sheet.html",
         {
@@ -225,3 +258,6 @@ def _render_invite_success(request, invitation):
             "invitation_url": invitation_url,
         },
     )
+    if request.headers.get("HX-Request") == "true" and invitation.anchor_person_id:
+        response["HX-Trigger"] = "treeUpdated"
+    return response

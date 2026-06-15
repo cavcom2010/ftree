@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from django.conf import settings
+from django.db.models import Count
 
 from apps.core.homepage_context import build_homepage_context
 from apps.families.models import Family
@@ -26,17 +27,18 @@ PARTNER_TREE_TYPES = {
     Relationship.Type.SPOUSE,
     Relationship.Type.PARTNER,
     Relationship.Type.EX_PARTNER,
+    Relationship.Type.CO_PARENT,
 }
 
 
-def build_tree_context(user, family_slug=None):
-    family = _family_for_user(user, family_slug=family_slug)
+def build_tree_context(user, family_slug=None, anchor_id=None, global_admin_view=False):
+    family = _family_for_user(user, family_slug=family_slug, global_admin_view=global_admin_view)
     if not family or not Person.objects.filter(family=family).exists():
         return _tree_from_demo_context(build_homepage_context())
 
     people = list(Person.objects.filter(family=family).order_by("birth_date", "first_name", "last_name", "id"))
-    anchor = _anchor_for_user(family, user)
-    available_families = _available_families(user)
+    anchor = _anchor_for_user(family, user, anchor_id=anchor_id, global_admin_view=global_admin_view)
+    available_families = _available_families(user, global_admin_view=global_admin_view)
     received_invitations = list(pending_invitations_for_user(user)[:8])
     user_can_invite = can_invite(family, user)
     if not anchor:
@@ -53,6 +55,9 @@ def build_tree_context(user, family_slug=None):
             "people_count": len(people),
             "empty_state": False,
             "needs_anchor_choice": True,
+            "needs_family_choice": False,
+            "is_global_admin_view": global_admin_view,
+            "admin_anchor_choices": [],
         }
 
     graph = _relationship_graph(family, people)
@@ -94,20 +99,41 @@ def build_tree_context(user, family_slug=None):
         "people_count": len(people),
         "empty_state": False,
         "needs_anchor_choice": False,
+        "needs_family_choice": False,
+        "is_global_admin_view": global_admin_view,
+        "admin_anchor_choices": [_person_choice(person) for person in people] if global_admin_view else [],
     }
 
 
-def _family_for_user(user, family_slug=None):
+def _family_for_user(user, family_slug=None, global_admin_view=False):
+    if global_admin_view and family_slug:
+        return Family.objects.filter(slug=family_slug).first()
     return current_family_for_user(user, family_slug=family_slug)
 
 
-def _available_families(user):
+def _available_families(user, global_admin_view=False):
     if not getattr(user, "is_authenticated", False):
         return []
+    if global_admin_view:
+        return list(
+            Family.objects.annotate(people_count=Count("people"))
+            .order_by("name", "id")
+            .distinct()
+        )
     return list(Family.objects.filter(memberships__user=user).order_by("name").distinct())
 
 
-def _anchor_for_user(family, user):
+def _anchor_for_user(family, user, anchor_id=None, global_admin_view=False):
+    if global_admin_view:
+        if anchor_id:
+            anchor = Person.objects.filter(family=family, id=anchor_id).first()
+            if anchor:
+                return anchor
+        membership = family.memberships.select_related("person").filter(user=user).first()
+        if membership and membership.person:
+            return membership.person
+        return Person.objects.filter(family=family).order_by("birth_date", "first_name", "last_name", "id").first()
+
     if getattr(user, "is_authenticated", False):
         membership = (
             family.memberships.select_related("person")
@@ -127,6 +153,7 @@ def _relationship_graph(family, people):
     parents_by_child = {person.id: set() for person in people}
     children_by_parent = {person.id: set() for person in people}
     partners_by_person = {person.id: set() for person in people}
+    partner_types_by_person = {person.id: {} for person in people}
     siblings_by_person = {person.id: set() for person in people}
 
     relationships = Relationship.objects.filter(
@@ -142,6 +169,8 @@ def _relationship_graph(family, people):
         elif relationship_type in PARTNER_TREE_TYPES:
             partners_by_person[from_id].add(to_id)
             partners_by_person[to_id].add(from_id)
+            _store_partner_type(partner_types_by_person, from_id, to_id, relationship_type)
+            _store_partner_type(partner_types_by_person, to_id, from_id, relationship_type)
         elif relationship_type == Relationship.Type.SIBLING:
             siblings_by_person[from_id].add(to_id)
             siblings_by_person[to_id].add(from_id)
@@ -157,6 +186,7 @@ def _relationship_graph(family, people):
         "parents_by_child": parents_by_child,
         "children_by_parent": children_by_parent,
         "partners_by_person": partners_by_person,
+        "partner_types_by_person": partner_types_by_person,
         "siblings_by_person": siblings_by_person,
     }
 
@@ -286,7 +316,15 @@ def _person_card(
         "can_invite": can_invite_relatives and not membership and not invitation,
         "can_edit_name": is_current_user or can_invite_relatives,
         "parents": [_mini_person(graph["people_by_id"][person_id]) for person_id in parent_ids if person_id in graph["people_by_id"]],
-        "partners": [_mini_person(graph["people_by_id"][person_id]) for person_id in partner_ids if person_id in graph["people_by_id"]],
+        "partners": [
+            _mini_person(
+                graph["people_by_id"][person_id],
+                relationship_label=_partner_relationship_label(graph, person.id, person_id),
+                shared_child_names=_shared_child_names(graph, person.id, person_id),
+            )
+            for person_id in partner_ids
+            if person_id in graph["people_by_id"]
+        ],
         "children": [_mini_person(graph["people_by_id"][person_id]) for person_id in child_ids if person_id in graph["people_by_id"]],
         "siblings": [_mini_person(graph["people_by_id"][person_id]) for person_id in sibling_ids if person_id in graph["people_by_id"]],
         "parent_count": len(parent_ids),
@@ -306,12 +344,50 @@ def _connection_label(membership, invitation, is_current_user):
     return "Unclaimed"
 
 
-def _mini_person(person):
+def _mini_person(person, relationship_label="", shared_child_names=None):
     return {
         "id": person.id,
         "full_name": person.full_name,
         "initials": _initials(person.first_name, person.last_name),
+        "relationship_label": relationship_label,
+        "shared_child_names": shared_child_names or [],
     }
+
+
+def _store_partner_type(partner_types_by_person, person_id, partner_id, relationship_type):
+    existing = partner_types_by_person[person_id].get(partner_id)
+    if not existing or _partner_type_priority(relationship_type) < _partner_type_priority(existing):
+        partner_types_by_person[person_id][partner_id] = relationship_type
+
+
+def _partner_type_priority(relationship_type):
+    priorities = {
+        Relationship.Type.SPOUSE: 0,
+        Relationship.Type.PARTNER: 1,
+        Relationship.Type.EX_PARTNER: 2,
+        Relationship.Type.CO_PARENT: 3,
+    }
+    return priorities.get(relationship_type, 99)
+
+
+def _partner_relationship_label(graph, person_id, partner_id):
+    relationship_type = graph["partner_types_by_person"].get(person_id, {}).get(partner_id)
+    labels = {
+        Relationship.Type.SPOUSE: "Spouse",
+        Relationship.Type.PARTNER: "Partner",
+        Relationship.Type.EX_PARTNER: "Ex-partner",
+        Relationship.Type.CO_PARENT: "Co-parent",
+    }
+    return labels.get(relationship_type, "Partner")
+
+
+def _shared_child_names(graph, person_id, partner_id):
+    shared_child_ids = graph["children_by_parent"].get(person_id, set()) & graph["children_by_parent"].get(partner_id, set())
+    return [
+        graph["people_by_id"][child_id].full_name
+        for child_id in sorted(shared_child_ids)
+        if child_id in graph["people_by_id"]
+    ][:3]
 
 
 def _profile_photo_url(person):
@@ -410,6 +486,9 @@ def _tree_from_demo_context(context):
         "people_count": context.get("stats", {}).get("people", 0),
         "empty_state": not rows,
         "needs_anchor_choice": False,
+        "needs_family_choice": False,
+        "is_global_admin_view": False,
+        "admin_anchor_choices": [],
     }
 
 

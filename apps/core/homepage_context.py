@@ -18,6 +18,7 @@ PARTNER_TREE_TYPES = {
     Relationship.Type.SPOUSE,
     Relationship.Type.PARTNER,
     Relationship.Type.EX_PARTNER,
+    Relationship.Type.CO_PARENT,
 }
 MAX_HOMEPAGE_DEPTH = 3
 
@@ -276,11 +277,11 @@ def _close_family_dashboard(
         ),
         _close_family_group(
             "partners",
-            "Partner",
+            "Partners & co-parents",
             "heart",
             _people_from_ids(partners_by_person.get(anchor.id, set()), people_by_id),
             "Add partner",
-            "Connect your spouse or partner when you are ready.",
+            "Connect spouses, partners, and co-parents when you are ready.",
         ),
         _close_family_group(
             "children",
@@ -332,7 +333,7 @@ def _close_family_group(key, title, icon, people, action_label, empty_text):
 def _close_family_role(key):
     return {
         "parents": "Parent",
-        "partners": "Partner",
+        "partners": "Partner/co-parent",
         "children": "Child",
         "siblings": "Sibling",
     }.get(key, "Relative")

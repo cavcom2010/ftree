@@ -18,7 +18,9 @@
       </a>
       <div class="brand-text tree-title-block">
         <strong id="tree-title">{% if family %}{{ family.name }}{% else %}Tree setup{% endif %}</strong>
-        {% if needs_tree_setup %}
+        {% if needs_family_choice %}
+          <span>Admin view · Choose a family tree</span>
+        {% elif needs_tree_setup %}
           <span>No family profile is linked to your account yet.</span>
         {% elif tree_anchor %}
           <span>Family Tree · Centred on {{ tree_anchor.full_name }}</span>
@@ -44,7 +46,30 @@
       </section>
     {% endif %}
 
-    {% if needs_tree_setup %}
+    {% if needs_family_choice %}
+      <section class="tree-anchor-card tree-admin-picker" aria-labelledby="admin-family-title">
+        <p class="tree-kicker">Admin view</p>
+        <h2 id="admin-family-title">Choose a family tree</h2>
+        <p>Staff can inspect family trees without creating a personal starter tree. Tree editing still requires family membership or the Django admin.</p>
+        <div class="tree-admin-family-grid">
+          {% for choice in admin_family_choices %}
+            <a href="{% url 'tree' %}?family={{ choice.slug }}">
+              <span>{{ choice.name|slice:":1" }}</span>
+              <strong>{{ choice.name }}</strong>
+              <small>{{ choice.people_count }} people</small>
+            </a>
+          {% empty %}
+            <div class="tree-admin-empty">
+              <strong>No family trees yet</strong>
+              <small>Create families and people in Django admin.</small>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="tree-empty-actions">
+          <a class="tree-action-link is-secondary" href="/admin/">Open admin</a>
+        </div>
+      </section>
+    {% elif needs_tree_setup %}
       <section class="tree-empty-card" aria-labelledby="tree-empty-title">
         <p class="tree-kicker">Tree setup needed</p>
         <h1 id="tree-empty-title">Your account is signed in, but not connected to a family person yet.</h1>
@@ -139,7 +164,25 @@
         </button>
       </section>
 
-      {% if available_families|length > 1 %}
+      {% if is_global_admin_view %}
+        <section class="tree-family-switcher tree-admin-switcher" aria-label="Admin tree controls">
+          <a class="is-active" href="{% url 'tree' %}">All families</a>
+          {% for available_family in available_families %}
+            <a href="{% url 'tree' %}?family={{ available_family.slug }}" {% if family and available_family.id == family.id %}class="is-active" aria-current="true"{% endif %}>
+              {{ available_family.name }}
+            </a>
+          {% endfor %}
+        </section>
+        {% if admin_anchor_choices %}
+          <section class="tree-family-switcher tree-admin-switcher" aria-label="Choose admin tree anchor">
+            {% for choice in admin_anchor_choices %}
+              <a href="{% url 'tree' %}?family={{ family.slug }}&anchor={{ choice.id }}" {% if tree_anchor and choice.id == tree_anchor.id %}class="is-active" aria-current="true"{% endif %}>
+                {{ choice.full_name }}
+              </a>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% elif available_families|length > 1 %}
         <section class="tree-family-switcher" aria-label="Switch family">
           {% for available_family in available_families %}
             <form method="post" action="{% url 'family_switch' available_family.slug %}">
@@ -199,7 +242,7 @@
                     <span class="tree-card-meta">
                       <em>{{ person.connection_label }}</em>
                       {% if person.child_count %}<em>{{ person.child_count }} child{{ person.child_count|pluralize }}</em>{% endif %}
-                      {% if person.partner_count %}<em>{{ person.partner_count }} partner{{ person.partner_count|pluralize }}</em>{% endif %}
+                      {% if person.partner_count %}<em>{{ person.partner_count }} partner/co-parent{{ person.partner_count|pluralize }}</em>{% endif %}
                     </span>
                   </button>
                 {% endfor %}
@@ -216,7 +259,7 @@
     {% endif %}
   </section>
 
-  {% if not needs_anchor_choice and not needs_tree_setup %}
+  {% if not needs_anchor_choice and not needs_tree_setup and not needs_family_choice %}
     <div class="tree-reveal-backdrop" data-tree-reveal-close hidden></div>
     {% for row in relative_generation_rows %}
       {% for person in row.people %}
@@ -242,7 +285,7 @@
 
           <div class="tree-reveal-pills" role="tablist" aria-label="{{ person.full_name }} relationship groups">
             <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="parents-{{ person.id }}" data-reveal-tab="parents-{{ person.id }}">Parents</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="partners-{{ person.id }}" data-reveal-tab="partners-{{ person.id }}">Partners</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="partners-{{ person.id }}" data-reveal-tab="partners-{{ person.id }}">Partners & co-parents</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="children-{{ person.id }}" data-reveal-tab="children-{{ person.id }}">Children</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="siblings-{{ person.id }}" data-reveal-tab="siblings-{{ person.id }}">Siblings</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="details-{{ person.id }}" data-reveal-tab="details-{{ person.id }}">Details</button>
@@ -262,10 +305,17 @@
           </div>
           <div class="tree-reveal-panel" id="partners-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
             {% for relative in person.partners %}
-              <span>{{ relative.full_name }}</span>
+              <span class="tree-related-chip">
+                <strong>{{ relative.full_name }}</strong>
+                {% if relative.relationship_label %}
+                  <small>
+                    {{ relative.relationship_label }}{% if relative.shared_child_names %} · shares {{ relative.shared_child_names|join:", " }}{% endif %}
+                  </small>
+                {% endif %}
+              </span>
             {% empty %}
               {% if not can_invite_relatives %}
-                <span>No partner connected</span>
+                <span>No partner or co-parent connected</span>
               {% endif %}
             {% endfor %}
               {% if can_invite_relatives %}

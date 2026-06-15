@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, When
 
 from apps.families.models import FamilyMembership
 from apps.people.models import Person
@@ -16,6 +16,7 @@ PARENT_RELATIONSHIP_CHOICES = [
 ]
 
 PARTNER_RELATIONSHIP_CHOICES = [
+    (Relationship.Type.CO_PARENT, "Co-parent"),
     (Relationship.Type.SPOUSE, "Spouse"),
     (Relationship.Type.PARTNER, "Partner"),
     (Relationship.Type.EX_PARTNER, "Ex-partner"),
@@ -49,8 +50,15 @@ class InviteRelativeForm(InvitePersonForm):
         widget=forms.TextInput(attrs={"placeholder": "Optional username or email"}),
         help_text="Optional. Leave blank to add a family-tree profile without inviting an account yet.",
     )
-    first_name = forms.CharField(max_length=100)
-    last_name = forms.CharField(label="Last/current surname", max_length=100)
+    existing_person = forms.ModelChoiceField(
+        label="Connect existing person",
+        queryset=Person.objects.none(),
+        required=False,
+        empty_label="Create a new profile",
+        help_text="Suggested co-parents appear first. Leave blank to create a new profile.",
+    )
+    first_name = forms.CharField(max_length=100, required=False)
+    last_name = forms.CharField(label="Last/current surname", max_length=100, required=False)
     maiden_name = forms.CharField(
         label="Birth/maiden surname",
         max_length=100,
@@ -77,7 +85,7 @@ class InviteRelativeForm(InvitePersonForm):
         label="Partner type",
         choices=PARTNER_RELATIONSHIP_CHOICES,
         required=False,
-        initial=Relationship.Type.SPOUSE,
+        initial=Relationship.Type.CO_PARENT,
     )
     other_parent = forms.ModelChoiceField(
         label="Other parent",
@@ -113,12 +121,32 @@ class InviteRelativeForm(InvitePersonForm):
         self.relation_type = relation_type
         if family and anchor_person:
             self.fields["other_parent"].queryset = _partners_for_person(family, anchor_person)
+            self.fields["existing_person"].queryset = _existing_partner_candidates(family, anchor_person)
             shared_parent_queryset = _parents_for_person(family, anchor_person)
             self.fields["shared_parents"].queryset = shared_parent_queryset
             self.fields["partner_shared_children"].queryset = _children_for_person(family, anchor_person)
             self.fields["parent_shared_children"].queryset = _siblings_for_person(family, anchor_person)
+            if not self.is_bound and relation_type in {"partner", "spouse"}:
+                self.initial["partner_relationship_type"] = Relationship.Type.CO_PARENT
             if not self.is_bound:
                 self.initial["shared_parents"] = list(shared_parent_queryset.values_list("id", flat=True))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        existing_person = cleaned_data.get("existing_person")
+        first_name = (cleaned_data.get("first_name") or "").strip()
+        last_name = (cleaned_data.get("last_name") or "").strip()
+
+        if existing_person and self.relation_type not in {"partner", "spouse"}:
+            self.add_error("existing_person", "Existing-person connection is available for partners and co-parents.")
+
+        if not existing_person:
+            if not first_name:
+                self.add_error("first_name", "Enter a first name or choose an existing person.")
+            if not last_name:
+                self.add_error("last_name", "Enter a surname or choose an existing person.")
+
+        return cleaned_data
 
 
 class SignupForm(UserCreationForm):
@@ -161,16 +189,20 @@ def _parent_types():
     ]
 
 
-def _partners_for_person(family, person):
-    partner_types = [
+def _partner_types():
+    return [
         Relationship.Type.SPOUSE,
         Relationship.Type.PARTNER,
         Relationship.Type.EX_PARTNER,
+        Relationship.Type.CO_PARENT,
     ]
+
+
+def _partners_for_person(family, person):
     relationships = Relationship.objects.filter(
         Q(from_person=person) | Q(to_person=person),
         family=family,
-        relationship_type__in=partner_types,
+        relationship_type__in=_partner_types(),
     )
     partner_ids = []
     for relationship in relationships:
@@ -180,6 +212,62 @@ def _partners_for_person(family, person):
             else relationship.from_person_id
         )
     return Person.objects.filter(family=family, id__in=partner_ids).order_by("first_name", "last_name")
+
+
+def _existing_partner_candidates(family, person):
+    likely_ids = _co_parent_candidate_ids(family, person)
+    excluded_ids = {person.id}
+    excluded_ids.update(_direct_relative_ids(family, person))
+    excluded_ids.update(_partners_for_person(family, person).values_list("id", flat=True))
+
+    likely_order = Case(
+        *[When(id=person_id, then=0) for person_id in likely_ids],
+        default=1,
+        output_field=IntegerField(),
+    )
+    return (
+        Person.objects.filter(family=family)
+        .exclude(id__in=excluded_ids)
+        .annotate(connection_rank=likely_order)
+        .order_by("connection_rank", "birth_date", "first_name", "last_name", "id")
+    )
+
+
+def _co_parent_candidate_ids(family, person):
+    child_ids = Relationship.objects.filter(
+        family=family,
+        from_person=person,
+        relationship_type__in=_parent_types(),
+    ).values_list("to_person_id", flat=True)
+    return set(
+        Relationship.objects.filter(
+            family=family,
+            to_person_id__in=child_ids,
+            relationship_type__in=_parent_types(),
+        )
+        .exclude(from_person=person)
+        .values_list("from_person_id", flat=True)
+    )
+
+
+def _direct_relative_ids(family, person):
+    direct_ids = set()
+    direct_ids.update(
+        Relationship.objects.filter(
+            family=family,
+            to_person=person,
+            relationship_type__in=_parent_types(),
+        ).values_list("from_person_id", flat=True)
+    )
+    direct_ids.update(
+        Relationship.objects.filter(
+            family=family,
+            from_person=person,
+            relationship_type__in=_parent_types(),
+        ).values_list("to_person_id", flat=True)
+    )
+    direct_ids.update(_siblings_for_person(family, person).values_list("id", flat=True))
+    return direct_ids
 
 
 def _parents_for_person(family, person):

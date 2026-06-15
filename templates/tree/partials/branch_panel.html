@@ -8,12 +8,12 @@
     </div>
 
     <div class="branch-group">
-        <span>Spouse</span>
+        <span>Partners & co-parents</span>
         <div class="branch-mini-list">
             {% for spouse in panel.spouses %}
                 <span>{{ spouse.name }}</span>
             {% empty %}
-                <button type="button" data-tree-toast="Add spouse placeholder selected.">Add spouse</button>
+                <button type="button" data-tree-toast="Add partner placeholder selected.">Add partner</button>
             {% endfor %}
         </div>
     </div>

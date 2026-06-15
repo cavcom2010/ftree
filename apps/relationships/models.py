@@ -8,6 +8,7 @@ class Relationship(models.Model):
         SPOUSE = "spouse", "Spouse"
         PARTNER = "partner", "Partner"
         EX_PARTNER = "ex_partner", "Ex-partner"
+        CO_PARENT = "co_parent", "Co-parent"
         SIBLING = "sibling", "Sibling"
         ADOPTIVE_PARENT = "adoptive_parent", "Adoptive Parent"
         STEP_PARENT = "step_parent", "Step-parent"
@@ -23,6 +24,7 @@ class Relationship(models.Model):
         Type.SPOUSE,
         Type.PARTNER,
         Type.EX_PARTNER,
+        Type.CO_PARENT,
         Type.SIBLING,
     )
     MAX_PARENT_LIKE_RELATIONSHIPS = 4

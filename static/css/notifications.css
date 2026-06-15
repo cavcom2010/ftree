@@ -1,0 +1,122 @@
+/* ===== Subtle notifications ===== */
+.app-toast-stack {
+  position: fixed;
+  z-index: 1600;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  transform: translateX(-50%);
+  width: min(calc(100vw - 24px), 420px);
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.app-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 9px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 118, 82, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+  box-shadow: 0 10px 28px rgba(15, 41, 30, 0.12);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.25;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.app-toast.is-leaving {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+}
+
+.app-toast-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  background: var(--green-bright);
+}
+
+.app-toast-success .app-toast-dot {
+  background: var(--green-bright);
+}
+
+.app-toast-warning .app-toast-dot {
+  background: #f59e0b;
+}
+
+.app-toast-error .app-toast-dot {
+  background: #ef4444;
+}
+
+.app-toast-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-toast-close {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 41, 30, 0.06);
+  color: var(--ink);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.app-toast-close:active {
+  transform: scale(0.94);
+}
+
+/* Tree create sheet guidance should be inline, not a floating toast. */
+.tree-create-helper {
+  margin: 2px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 18px;
+  background: rgba(209, 250, 229, 0.55);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.tree-create-option[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.72;
+  box-shadow: none;
+}
+
+.tree-create-option[aria-disabled="true"]:active,
+.tree-create-option[aria-disabled="true"]:hover {
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .app-toast-stack {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    width: calc(100vw - 16px);
+  }
+
+  .app-toast {
+    min-height: 40px;
+    padding: 7px 8px 7px 11px;
+    font-size: 0.82rem;
+  }
+}

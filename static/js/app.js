@@ -4,7 +4,6 @@ function setViewportHeight() {
 setViewportHeight();
 window.addEventListener("resize", setViewportHeight);
 
-const toast = document.getElementById("toast");
 const drawer = document.getElementById("personDrawer");
 const bottomNav = document.getElementById("bottomNav");
 const sheet = document.getElementById("global-sheet");
@@ -21,22 +20,63 @@ function scrollToSection(id) {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function showToast(message) {
-  if (!toast) return;
-  const toastText = document.getElementById("toastText");
-  if (toastText) toastText.textContent = message;
-  toast.classList.add("show");
-  clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+function getToastStack() {
+  let toastStack = document.querySelector(".app-toast-stack");
+  if (!toastStack) {
+    toastStack = document.createElement("div");
+    toastStack.className = "app-toast-stack";
+    toastStack.setAttribute("aria-live", "polite");
+    toastStack.setAttribute("aria-atomic", "true");
+    document.body.appendChild(toastStack);
+  }
+  return toastStack;
 }
+
+function removeToast(toastElement) {
+  if (!toastElement || toastElement.classList.contains("is-leaving")) return;
+  toastElement.classList.add("is-leaving");
+  window.setTimeout(() => toastElement.remove(), 180);
+}
+
+function bindToast(toastElement) {
+  if (!toastElement || toastElement.dataset.boundToast === "true") return;
+  toastElement.dataset.boundToast = "true";
+
+  const closeButton = toastElement.querySelector(".app-toast-close");
+  if (closeButton) {
+    closeButton.addEventListener("click", () => removeToast(toastElement));
+  }
+
+  window.setTimeout(() => removeToast(toastElement), 2800);
+}
+
+function showToast(message, type = "success") {
+  if (!message) return;
+  const allowedTypes = ["success", "warning", "error"];
+  const toastType = allowedTypes.includes(type) ? type : "success";
+  const toastStack = getToastStack();
+  const toastElement = document.createElement("div");
+  toastElement.className = `app-toast app-toast-${toastType}`;
+  toastElement.setAttribute("data-toast", "");
+  toastElement.innerHTML = `
+    <span class="app-toast-dot" aria-hidden="true"></span>
+    <span class="app-toast-text"></span>
+    <button class="app-toast-close" type="button" aria-label="Dismiss notification">&times;</button>
+  `;
+  const toastText = toastElement.querySelector(".app-toast-text");
+  if (toastText) toastText.textContent = message;
+
+  toastStack.appendChild(toastElement);
+  bindToast(toastElement);
+}
+
+window.showToast = showToast;
 
 function toggleGeneration(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const wasHidden = el.classList.contains("hidden");
   el.classList.toggle("hidden");
   el.classList.add("revealed");
-  showToast(wasHidden ? "Descendants revealed" : "Branch collapsed");
 }
 
 function revealAll() {
@@ -44,7 +84,6 @@ function revealAll() {
     el.classList.remove("hidden");
     el.classList.add("revealed");
   });
-  showToast("Full branch revealed");
 }
 
 function selectPerson(event, name, meta, avatar) {
@@ -173,22 +212,26 @@ if (bottomNav) {
 }
 
 // HTMX hooks
-document.body.addEventListener("showToast", (event) => {
-  showToast(event.detail.value);
-});
+if (document.body) {
+  document.body.addEventListener("showToast", (event) => {
+    showToast(event.detail.value);
+  });
 
-document.body.addEventListener("htmx:afterSwap", (event) => {
-  if (event.detail.target.id === "personDrawer") {
-    event.detail.target.classList.add("show");
-  }
-  if (event.detail.target.id === "global-sheet") {
-    event.detail.target.classList.add("show");
-    if (sheetOverlay) sheetOverlay.classList.add("show");
-  }
-});
+  document.body.addEventListener("htmx:afterSwap", (event) => {
+    if (event.detail.target.id === "personDrawer") {
+      event.detail.target.classList.add("show");
+    }
+    if (event.detail.target.id === "global-sheet") {
+      event.detail.target.classList.add("show");
+      if (sheetOverlay) sheetOverlay.classList.add("show");
+    }
+  });
+}
 
 // Active bottom nav item per page
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-toast]").forEach(bindToast);
+
   const path = window.location.pathname;
   const navLinks = document.querySelectorAll(".bottom-nav a");
   navLinks.forEach((link) => {
@@ -215,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initialize Lucide icons
-  if (typeof lucide !== 'undefined') {
+  if (typeof lucide !== "undefined") {
     lucide.createIcons();
   }
 });
@@ -229,16 +272,6 @@ document.addEventListener("click", (event) => {
 
   if (event.target.closest("[data-account-sheet-close]")) {
     closeAccountSheet();
-    return;
-  }
-
-  const treeSheet = document.getElementById("tree-create-sheet");
-  if (!treeSheet && event.target.closest("[data-create-sheet-trigger]")) {
-    showToast("Create menu is available from the tree homepage");
-  }
-
-  if (!treeSheet && event.target.closest("[data-tree-search-trigger]")) {
-    showToast("Search is available from the tree homepage");
   }
 });
 

@@ -104,9 +104,9 @@ class EmailVerification(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["token"]),
-            models.Index(fields=["email"]),
-            models.Index(fields=["user", "verified_at"]),
+            models.Index(fields=["token"], name="families_em_token_8b8f1a_idx"),
+            models.Index(fields=["email"], name="families_em_email_7d6f20_idx"),
+            models.Index(fields=["user", "verified_at"], name="families_em_user_02ef8b_idx"),
         ]
 
     def __str__(self):
@@ -229,3 +229,7 @@ class FamilyInvitation(models.Model):
             raise ValidationError({"person": "Invited person must belong to the same family."})
         if self.anchor_person_id and self.anchor_person.family_id != self.family_id:
             raise ValidationError({"anchor_person": "Anchor person must belong to the same family."})
+        if self.invitee_user_id and self.invitee_email:
+            raise ValidationError("Invite cannot target both a user and an email address.")
+        if self.relationship_type and self.relationship_type not in Relationship.Type.values:
+            raise ValidationError({"relationship_type": "Unknown relationship type."})

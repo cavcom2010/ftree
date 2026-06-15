@@ -128,7 +128,7 @@ def create_invitation(
         family=family,
         inviter=inviter,
         invitee_user=invitee_user,
-        invitee_email=invitee_email if not invitee_user else invitee_user.email,
+        invitee_email="" if invitee_user else invitee_email,
         person=person,
         anchor_person=anchor_person,
         relationship_type=relationship_type,

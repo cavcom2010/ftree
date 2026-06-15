@@ -1,10 +1,21 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from apps.relationships.models import Relationship
+
+
+def make_email_verification_token():
+    return get_random_string(64)
+
+
+def default_email_verification_expiry():
+    return timezone.now() + timedelta(hours=24)
 
 
 class Family(models.Model):
@@ -78,6 +89,46 @@ class FamilyMembership(models.Model):
             raise ValidationError({"person": "Membership person must belong to the same family."})
 
 
+class EmailVerification(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_verifications",
+    )
+    email = models.EmailField()
+    token = models.CharField(max_length=96, unique=True, default=make_email_verification_token)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=default_email_verification_expiry)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["email"]),
+            models.Index(fields=["user", "verified_at"]),
+        ]
+
+    def __str__(self):
+        return f"Email verification for {self.email}"
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_verified(self):
+        return bool(self.verified_at)
+
+    @property
+    def can_verify(self):
+        return not self.is_verified and not self.is_expired
+
+    def mark_verified(self):
+        self.verified_at = timezone.now()
+        self.save(update_fields=["verified_at"])
+
+
 class FamilyInvitation(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -134,7 +185,7 @@ class FamilyInvitation(models.Model):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.PENDING,
+        default=FamilyInvitation.Status.PENDING if False else "pending",
     )
     sent_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)

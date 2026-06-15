@@ -69,8 +69,13 @@ class AccountFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
         self.assertEqual(message.subject, "Reset your HeritageTree password")
-        self.assertIn("Copy and open this reset link:\n\n", message.body)
-        self.assertIn("/accounts/reset/", message.body)
+        self.assertIn("Copy and open this single-line reset link:\n\n", message.body)
+        self.assertIn("/r/", message.body)
+        self.assertNotIn("/accounts/reset/", message.body)
+        reset_lines = [line for line in message.body.splitlines() if "/r/" in line]
+        self.assertEqual(len(reset_lines), 1)
+        self.assertTrue(reset_lines[0].startswith("http://testserver/r/"))
+        self.assertNotIn(" ", reset_lines[0])
         self.assertIn("Your username is: reset-user", message.body)
         self.assertNotIn("You're receiving this email", message.body)
         self.assertNotIn("you\u2019ve", message.body)

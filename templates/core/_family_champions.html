@@ -18,29 +18,24 @@
     <div class="champion-points">+{{ achiever.total }}</div>
   </div>
   {% empty %}
-  <div class="champion">
-    <div class="champion-rank gold">1st</div>
-    <div class="champion-info">
-      <b>Sarah Mazhindu</b>
-      <p>Memory Keeper • 12 stories</p>
+    {% if is_demo_context %}
+    <div class="champion">
+      <div class="champion-rank gold">1st</div>
+      <div class="champion-info">
+        <b>Demo Relative</b>
+        <p>Example champion shown before sign in.</p>
+      </div>
+      <div class="champion-points">+12</div>
     </div>
-    <div class="champion-points">+120</div>
-  </div>
-  <div class="champion">
-    <div class="champion-rank silver">2nd</div>
-    <div class="champion-info">
-      <b>David Mazhindu</b>
-      <p>Family Historian • 8 stories</p>
+    {% else %}
+    <div class="champion">
+      <div class="champion-rank gold"><i data-lucide="trophy"></i></div>
+      <div class="champion-info">
+        <b>No champions yet</b>
+        <p>Family contribution scores will appear after real activity is recorded.</p>
+      </div>
+      <div class="champion-points">+0</div>
     </div>
-    <div class="champion-points">+95</div>
-  </div>
-  <div class="champion">
-    <div class="champion-rank bronze">3rd</div>
-    <div class="champion-info">
-      <b>James Mazhindu</b>
-      <p>Story Teller • 5 stories</p>
-    </div>
-    <div class="champion-points">+64</div>
-  </div>
+    {% endif %}
   {% endfor %}
 </div>

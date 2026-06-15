@@ -87,6 +87,7 @@ def invite_relative(request, person_id, relation_type):
                     person_data={
                         "first_name": form.cleaned_data["first_name"],
                         "last_name": form.cleaned_data["last_name"],
+                        "maiden_name": form.cleaned_data["maiden_name"],
                         "gender": form.cleaned_data["gender"],
                         "birth_date": form.cleaned_data["birth_date"],
                     },

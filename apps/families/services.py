@@ -342,6 +342,7 @@ def create_relative(
         created_by=inviter,
         first_name=person_data.get("first_name", "").strip(),
         last_name=person_data.get("last_name", "").strip(),
+        maiden_name=person_data.get("maiden_name", "").strip(),
         gender=person_data.get("gender") or Person.Gender.UNKNOWN,
         birth_date=person_data.get("birth_date"),
     )

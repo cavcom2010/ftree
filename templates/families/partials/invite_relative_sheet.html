@@ -24,6 +24,12 @@
         {{ form.last_name.errors }}
       </label>
     </div>
+    <label>
+      <span>{{ form.maiden_name.label }}</span>
+      {{ form.maiden_name }}
+      {% if form.maiden_name.help_text %}<small>{{ form.maiden_name.help_text }}</small>{% endif %}
+      {{ form.maiden_name.errors }}
+    </label>
     <div class="tree-form-grid">
       <label>
         <span>{{ form.gender.label }}</span>

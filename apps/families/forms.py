@@ -50,7 +50,14 @@ class InviteRelativeForm(InvitePersonForm):
         help_text="Optional. Leave blank to add a family-tree profile without inviting an account yet.",
     )
     first_name = forms.CharField(max_length=100)
-    last_name = forms.CharField(max_length=100)
+    last_name = forms.CharField(label="Last/current surname", max_length=100)
+    maiden_name = forms.CharField(
+        label="Birth/maiden surname",
+        max_length=100,
+        required=False,
+        help_text="Optional. Useful for married female relatives or anyone whose birth surname differs.",
+        widget=forms.TextInput(attrs={"placeholder": "Optional"}),
+    )
     gender = forms.ChoiceField(
         required=False,
         choices=Person.Gender.choices,

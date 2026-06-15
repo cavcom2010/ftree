@@ -268,6 +268,7 @@ def _person_card(
     return {
         "id": person.id,
         "full_name": person.full_name,
+        "maiden_name": person.maiden_name,
         "first_name": person.first_name,
         "initials": _initials(person.first_name, person.last_name),
         "relationship_label": relationship_label,

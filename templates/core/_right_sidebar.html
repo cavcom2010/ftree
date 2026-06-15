@@ -1,36 +1,53 @@
 <!-- templates/core/_right_sidebar.html -->
 <aside class="desktop-panel">
-  <div class="desktop-search">
+  <a class="desktop-search" href="{% if request.user.is_authenticated %}/tree/{% else %}/accounts/signup/{% endif %}">
     <i data-lucide="search"></i>
     Search people, places, stories...
-  </div>
+  </a>
 
   <div class="profile-panel">
     <div class="profile-big" id="desktopAvatar">
-      <i data-lucide="user"></i>
+      {% if right_panel.avatar_url %}
+        <img src="{{ right_panel.avatar_url }}" alt="{{ right_panel.name }}">
+      {% else %}
+        <span>{{ right_panel.initials|default:"HT" }}</span>
+      {% endif %}
     </div>
-    <h3 id="desktopName">{{ request.user.username|default:"Family Member" }}</h3>
-    <p id="desktopMeta">Generation 2 • Living</p>
+    <h3 id="desktopName">{{ right_panel.name|default:"Family Member" }}</h3>
+    <p id="desktopMeta">{{ right_panel.meta|default:"Open your family tree" }}</p>
     <div class="prompt-actions" style="margin-bottom:0;">
-      <button class="btn primary" onclick="showToast('Profile opened')">
-        <i data-lucide="user"></i>Profile
-      </button>
-      <button class="btn" onclick="showToast('Add menu opened')">
-        <i data-lucide="plus"></i>Add
-      </button>
+      <a class="btn primary" href="{% if request.user.is_authenticated %}/tree/{% else %}/accounts/signup/{% endif %}">
+        <i data-lucide="user"></i>{% if request.user.is_authenticated %}Open Tree{% else %}Start{% endif %}
+      </a>
+      <a class="btn" href="{% if request.user.is_authenticated %}/tree/{% else %}/accounts/signup/{% endif %}">
+        <i data-lucide="plus"></i>{% if request.user.is_authenticated %}Add{% else %}Join{% endif %}
+      </a>
     </div>
   </div>
 
   <div class="widget">
     <h3>Relationship Finder</h3>
-    <p>Select two relatives to trace how they connect.</p>
-    <button class="btn primary" style="width:100%" onclick="showToast('Relationship Finder opened')">
-      <i data-lucide="link"></i>Find Relationship
-    </button>
+    {% if request.user.is_authenticated %}
+      <p>Use your real family tree to trace how relatives connect.</p>
+      <a class="btn primary" style="width:100%" href="/tree/">
+        <i data-lucide="link"></i>Open Tree
+      </a>
+    {% else %}
+      <p>Create an account to trace real relationships in your private tree.</p>
+      <a class="btn primary" style="width:100%" href="/accounts/signup/">
+        <i data-lucide="link"></i>Start Tree
+      </a>
+    {% endif %}
   </div>
 
   <div class="widget">
     <h3>Family Compass</h3>
-    <p>You are viewing <strong>Generation 2</strong>. Reveal descendants to move down the branch.</p>
+    {% if is_demo_context %}
+      <p>You are viewing a demo family preview. Sign in to build your own tree.</p>
+    {% elif generation_count %}
+      <p>You are viewing <strong>{{ right_panel.family_hint }}</strong> with <strong>{{ generation_count }}</strong> generation row{{ generation_count|pluralize }}.</p>
+    {% else %}
+      <p>Your private family tree is ready to start from Gen 0.</p>
+    {% endif %}
   </div>
 </aside>

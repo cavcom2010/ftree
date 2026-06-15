@@ -13,14 +13,14 @@
     <div class="tree-create-actions">
         {% if tree_only %}
             <button type="button" data-tree-scroll-anchor data-create-sheet-close>Choose a person in the tree</button>
-            <button type="button" class="tree-create-option">Invite from person card</button>
-            <button type="button" class="tree-create-option">Review invite status</button>
-            <button type="button" class="tree-create-option">Connected users</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Invite from person card</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Review invite status</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Connected users</button>
         {% else %}
-            <button type="button" class="tree-create-option">Add relative</button>
-            <button type="button" class="tree-create-option">Add photo memory</button>
-            <button type="button" class="tree-create-option">Write story</button>
-            <button type="button" class="tree-create-option">Add video</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Add relative</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Add photo memory</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Write story</button>
+            <button type="button" class="tree-create-option" aria-disabled="true" tabindex="-1">Add video</button>
         {% endif %}
     </div>
 </section>

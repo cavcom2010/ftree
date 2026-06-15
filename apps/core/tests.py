@@ -1,4 +1,3 @@
-from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from decouple import UndefinedValueError
@@ -147,9 +146,9 @@ class TreePageTests(TestCase):
 class SeedDemoMediaCommandTests(TestCase):
     def test_skip_downloads_creates_articles_and_memory_records_idempotently(self):
         call_command("seed_demo_media", skip_downloads=True, verbosity=0)
-        family = Family.objects.get(slug="mazhindu-demo")
+        family = Family.objects.get(slug="johnson-family")
         expected_memory_count = len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS)
-        expected_story_count = 9
+        expected_story_count = 3 + len(STORY_ARTICLE_SEEDS)
 
         self.assertEqual(Memory.objects.filter(family=family).count(), expected_memory_count)
         self.assertEqual(Story.objects.filter(family=family).count(), expected_story_count)
@@ -159,10 +158,9 @@ class SeedDemoMediaCommandTests(TestCase):
         self.assertEqual(Memory.objects.filter(family=family).count(), expected_memory_count)
         self.assertEqual(Story.objects.filter(family=family).count(), expected_story_count)
 
-    def test_download_failure_raises_command_error(self):
-        with TemporaryDirectory() as tmpdir:
-            with patch("apps.core.management.commands.seed_demo_media.requests.get") as mocked_get:
-                mocked_get.side_effect = UndefinedValueError("PIXABAY_API_KEY not set")
+    def test_missing_pixabay_api_key_raises_command_error(self):
+        with patch("apps.core.management.commands.seed_demo_media.config") as mocked_config:
+            mocked_config.side_effect = UndefinedValueError("PIXABAY_API_KEY not set")
 
-                with self.assertRaises(CommandError):
-                    call_command("seed_demo_media", media_root=tmpdir, verbosity=0)
+            with self.assertRaisesMessage(CommandError, "PIXABAY_API_KEY is required"):
+                call_command("seed_demo_media", verbosity=0)

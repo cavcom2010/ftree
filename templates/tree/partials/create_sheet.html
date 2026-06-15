@@ -5,19 +5,19 @@
             <p class="tree-eyebrow">Create</p>
             <h2 id="tree-create-title">Add to the family tree</h2>
         </div>
-        <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+        <button type="button" data-create-sheet-close aria-label="Close create menu">Close</button>
     </div>
     <div class="tree-create-actions">
         {% if tree_only %}
             <button type="button" data-tree-scroll-anchor data-create-sheet-close>Choose a person in the tree</button>
-            <button type="button" data-tree-toast="Open a person card, then use Parents, Partners, Children, Siblings, or Details to invite the right relative.">Invite from person card</button>
-            <button type="button" data-tree-toast="Pending invites show on person cards until accepted, declined, or ignored.">Review invite status</button>
-            <button type="button" data-tree-toast="Accepted invitations connect users through their claimed family-tree person.">Connected users</button>
+            <button type="button">Invite from person card</button>
+            <button type="button">Review invite status</button>
+            <button type="button">Connected users</button>
         {% else %}
-            <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
-            <button type="button" data-tree-toast="Photo memory flow will open here.">Add photo memory</button>
-            <button type="button" data-tree-toast="Story editor will open here.">Write story</button>
-            <button type="button" data-tree-toast="Video memory flow will open here.">Add video</button>
+            <button type="button">Add relative</button>
+            <button type="button">Add photo memory</button>
+            <button type="button">Write story</button>
+            <button type="button">Add video</button>
         {% endif %}
     </div>
 </section>

@@ -1,0 +1,9 @@
+Hello,
+
+Open this HeritageTree account URL to activate your account:
+
+{{ verification_url }}
+
+This URL expires soon for security.
+
+HeritageTree

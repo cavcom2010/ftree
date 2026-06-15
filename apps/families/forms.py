@@ -84,6 +84,20 @@ class InviteRelativeForm(InvitePersonForm):
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
+    partner_shared_children = forms.ModelMultipleChoiceField(
+        label="Children you share with this partner",
+        queryset=Person.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select existing children who should also be connected to this partner.",
+    )
+    parent_shared_children = forms.ModelMultipleChoiceField(
+        label="Existing siblings who are also this parent's children",
+        queryset=Person.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select your existing siblings who should also be connected to this parent.",
+    )
 
     def __init__(self, *args, family=None, anchor_person=None, relation_type="", **kwargs):
         super().__init__(*args, **kwargs)
@@ -94,6 +108,8 @@ class InviteRelativeForm(InvitePersonForm):
             self.fields["other_parent"].queryset = _partners_for_person(family, anchor_person)
             shared_parent_queryset = _parents_for_person(family, anchor_person)
             self.fields["shared_parents"].queryset = shared_parent_queryset
+            self.fields["partner_shared_children"].queryset = _children_for_person(family, anchor_person)
+            self.fields["parent_shared_children"].queryset = _siblings_for_person(family, anchor_person)
             if not self.is_bound:
                 self.initial["shared_parents"] = list(shared_parent_queryset.values_list("id", flat=True))
 
@@ -129,6 +145,15 @@ class SignupForm(UserCreationForm):
         return value
 
 
+def _parent_types():
+    return [
+        Relationship.Type.PARENT_CHILD,
+        Relationship.Type.ADOPTIVE_PARENT,
+        Relationship.Type.STEP_PARENT,
+        Relationship.Type.GUARDIAN,
+    ]
+
+
 def _partners_for_person(family, person):
     partner_types = [
         Relationship.Type.SPOUSE,
@@ -151,15 +176,50 @@ def _partners_for_person(family, person):
 
 
 def _parents_for_person(family, person):
-    parent_types = [
-        Relationship.Type.PARENT_CHILD,
-        Relationship.Type.ADOPTIVE_PARENT,
-        Relationship.Type.STEP_PARENT,
-        Relationship.Type.GUARDIAN,
-    ]
     parent_ids = Relationship.objects.filter(
         family=family,
         to_person=person,
-        relationship_type__in=parent_types,
+        relationship_type__in=_parent_types(),
     ).values_list("from_person_id", flat=True)
     return Person.objects.filter(family=family, id__in=parent_ids).order_by("first_name", "last_name")
+
+
+def _children_for_person(family, person):
+    child_ids = Relationship.objects.filter(
+        family=family,
+        from_person=person,
+        relationship_type__in=_parent_types(),
+    ).values_list("to_person_id", flat=True)
+    return Person.objects.filter(family=family, id__in=child_ids).order_by("birth_date", "first_name", "last_name")
+
+
+def _siblings_for_person(family, person):
+    sibling_ids = set()
+
+    sibling_relationships = Relationship.objects.filter(
+        family=family,
+        relationship_type=Relationship.Type.SIBLING,
+    ).filter(Q(from_person=person) | Q(to_person=person))
+    for relationship in sibling_relationships:
+        sibling_ids.add(
+            relationship.to_person_id
+            if relationship.from_person_id == person.id
+            else relationship.from_person_id
+        )
+
+    parent_ids = Relationship.objects.filter(
+        family=family,
+        to_person=person,
+        relationship_type__in=_parent_types(),
+    ).values_list("from_person_id", flat=True)
+    sibling_ids.update(
+        Relationship.objects.filter(
+            family=family,
+            from_person_id__in=parent_ids,
+            relationship_type__in=_parent_types(),
+        )
+        .exclude(to_person=person)
+        .values_list("to_person_id", flat=True)
+    )
+
+    return Person.objects.filter(family=family, id__in=sibling_ids).order_by("birth_date", "first_name", "last_name")

@@ -479,12 +479,21 @@ def _strongest_role(existing_role, invited_role):
     return max([existing_role, invited_role], key=priority.index)
 
 
+def _activity_type_for_verb(verb):
+    if verb == "added":
+        return Activity.Type.PERSON_ADDED
+    if verb in {"invited", "joined"}:
+        return Activity.Type.PERSON_ADDED
+    return Activity.Type.PERSON_ADDED
+
+
 def _record_activity(*, family, user, verb, target, description):
-    Activity.objects.create(
-        family=family,
-        user=user if getattr(user, "is_authenticated", False) else None,
-        verb=verb,
-        target_model=target.__class__.__name__,
-        target_id=str(target.pk),
-        description=description,
-    )
+    data = {
+        "family": family,
+        "actor": user if getattr(user, "is_authenticated", False) else None,
+        "activity_type": _activity_type_for_verb(verb),
+        "message": description,
+    }
+    if isinstance(target, Person):
+        data["person"] = target
+    Activity.objects.create(**data)

@@ -1,0 +1,51 @@
+<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head">
+    <div>
+      <p class="tree-eyebrow">Edit person</p>
+      <h2 id="tree-create-title">Edit name for {{ person.full_name }}</h2>
+    </div>
+    <button type="button" data-create-sheet-close aria-label="Close edit name form">&times;</button>
+  </div>
+
+  <form class="tree-invite-form" method="post" hx-post="{% url 'person_edit_name' person.id %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="tree-form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="tree-form-grid">
+      <label>
+        <span>{{ form.first_name.label }}</span>
+        {{ form.first_name }}
+        {{ form.first_name.errors }}
+      </label>
+      <label>
+        <span>{{ form.last_name.label }}</span>
+        {{ form.last_name }}
+        {{ form.last_name.errors }}
+      </label>
+    </div>
+
+    <div class="tree-form-grid">
+      <label>
+        <span>{{ form.middle_name.label }}</span>
+        {{ form.middle_name }}
+        {{ form.middle_name.errors }}
+      </label>
+      <label>
+        <span>{{ form.maiden_name.label }}</span>
+        {{ form.maiden_name }}
+        {{ form.maiden_name.errors }}
+      </label>
+    </div>
+
+    <p class="tree-form-help">This updates the name shown on the homepage, tree cards, drawers, and relationship views.</p>
+
+    <div class="tree-create-actions">
+      <button type="submit">Save name</button>
+      <button type="button" data-create-sheet-close>Cancel</button>
+    </div>
+  </form>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

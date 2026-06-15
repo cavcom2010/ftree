@@ -109,6 +109,93 @@ class TreePageTests(TestCase):
         self.assertContains(response, "Add partner")
         self.assertContains(response, "Add child")
 
+    def test_staff_without_membership_sees_family_picker_without_starter_tree(self):
+        staff = User.objects.create_user(
+            username="tree-staff",
+            email="tree-staff@example.com",
+            is_staff=True,
+        )
+        family_count = Family.objects.count()
+        person_count = Person.objects.count()
+        self.client.force_login(staff)
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Admin view")
+        self.assertContains(response, "Choose a family tree")
+        self.assertContains(response, "Johnson Family")
+        self.assertEqual(Family.objects.count(), family_count)
+        self.assertEqual(Person.objects.count(), person_count)
+        self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
+
+    def test_staff_can_view_selected_family_read_only_without_membership(self):
+        staff = User.objects.create_user(
+            username="tree-staff-viewer",
+            email="tree-staff-viewer@example.com",
+            is_staff=True,
+        )
+        self.client.force_login(staff)
+
+        response = self.client.get("/tree/?family=johnson-family")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Johnson Family")
+        self.assertContains(response, "All families")
+        self.assertContains(response, "Family Tree · Centred on")
+        self.assertNotContains(response, "Start your tree")
+        self.assertNotContains(response, "invite-relative")
+        self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
+
+    def test_staff_can_choose_anchor_in_selected_family(self):
+        staff = User.objects.create_user(
+            username="tree-staff-anchor",
+            email="tree-staff-anchor@example.com",
+            is_staff=True,
+        )
+        anchor = Person.objects.get(family__slug="johnson-family", first_name="Robert")
+        self.client.force_login(staff)
+
+        response = self.client.get(f"/tree/?family=johnson-family&anchor={anchor.id}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Family Tree · Centred on Robert Johnson")
+        self.assertContains(response, 'aria-current="true"')
+
+    def test_staff_homepage_without_membership_does_not_create_starter_tree(self):
+        staff = User.objects.create_user(
+            username="home-staff",
+            email="home-staff@example.com",
+            is_staff=True,
+        )
+        family_count = Family.objects.count()
+        person_count = Person.objects.count()
+        self.client.force_login(staff)
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Family.objects.count(), family_count)
+        self.assertEqual(Person.objects.count(), person_count)
+        self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
+
+    def test_regular_non_member_cannot_view_other_family_by_slug(self):
+        user = User.objects.create_user(
+            username="regular-tree-user",
+            email="regular-tree-user@example.com",
+            first_name="Regular",
+            last_name="User",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get("/tree/?family=johnson-family")
+
+        self.assertEqual(response.status_code, 200)
+        membership = FamilyMembership.objects.select_related("family").get(user=user)
+        self.assertNotEqual(membership.family.slug, "johnson-family")
+        self.assertContains(response, "Regular&#x27;s Family Tree")
+        self.assertNotContains(response, "Johnson Family")
+
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
 

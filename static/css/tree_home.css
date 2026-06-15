@@ -249,12 +249,14 @@
 
 .tree-invite-strip strong,
 .tree-invite-strip a,
-.tree-family-switcher button {
+.tree-family-switcher button,
+.tree-family-switcher a {
   white-space: nowrap;
 }
 
 .tree-invite-strip a,
-.tree-family-switcher button {
+.tree-family-switcher button,
+.tree-family-switcher a {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 11px;
@@ -269,7 +271,8 @@
   flex: 0 0 auto;
 }
 
-.tree-family-switcher button.is-active {
+.tree-family-switcher button.is-active,
+.tree-family-switcher a.is-active {
   border-color: transparent;
   color: #fff;
   background: linear-gradient(135deg, var(--green), var(--green-bright));
@@ -772,6 +775,53 @@
   color: var(--muted);
 }
 
+.tree-admin-family-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tree-admin-family-grid a,
+.tree-admin-empty {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 10px;
+  color: var(--ink);
+  background: #fff;
+  text-align: left;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.tree-admin-family-grid span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
+  font-weight: 950;
+}
+
+.tree-admin-family-grid strong,
+.tree-admin-family-grid small {
+  display: block;
+  min-width: 0;
+}
+
+.tree-admin-family-grid small {
+  color: var(--muted);
+}
+
+.tree-admin-switcher {
+  margin-top: -4px;
+}
+
 .tree-reveal-backdrop,
 .tree-sheet-backdrop {
   position: fixed;
@@ -922,6 +972,23 @@
 
 .tree-reveal-panel button {
   color: var(--green);
+}
+
+.tree-reveal-panel .tree-related-chip {
+  display: grid;
+  gap: 2px;
+  border-radius: 16px;
+}
+
+.tree-related-chip strong,
+.tree-related-chip small {
+  display: block;
+}
+
+.tree-related-chip small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
 }
 
 .tree-reveal-panel dl {
@@ -1142,6 +1209,10 @@
   }
 
   .anchor-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tree-admin-family-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

@@ -273,16 +273,19 @@
               {% endif %}
           </div>
           <div class="tree-reveal-panel" id="children-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
+            <span>{{ person.child_count }} direct child{{ person.child_count|pluralize }}</span>
             {% for relative in person.children %}
               <span>{{ relative.full_name }}</span>
             {% empty %}
-              {% if not can_invite_relatives %}
+              {% if can_invite_relatives %}
+                <span>No children connected yet</span>
+              {% else %}
                 <span>No child connected</span>
               {% endif %}
             {% endfor %}
-              {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.child_count %}Add another child{% else %}Add child{% endif %}</button>
-              {% endif %}
+            {% if can_invite_relatives %}
+              <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.child_count %}Add another child{% else %}Add child{% endif %}</button>
+            {% endif %}
           </div>
           <div class="tree-reveal-panel" id="siblings-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
             {% for relative in person.siblings %}

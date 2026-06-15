@@ -6,6 +6,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/tree_home.css' %}?v=20260615-tree-shell">
+<link rel="stylesheet" href="{% static 'css/tree_onboarding.css' %}?v=20260615-tree-onboarding">
 {% endblock %}
 
 {% block content %}
@@ -95,6 +96,34 @@
         </div>
       </section>
     {% else %}
+      {% if show_tree_onboarding and tree_anchor and can_invite_relatives %}
+        <section class="tree-onboarding-card" aria-labelledby="tree-onboarding-title">
+          <div class="tree-onboarding-copy">
+            <p class="tree-kicker">Start your tree</p>
+            <h1 id="tree-onboarding-title">You are Gen 0. Build your first family links.</h1>
+            <p>
+              We have created your private family tree and placed <strong>{{ tree_anchor.full_name }}</strong> at the centre.
+              Add one close relative now, or skip and explore the tree first.
+            </p>
+          </div>
+          <div class="tree-onboarding-actions" aria-label="Quick ways to add your first relatives">
+            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+              <i data-lucide="arrow-up"></i>
+              Add parent
+            </button>
+            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+              <i data-lucide="heart"></i>
+              Add partner
+            </button>
+            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+              <i data-lucide="baby"></i>
+              Add child
+            </button>
+            <a href="#tree-generation-stack">Explore first</a>
+          </div>
+        </section>
+      {% endif %}
+
       <section class="tree-toolbar" aria-label="Tree controls">
         <div>
           <strong>{{ generation_count }}</strong>
@@ -123,7 +152,7 @@
         </section>
       {% endif %}
 
-      <section class="tree-generation-stack" aria-label="Relative generations">
+      <section class="tree-generation-stack" id="tree-generation-stack" aria-label="Relative generations">
         {% for row in relative_generation_rows %}
           <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}" data-generation-number="{{ row.number }}">
             <button

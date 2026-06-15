@@ -12,16 +12,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260615-auth-fields">
+  <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260615-subtle-notifications">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
-  <!-- Toast -->
-  <div class="toast" id="toast" role="status" aria-live="polite">
-    <i data-lucide="check-circle"></i>
-    <span id="toastText">Action completed</span>
+  <div class="app-toast-stack" aria-live="polite" aria-atomic="true">
+    {% if messages %}
+      {% for message in messages %}
+        {% if "success" in message.tags or "error" in message.tags or "warning" in message.tags %}
+          <div class="app-toast app-toast-{{ message.tags }}" data-toast>
+            <span class="app-toast-dot" aria-hidden="true"></span>
+            <span class="app-toast-text">{{ message }}</span>
+            <button class="app-toast-close" type="button" aria-label="Dismiss notification">&times;</button>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
   </div>
 
   {% if not tree_only %}
@@ -119,7 +128,7 @@
     <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
   {% endif %}
 
-  <script defer src="{% static 'js/app.js' %}?v=20260615-account-nav"></script>
+  <script defer src="{% static 'js/app.js' %}?v=20260615-subtle-notifications"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -1,22 +1,31 @@
-from apps.families.models import Family
+from apps.families.services import current_family_for_user
 from apps.memories.models import Memory
 from apps.people.models import Person
 from apps.people.services import get_generation_rows
 from apps.relationships.models import Relationship
+from apps.social.models import Activity
 from apps.stories.models import Story
 
 
-def build_homepage_context():
-    family = Family.objects.prefetch_related("people").first()
-    if not family or not Person.objects.filter(family=family).exists():
-        return _build_demo_context()
+def build_homepage_context(user=None, family_slug=None):
+    if getattr(user, "is_authenticated", False):
+        family = current_family_for_user(user, family_slug=family_slug)
+        if family and Person.objects.filter(family=family).exists():
+            return _build_family_context(family, is_demo_context=False)
+        return _build_empty_context(family)
 
-    return _build_family_context(family)
+    return _build_demo_context()
 
 
-def _build_family_context(family):
-    person_qs = Person.objects.filter(family=family).prefetch_related("memories", "stories")
-    people = list(person_qs)
+def _build_family_context(family, *, is_demo_context):
+    people = list(
+        Person.objects.filter(family=family)
+        .prefetch_related("memories", "stories")
+        .order_by("birth_date", "first_name", "last_name", "id")
+    )
+    if not people:
+        return _build_empty_context(family)
+
     person_cards = {
         person.id: _person_card_from_model(person, "Family member")
         for person in people
@@ -24,16 +33,25 @@ def _build_family_context(family):
     root_person = people[0]
     root_card = person_cards[root_person.id]
 
-    spouse_links = Relationship.objects.filter(
+    partner_links = Relationship.objects.filter(
         family=family,
-        relationship_type=Relationship.Type.SPOUSE,
+        relationship_type__in=[
+            Relationship.Type.SPOUSE,
+            Relationship.Type.PARTNER,
+            Relationship.Type.EX_PARTNER,
+        ],
         from_person_id__in=person_cards,
     )
-    people_with_spouses = {link.from_person_id for link in spouse_links}
+    people_with_partners = {link.from_person_id for link in partner_links}
 
     child_links = Relationship.objects.filter(
         family=family,
-        relationship_type=Relationship.Type.PARENT_CHILD,
+        relationship_type__in=[
+            Relationship.Type.PARENT_CHILD,
+            Relationship.Type.ADOPTIVE_PARENT,
+            Relationship.Type.STEP_PARENT,
+            Relationship.Type.GUARDIAN,
+        ],
         from_person_id__in=person_cards,
     )
     children_count_by_parent = {}
@@ -41,13 +59,16 @@ def _build_family_context(family):
         children_count_by_parent[link.from_person_id] = children_count_by_parent.get(link.from_person_id, 0) + 1
 
     generation_rows = []
-    for generation in get_generation_rows(family):
+    generation_sections = []
+    rows = []
+    raw_generations = list(get_generation_rows(family))
+    for index, generation in enumerate(raw_generations, start=1):
         enriched_people = [
             _enrich_person(
                 person,
                 generation["label"],
                 generation["number"],
-                person.id in people_with_spouses,
+                person.id in people_with_partners,
                 children_count_by_parent.get(person.id, 0),
             )
             for person in generation["people"]
@@ -60,9 +81,6 @@ def _build_family_context(family):
             }
         )
 
-    generation_sections = []
-    rows = []
-    for index, generation in enumerate(get_generation_rows(family), start=1):
         row_people = [
             person_cards[person.id]
             for person in generation["people"]
@@ -73,7 +91,7 @@ def _build_family_context(family):
             "title": generation["label"],
             "subtitle": "Relatives grouped from recorded parent and child links.",
             "people": row_people,
-            "add_action_label": "Connect relative",
+            "add_action_label": "Add from tree page",
         }
         rows.append(row)
         generation_sections.append(
@@ -96,6 +114,7 @@ def _build_family_context(family):
 
     memories = Memory.objects.filter(family=family).prefetch_related("people").order_by("-created_at")
     stories = Story.objects.filter(family=family).prefetch_related("people").order_by("-created_at")
+    recent_activities = Activity.objects.filter(family=family).order_by("-created_at")[:6]
     memory_rails = [
         _memory_rail(
             "Videos",
@@ -132,11 +151,38 @@ def _build_family_context(family):
         "people": context_people,
         "branch_panels": branch_panels,
         "memory_rails": memory_rails,
+        "memories": list(memories[:6]),
+        "recent_activities": list(recent_activities),
+        "top_achievers": [],
         "generation_count": len(generation_sections),
         "people_count": len(context_people),
         "photo_count": photo_count,
         "story_count": story_count,
         "empty_state": False,
+        "is_demo_context": is_demo_context,
+    }
+
+
+def _build_empty_context(family=None):
+    return {
+        "family": family,
+        "root_person": None,
+        "stats": {"generations": 0, "people": 0, "memories": 0, "missing": 0},
+        "generation_sections": [],
+        "generation_rows": [],
+        "rows": [],
+        "people": [],
+        "branch_panels": [],
+        "memory_rails": [],
+        "memories": [],
+        "recent_activities": [],
+        "top_achievers": [],
+        "generation_count": 0,
+        "people_count": 0,
+        "photo_count": 0,
+        "story_count": 0,
+        "empty_state": True,
+        "is_demo_context": False,
     }
 
 
@@ -144,7 +190,12 @@ def _build_branch_panels(family, person_cards):
     panels = []
     child_links = Relationship.objects.filter(
         family=family,
-        relationship_type=Relationship.Type.PARENT_CHILD,
+        relationship_type__in=[
+            Relationship.Type.PARENT_CHILD,
+            Relationship.Type.ADOPTIVE_PARENT,
+            Relationship.Type.STEP_PARENT,
+            Relationship.Type.GUARDIAN,
+        ],
         from_person_id__in=person_cards,
         to_person_id__in=person_cards,
     )
@@ -154,15 +205,19 @@ def _build_branch_panels(family, person_cards):
             person_cards[link.to_person_id]
         )
 
-    spouse_links = Relationship.objects.filter(
+    partner_links = Relationship.objects.filter(
         family=family,
-        relationship_type=Relationship.Type.SPOUSE,
+        relationship_type__in=[
+            Relationship.Type.SPOUSE,
+            Relationship.Type.PARTNER,
+            Relationship.Type.EX_PARTNER,
+        ],
         from_person_id__in=person_cards,
         to_person_id__in=person_cards,
     )
-    spouses_by_person = {}
-    for link in spouse_links:
-        spouses_by_person.setdefault(link.from_person_id, []).append(
+    partners_by_person = {}
+    for link in partner_links:
+        partners_by_person.setdefault(link.from_person_id, []).append(
             person_cards[link.to_person_id]
         )
 
@@ -173,9 +228,9 @@ def _build_branch_panels(family, person_cards):
                 "id": f"branch-{person_id}",
                 "title": f"{owner['name']}'s branch",
                 "owner": owner,
-                "spouses": spouses_by_person.get(person_id, []),
+                "spouses": partners_by_person.get(person_id, []),
                 "children": children,
-                "missing_actions": ["Add spouse", "Invite child", "Attach memory"],
+                "missing_actions": ["Add partner", "Add child", "Attach memory"],
             }
         )
     return panels
@@ -183,247 +238,73 @@ def _build_branch_panels(family, person_cards):
 
 def _build_demo_context():
     family = {
-        "name": "Moyo Family Tree",
-        "description": "A private place to map generations and preserve memories.",
+        "name": "Demo Family Tree",
+        "description": "Example data shown before you sign in.",
         "is_demo": True,
     }
+    alex = _person_card("demo-alex", "Alex Green", "Root person", "AG", is_direct_line=True, memory_count=2)
+    maya = _person_card("demo-maya", "Maya Green", "Parent", "MG", is_direct_line=True, memory_count=1)
+    noah = _person_card("demo-noah", "Noah Green", "Child", "NG", is_direct_line=True, memory_count=0)
 
-    tawanda = _person_card("demo-tawanda", "Tawanda Moyo", "Grandfather", "TM", is_direct_line=True, memory_count=8)
-    rudo = _person_card("demo-rudo", "Rudo Moyo", "Grandmother", "RM", is_direct_line=True, is_spouse=True, memory_count=11)
-    joseph = _person_card("demo-joseph", "Joseph Moyo", "Father", "JM", is_direct_line=True, memory_count=16)
-    john = _person_card("demo-john", "John Moyo", "Uncle", "JM", is_side_branch=True, memory_count=5)
-    mary = _person_card("demo-mary", "Mary Dube", "Auntie", "MD", is_side_branch=True, memory_count=7)
-    nyasha = _person_card("demo-nyasha", "Nyasha Moyo", "Mother", "NM", is_spouse=True, memory_count=9)
-    calvin = _person_card("demo-calvin", "Calvin Moyo", "Root person", "CM", is_direct_line=True, memory_count=14)
-    tariro = _person_card("demo-tariro", "Tariro Moyo", "Sister", "TM", is_side_branch=True, memory_count=4)
-    blessing = _person_card("demo-blessing", "Blessing Moyo", "Brother", "BM", is_side_branch=True, memory_count=2)
-    amara = _person_card("demo-amara", "Amara Moyo", "Child", "AM", is_direct_line=True, memory_count=3)
-    kai = _person_card("demo-kai", "Kai Moyo", "Grandchild", "KM", is_direct_line=True, memory_count=1)
-
-    sarah = _person_card("demo-sarah", "Sarah Moyo", "Uncle John's spouse", "SM", is_spouse=True, memory_count=2)
-    aaron = _person_card("demo-aaron", "Aaron Moyo", "Cousin", "AM", is_side_branch=True, memory_count=3)
-    lisa = _person_card("demo-lisa", "Lisa Moyo", "Cousin", "LM", is_side_branch=True, memory_count=1)
-    peter = _person_card("demo-peter", "Peter Dube", "Auntie Mary's spouse", "PD", is_spouse=True, memory_count=1)
-    faith = _person_card("demo-faith", "Faith Dube", "Cousin", "FD", is_side_branch=True, memory_count=2)
-
-    john_panel = _branch_panel(
-        "branch-demo-john",
-        "Uncle John's branch",
-        john,
-        spouses=[sarah],
-        children=[aaron, lisa],
-    )
-    mary_panel = _branch_panel(
-        "branch-demo-mary",
-        "Auntie Mary's branch",
-        mary,
-        spouses=[peter],
-        children=[faith],
-    )
-    tariro_panel = _branch_panel(
-        "branch-demo-tariro",
-        "Tariro's branch",
-        tariro,
-        spouses=[],
-        children=[],
-        missing_actions=["Add partner", "Add child", "Invite Tariro"],
-    )
-
-    john["branch_panel"] = john_panel
-    mary["branch_panel"] = mary_panel
-    tariro["branch_panel"] = tariro_panel
-
+    generation_rows = [
+        {
+            "number": 1,
+            "label": "Founders",
+            "people": [
+                _demo_enriched_person(alex, "Founder", 1),
+                _demo_enriched_person(maya, "Founder", 1),
+            ],
+        },
+        {
+            "number": 2,
+            "label": "Children",
+            "people": [_demo_enriched_person(noah, "Child", 2)],
+        },
+    ]
+    rows = [
+        _relationship_row("Founders", "Example cards only. Sign in to build your real tree.", [alex, maya], "Start your tree"),
+        _relationship_row("Children", "Example descendant row.", [noah], "Start your tree"),
+    ]
     generation_sections = [
-        _generation_section(
-            "gen-minus-2",
-            "Gen -2",
-            "Grandparents",
-            "Grandparents couple and their children.",
-            True,
-            [
-                _relationship_row(
-                    "Grandparents couple",
-                    "Direct ancestors at the top of this visible branch.",
-                    [tawanda, rudo],
-                    "Add grandparent",
-                ),
-                _relationship_row(
-                    "Children of Tawanda and Rudo",
-                    "Father continues the direct line. Uncle and auntie open their own branches.",
-                    [joseph, john, mary],
-                    "Add child",
-                ),
-            ],
-        ),
-        _generation_section(
-            "gen-minus-1",
-            "Gen -1",
-            "Parents",
-            "Direct parent generation for the selected root person.",
-            True,
-            [
-                _relationship_row(
-                    "Parents",
-                    "The couple that links the root person to this branch.",
-                    [joseph, nyasha],
-                    "Add parent",
-                )
-            ],
-        ),
-        _generation_section(
-            "gen-zero",
-            "Gen 0",
-            "You and siblings",
-            "Root person's own generation.",
-            True,
-            [
-                _relationship_row(
-                    "You and siblings",
-                    "Same parents, same generation.",
-                    [calvin, tariro, blessing],
-                    "Add sibling",
-                )
-            ],
-        ),
-        _generation_section(
-            "gen-plus-1",
-            "Gen +1",
-            "Children",
-            "Direct descendants below the root person.",
-            False,
-            [
-                _relationship_row(
-                    "Children",
-                    "Next generation connected to the root person.",
-                    [amara],
-                    "Add child",
-                )
-            ],
-        ),
-        _generation_section(
-            "gen-plus-2",
-            "Gen +2",
-            "Grandchildren",
-            "Youngest visible direct-line generation.",
-            False,
-            [
-                _relationship_row(
-                    "Grandchildren",
-                    "Future branch to keep connected over time.",
-                    [kai],
-                    "Add grandchild",
-                )
-            ],
-        ),
+        {
+            "id": "generation-1",
+            "label": "Gen 1",
+            "title": "Founders",
+            "subtitle": "Example data shown before sign in.",
+            "is_open": True,
+            "rows": [rows[0]],
+        },
+        {
+            "id": "generation-2",
+            "label": "Gen 2",
+            "title": "Children",
+            "subtitle": "Example data shown before sign in.",
+            "is_open": True,
+            "rows": [rows[1]],
+        },
     ]
-
-    branch_panels = [john_panel, mary_panel, tariro_panel]
-    rows = [row for section in generation_sections for row in section["rows"]]
-    people = [
-        tawanda,
-        rudo,
-        joseph,
-        john,
-        mary,
-        nyasha,
-        calvin,
-        tariro,
-        blessing,
-        amara,
-        kai,
-        sarah,
-        aaron,
-        lisa,
-        peter,
-        faith,
-    ]
-
-    generation_rows = []
-    gen_number = 1
-    for section in generation_sections:
-        section_people = []
-        for row in section["rows"]:
-            for person in row["people"]:
-                color_primary, color_soft = _generation_colors(gen_number)
-                section_people.append(
-                    {
-                        "id": person["id"],
-                        "first_name": person["name"].split()[0],
-                        "last_name": person["name"].split()[-1],
-                        "full_name": person["name"],
-                        "initials": person["initials"],
-                        "role": person["relationship_label"],
-                        "generation_label": section["title"],
-                        "birth_date": None,
-                        "death_date": None,
-                        "birth_place": "",
-                        "current_place": "",
-                        "profile_photo": "",
-                        "color1": color_primary,
-                        "color2": color_soft,
-                        "has_spouse": person.get("is_spouse", False),
-                        "children_count": person["memory_count"],
-                    }
-                )
-        generation_rows.append(
-            {
-                "number": gen_number,
-                "label": section["title"],
-                "people": section_people,
-            }
-        )
-        gen_number += 1
-
     memory_rails = [
-        _memory_rail(
-            "Videos",
-            "Compact clips attached to branches.",
-            [
-                _memory_item("demo-video-1", "Grandad's garden tour", "video", "Linked to Tawanda Moyo"),
-                _memory_item("demo-video-2", "Sunday lunch blessing", "video", "Linked to Gen -1"),
-            ],
-        ),
-        _memory_rail(
-            "Photo memories",
-            "Small photo cards below the tree.",
-            [
-                _memory_item("demo-photo-1", "Rudo's wedding portrait", "photo", "Linked to grandparents couple"),
-                _memory_item("demo-photo-2", "Cousins at the river", "photo", "Linked to Uncle John's branch"),
-                _memory_item("demo-photo-3", "First school day", "photo", "Linked to Amara Moyo"),
-            ],
-        ),
-        _memory_rail(
-            "Story posts",
-            "Written memories tied to relatives.",
-            [
-                _memory_item("demo-story-1", "How the family name travelled", "story", "Linked to Moyo branch"),
-                _memory_item("demo-story-2", "Auntie Mary's kitchen notes", "story", "Linked to Auntie Mary's branch"),
-            ],
-        ),
+        _memory_rail("Photo memories", "Example memory cards.", [_memory_item("demo-memory-1", "Wedding portrait", "photo", "Linked to demo tree")]),
     ]
-
-    photo_count = len(memory_rails[1]["items"]) if len(memory_rails) > 1 else 0
-    story_count = len(memory_rails[2]["items"]) if len(memory_rails) > 2 else 0
     return {
         "family": family,
-        "root_person": calvin,
-        "stats": {
-            "generations": len(generation_sections),
-            "people": len(people),
-            "memories": sum(len(rail["items"]) for rail in memory_rails),
-            "missing": 6,
-        },
+        "root_person": alex,
+        "stats": {"generations": len(generation_rows), "people": 3, "memories": 1, "missing": 0},
         "generation_sections": generation_sections,
         "generation_rows": generation_rows,
         "rows": rows,
-        "people": people,
-        "branch_panels": branch_panels,
+        "people": [alex, maya, noah],
+        "branch_panels": [],
         "memory_rails": memory_rails,
-        "generation_count": len(generation_sections),
-        "people_count": len(people),
-        "photo_count": photo_count,
-        "story_count": story_count,
+        "memories": [],
+        "recent_activities": [],
+        "top_achievers": [],
+        "generation_count": len(generation_rows),
+        "people_count": 3,
+        "photo_count": 0,
+        "story_count": 0,
         "empty_state": False,
+        "is_demo_context": True,
     }
 
 
@@ -446,6 +327,31 @@ def _enrich_person(person, generation_label, generation_number, has_spouse, chil
         "color2": color_soft,
         "has_spouse": has_spouse,
         "children_count": children_count,
+        "is_demo": False,
+    }
+
+
+def _demo_enriched_person(person, generation_label, generation_number):
+    color_primary, color_soft = _generation_colors(generation_number)
+    name_parts = person["name"].split()
+    return {
+        "id": person["id"],
+        "first_name": name_parts[0],
+        "last_name": name_parts[-1],
+        "full_name": person["name"],
+        "initials": person["initials"],
+        "role": generation_label,
+        "generation_label": generation_label,
+        "birth_date": None,
+        "death_date": None,
+        "birth_place": "",
+        "current_place": "",
+        "profile_photo": "",
+        "color1": color_primary,
+        "color2": color_soft,
+        "has_spouse": False,
+        "children_count": person.get("memory_count", 0),
+        "is_demo": True,
     }
 
 
@@ -508,29 +414,6 @@ def _person_card(
         "badges": badges,
         "branch_panel_id": "",
         "branch_panel": None,
-    }
-
-
-def _branch_panel(panel_id, title, owner, *, spouses, children, missing_actions=None):
-    owner["branch_panel_id"] = panel_id
-    return {
-        "id": panel_id,
-        "title": title,
-        "owner": owner,
-        "spouses": spouses,
-        "children": children,
-        "missing_actions": missing_actions or ["Add spouse", "Add child", "Attach memory"],
-    }
-
-
-def _generation_section(section_id, label, title, subtitle, is_open, rows):
-    return {
-        "id": section_id,
-        "label": label,
-        "title": title,
-        "subtitle": subtitle,
-        "is_open": is_open,
-        "rows": rows,
     }
 
 

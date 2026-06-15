@@ -1,0 +1,113 @@
+/* First-entry tree onboarding. Kept separate from tree_home.css so the feature can be reviewed safely. */
+.tree-onboarding-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 18px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(167, 243, 208, 0.9);
+  border-radius: 30px;
+  margin-bottom: 14px;
+  padding: clamp(18px, 4vw, 28px);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(16, 185, 129, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(209, 250, 229, 0.78));
+  box-shadow: var(--shadow);
+}
+
+.tree-onboarding-card::before {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -86px;
+  width: 210px;
+  height: 210px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.13);
+  pointer-events: none;
+}
+
+.tree-onboarding-copy,
+.tree-onboarding-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.tree-onboarding-copy h1 {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 0.96;
+  letter-spacing: -0.07em;
+  font-weight: 950;
+}
+
+.tree-onboarding-copy p:not(.tree-kicker) {
+  max-width: 620px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: clamp(0.94rem, 2.4vw, 1.05rem);
+  line-height: 1.55;
+}
+
+.tree-onboarding-actions {
+  display: grid;
+  gap: 10px;
+  align-self: center;
+}
+
+.tree-onboarding-actions button,
+.tree-onboarding-actions a {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(167, 243, 208, 0.92);
+  border-radius: 18px;
+  padding: 13px 16px;
+  color: var(--green);
+  background: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.tree-onboarding-actions button:first-child {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
+  box-shadow: 0 12px 28px rgba(5, 150, 105, 0.24);
+}
+
+.tree-onboarding-actions button:hover,
+.tree-onboarding-actions a:hover,
+.tree-onboarding-actions button:focus-visible,
+.tree-onboarding-actions a:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(16, 185, 129, 0.34);
+  box-shadow: 0 14px 32px rgba(15, 41, 30, 0.10);
+  outline: 0;
+}
+
+.tree-onboarding-actions i {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 760px) {
+  .tree-onboarding-card {
+    grid-template-columns: 1fr;
+    border-radius: 26px;
+    padding: 18px;
+  }
+
+  .tree-onboarding-actions {
+    grid-template-columns: 1fr;
+  }
+}

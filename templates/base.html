@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260615-auth-fields">
   <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260615-subtle-notifications">
+  <link rel="stylesheet" href="{% static 'css/tree_nav.css' %}?v=20260615-tree-bottom-nav">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   {% block extra_head %}{% endblock %}
@@ -95,9 +96,7 @@
     {% endif %}
   </div>
 
-  {% if not tree_only %}
-    {% include "core/_bottom_nav.html" %}
-  {% endif %}
+  {% include "core/_bottom_nav.html" %}
 
   {% if not tree_only %}
     <section class="person-drawer" id="personDrawer">

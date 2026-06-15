@@ -66,44 +66,6 @@
     </div>
   {% endif %}
 
-  {% if not tree_only and not request.user.is_authenticated %}
-    <div
-      class="account-sheet-backdrop"
-      id="accountSheetBackdrop"
-      data-account-sheet-close
-      hidden></div>
-    <section
-      class="account-sheet"
-      id="accountSheet"
-      role="dialog"
-      aria-modal="true"
-      aria-hidden="true"
-      aria-labelledby="accountSheetTitle"
-      hidden>
-      <div class="sheet-handle"></div>
-      <div class="account-sheet-head">
-        <div>
-          <p>Account</p>
-          <h2 id="accountSheetTitle">Open HeritageTree</h2>
-          <span>Sign in or create an account to start building your family tree.</span>
-        </div>
-        <button class="icon-btn" type="button" data-account-sheet-close aria-label="Close account menu">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      <div class="account-sheet-actions">
-        <a class="btn primary" href="{% url 'login' %}" data-account-login-link>
-          <i data-lucide="log-in"></i>
-          Log in
-        </a>
-        <a class="btn soft" href="{% url 'signup' %}" data-account-signup-link>
-          <i data-lucide="user-plus"></i>
-          Create account
-        </a>
-      </div>
-    </section>
-  {% endif %}
-
   <div class="app-shell">
     {% if not tree_only %}
       {% include "core/_left_sidebar.html" %}

@@ -283,6 +283,7 @@ def _person_card(
         "has_pending_invite": bool(invitation),
         "pending_invite_label": invitation.invitee_label if invitation else "",
         "can_invite": can_invite_relatives and not membership and not invitation,
+        "can_edit_name": is_current_user or can_invite_relatives,
         "parents": [_mini_person(graph["people_by_id"][person_id]) for person_id in parent_ids if person_id in graph["people_by_id"]],
         "partners": [_mini_person(graph["people_by_id"][person_id]) for person_id in partner_ids if person_id in graph["people_by_id"]],
         "children": [_mini_person(graph["people_by_id"][person_id]) for person_id in child_ids if person_id in graph["people_by_id"]],
@@ -359,117 +360,60 @@ def _generation_subtitle(number):
     if number == 0:
         return "You and siblings in one independent row."
     if number < 0:
-        return "Ancestor row. Slide horizontally to inspect every branch."
-    return "Descendant row. Slide horizontally to inspect every branch."
+        return "Ancestors above your Gen 0 anchor."
+    return "Descendants below your Gen 0 anchor."
 
 
-def _relationship_label(generation_number, is_anchor):
+def _relationship_label(generation_number, is_anchor=False):
     if is_anchor:
         return "Me"
     labels = {
+        -4: "Great-great-grandparent",
+        -3: "Great-grandparent",
         -2: "Grandparent",
         -1: "Parent",
         0: "Sibling",
         1: "Child",
         2: "Grandchild",
         3: "Great-grandchild",
+        4: "Descendant",
     }
-    if generation_number < -2:
-        return "Ancestor"
-    if generation_number > 3:
-        return "Descendant"
     return labels.get(generation_number, "Relative")
 
 
 def _life_years(person):
-    if not person.birth_date and not person.death_date:
-        return ""
-    start = str(person.birth_date.year) if person.birth_date else ""
-    end = str(person.death_date.year) if person.death_date else "Living"
-    return f"{start} - {end}".strip(" -")
+    if person.birth_date and person.death_date:
+        return f"{person.birth_date.year}–{person.death_date.year}"
+    if person.birth_date:
+        return f"Born {person.birth_date.year}"
+    return ""
 
 
 def _initials(first_name, last_name):
-    return f"{first_name[:1]}{last_name[:1]}".upper() or "FM"
+    letters = f"{(first_name or 'F')[:1]}{(last_name or '')[:1]}".upper()
+    return letters[:2]
 
 
 def _tree_from_demo_context(context):
-    rows = []
-    for section in context.get("generation_sections", []):
-        people_by_id = {}
-        for row in section["rows"]:
-            for person in row["people"]:
-                people_by_id[person["id"]] = _demo_person_card(person, section["label"])
-        rows.append(
-            {
-                "number": _demo_generation_number(section["label"]),
-                "label": section["label"],
-                "title": section["title"],
-                "subtitle": section["subtitle"],
-                "people": list(people_by_id.values()),
-            }
-        )
-
-    context.update(
-        {
-            "tree_only": True,
-            "tree_anchor": _demo_person_card(context["root_person"], "Gen 0"),
-            "relative_generation_rows": rows,
-            "needs_anchor_choice": False,
-            "available_families": [],
-            "received_invitations": [],
-            "can_invite_relatives": False,
-        }
-    )
-    return context
-
-
-def _demo_person_card(person, generation_label):
+    rows = context.get("generation_rows", [])
     return {
-        "id": person["id"],
-        "full_name": person["name"],
-        "first_name": person["name"].split(" ")[0],
-        "initials": person["initials"],
-        "relationship_label": person["relationship_label"],
-        "generation_label": generation_label,
-        "life_years": "",
-        "location": "Family tree",
-        "avatar_url": _safe_demo_avatar_url(person.get("avatar_url", "")),
-        "is_anchor": person["relationship_label"] == "Root person",
-        "is_connected": False,
-        "is_current_user": False,
-        "connected_user": "",
-        "connection_label": "Demo relative",
-        "has_pending_invite": False,
-        "pending_invite_label": "",
-        "can_invite": False,
-        "parents": [],
-        "partners": [],
-        "children": [],
-        "siblings": [],
-        "parent_count": 0,
-        "partner_count": 0,
-        "child_count": 0,
-        "sibling_count": 0,
+        "family": context.get("family"),
+        "tree_only": True,
+        "tree_anchor": None,
+        "relative_generation_rows": rows,
+        "person_cards": {},
+        "available_families": [],
+        "received_invitations": [],
+        "can_invite_relatives": False,
+        "generation_count": len(rows),
+        "people_count": context.get("stats", {}).get("people", 0),
+        "empty_state": not rows,
+        "needs_anchor_choice": False,
     }
 
 
-def _demo_generation_number(label):
-    if label == "Gen 0":
-        return 0
-    if label.startswith("Gen +"):
-        return int(label.replace("Gen +", ""))
-    if label.startswith("Gen -"):
-        return int(label.replace("Gen ", ""))
-    return 0
-
-
-def _safe_demo_avatar_url(url):
-    if not url:
-        return ""
-    media_url = getattr(settings, "MEDIA_URL", "/media/")
-    if url.startswith(media_url):
-        relative_path = url.removeprefix(media_url).lstrip("/")
-        if not (Path(settings.MEDIA_ROOT) / relative_path).exists():
-            return ""
-    return url
+def _seed_photo_url(filename):
+    path = Path(settings.MEDIA_ROOT) / "demo" / filename
+    if path.exists():
+        return f"{settings.MEDIA_URL}demo/{filename}"
+    return ""

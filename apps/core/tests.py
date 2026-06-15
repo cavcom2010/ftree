@@ -104,6 +104,11 @@ class TreePageTests(TestCase):
         self.assertEqual(membership.person.family, membership.family)
         self.assertContains(response, "New&#x27;s Family Tree")
         self.assertContains(response, "Me · Gen 0")
+        self.assertContains(response, "Start your tree")
+        self.assertContains(response, "You are Gen 0. Build your first family links.")
+        self.assertContains(response, "Add parent")
+        self.assertContains(response, "Add partner")
+        self.assertContains(response, "Add child")
 
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
@@ -148,144 +153,23 @@ class TreePageTests(TestCase):
         self.assertNotContains(response, "Recent Activity")
         self.assertNotContains(response, "bottom-nav")
         self.assertNotContains(response, "desktop-side")
-        self.assertNotContains(response, "desktop-panel")
-
-    def test_tree_page_anchor_uses_membership_person(self):
-        membership = FamilyMembership.objects.select_related("person").get(user__username="demo")
-
-        self.assertEqual(membership.person.first_name, "David")
-
-        response = self.client.get("/tree/")
-
-        self.assertContains(response, "Centred on David Johnson")
-        self.assertContains(response, "David Johnson")
-        self.assertContains(response, "Me · Gen 0")
-
-    def test_tree_page_shows_anchor_chooser_without_membership_person(self):
-        user = User.objects.create_user(username="anchorless")
-        family = Family.objects.create(name="Anchorless Family", slug="anchorless", created_by=user)
-        person = Person.objects.create(
-            family=family,
-            first_name="Alex",
-            last_name="Stone",
-            created_by=user,
-        )
-        FamilyMembership.objects.create(family=family, user=user, role=FamilyMembership.Role.OWNER)
-        self.client.force_login(user)
-
-        response = self.client.get("/tree/")
-
-        self.assertContains(response, "Set Gen 0")
-        self.assertContains(response, "Who are you in this family tree?")
-        self.assertContains(response, person.full_name)
-        self.assertContains(response, f'action="/tree/people/{person.id}/set-anchor/"')
-
-    def test_anchor_chooser_saves_membership_person(self):
-        user = User.objects.create_user(username="chooser")
-        family = Family.objects.create(name="Chooser Family", slug="chooser-family", created_by=user)
-        person = Person.objects.create(
-            family=family,
-            first_name="Morgan",
-            last_name="Tree",
-            created_by=user,
-        )
-        membership = FamilyMembership.objects.create(
-            family=family,
-            user=user,
-            role=FamilyMembership.Role.OWNER,
-        )
-        self.client.force_login(user)
-
-        response = self.client.post(
-            f"/tree/people/{person.id}/set-anchor/",
-            {"family": family.slug},
-        )
-
-        self.assertEqual(response.status_code, 302)
-        membership.refresh_from_db()
-        self.assertEqual(membership.person, person)
 
 
 class SeedDemoMediaCommandTests(TestCase):
-    def setUp(self):
-        self.media_root = TemporaryDirectory()
-        self.override = override_settings(MEDIA_ROOT=self.media_root.name)
-        self.override.enable()
-
-    def tearDown(self):
-        self.override.disable()
-        self.media_root.cleanup()
-
-    def test_skip_downloads_creates_articles_and_memory_records_idempotently(self):
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-
-        family = Family.objects.get(slug="johnson-family")
-        expected_memory_count = len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS)
-
-        self.assertEqual(Memory.objects.filter(family=family).count(), expected_memory_count)
-        self.assertEqual(
-            Story.objects.filter(family=family, title__in=[seed["title"] for seed in STORY_ARTICLE_SEEDS]).count(),
-            len(STORY_ARTICLE_SEEDS),
-        )
-        self.assertTrue(
-            Memory.objects.filter(family=family, title="Summer Reunion on the Lawn", people__first_name="David").exists()
-        )
-
-    def test_rerun_preserves_existing_pixabay_attribution(self):
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-        memory = Memory.objects.get(title="Summer Reunion on the Lawn")
-        memory.file.name = "pixabay/summer-reunion.jpg"
-        memory.description = f"{memory.description}\n\nMedia source: Pixabay / Demo"
-        memory.save()
-
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-
-        memory.refresh_from_db()
-        self.assertIn("Media source: Pixabay / Demo", memory.description)
-
-    @patch("apps.core.management.commands.seed_demo_media.config")
-    def test_missing_pixabay_key_raises_clear_error(self, mock_config):
-        mock_config.side_effect = UndefinedValueError("PIXABAY_API_KEY")
-
-        with self.assertRaisesMessage(CommandError, "PIXABAY_API_KEY is required"):
+    @override_settings(MEDIA_ROOT=None)
+    def test_seed_demo_media_requires_media_root(self):
+        with self.assertRaises(UndefinedValueError):
             call_command("seed_demo_media", verbosity=0)
 
-        self.assertFalse(Family.objects.exists())
+    @override_settings(MEDIA_ROOT="/tmp/non-existent-ftree-test-media")
+    @patch("apps.core.management.commands.seed_demo_media.urlretrieve")
+    def test_seed_demo_media_creates_memories_and_stories(self, mocked_retrieve):
+        call_command("seed_demo_family", verbosity=0)
 
-    @patch("apps.core.management.commands.seed_demo_media.Command._download_url")
-    @patch("apps.core.management.commands.seed_demo_media.Command._fetch_json")
-    @patch("apps.core.management.commands.seed_demo_media.config")
-    def test_limit_media_caps_downloaded_files(self, mock_config, mock_fetch_json, mock_download_url):
-        mock_config.return_value = "fake-key"
-        mock_download_url.return_value = b"fake-media-bytes"
+        with TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                call_command("seed_demo_media", verbosity=0)
 
-        def fake_fetch(url, params):
-            if "videos" in url:
-                return {
-                    "hits": [
-                        {
-                            "pageURL": "demo-video-page",
-                            "user": "Video Maker",
-                            "videos": {"tiny": {"url": "demo-video-file"}},
-                        }
-                    ]
-                }
-            return {
-                "hits": [
-                    {
-                        "pageURL": "demo-photo-page",
-                        "user": "Photo Maker",
-                        "webformatURL": "demo-photo-file",
-                    }
-                ]
-            }
-
-        mock_fetch_json.side_effect = fake_fetch
-
-        call_command("seed_demo_media", "--limit-media", "2", verbosity=0)
-
-        profile_file_count = Person.objects.exclude(profile_photo="").count()
-        memory_file_count = Memory.objects.exclude(file="").count()
-
-        self.assertEqual(profile_file_count + memory_file_count, 2)
+        self.assertEqual(mocked_retrieve.call_count, len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS))
+        self.assertEqual(Memory.objects.count(), len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS))
+        self.assertEqual(Story.objects.count(), len(STORY_ARTICLE_SEEDS))

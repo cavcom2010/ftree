@@ -1,5 +1,13 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.db import models
+
+
+def person_profile_photo_upload_path(instance, filename):
+    extension = Path(filename).suffix.lower()
+    return f"people/profile-photos/{uuid.uuid4()}{extension}"
 
 
 class Person(models.Model):
@@ -26,7 +34,9 @@ class Person(models.Model):
     birth_place = models.CharField(max_length=255, blank=True, default="")
     current_place = models.CharField(max_length=255, blank=True, default="")
     profile_photo = models.ImageField(
-        upload_to="people/photos/", null=True, blank=True
+        upload_to=person_profile_photo_upload_path,
+        null=True,
+        blank=True,
     )
     biography = models.TextField(blank=True, default="")
     is_living = models.BooleanField(default=True)

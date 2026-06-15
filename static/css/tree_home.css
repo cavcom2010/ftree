@@ -588,20 +588,20 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  width: 72px;
-  height: 72px;
-  border: 3px solid var(--tree-gen-soft);
-  border-radius: 24px;
+  width: 64px;
+  height: 64px;
+  border: 3px solid #f0abfc;
+  border-radius: 50%;
   color: #fff;
-  background: linear-gradient(135deg, var(--tree-gen-primary), color-mix(in srgb, var(--tree-gen-primary) 72%, #ffffff 28%));
-  font-size: 1.15rem;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  font-size: 1.08rem;
   font-weight: 900;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--tree-gen-primary) 18%, transparent);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.24);
 }
 
 .tree-avatar.is-large {
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
 }
 
 .tree-avatar img {
@@ -617,6 +617,7 @@
   inset: 0;
   display: grid;
   place-items: center;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
 }
 
 .tree-card-copy {

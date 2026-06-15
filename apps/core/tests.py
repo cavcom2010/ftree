@@ -64,7 +64,7 @@ class HomepageShellTests(TestCase):
 
         self.assertContains(response, "data-bottom-tree-link")
         self.assertContains(response, 'href="/memories/"')
-        self.assertContains(response, 'aria-label="Connect"')
+        self.assertContains(response, 'aria-label="Connect relatives"')
         self.assertContains(response, 'href="/people/create/"')
         self.assertNotContains(response, "data-bottom-account-trigger")
         self.assertNotContains(response, 'id="accountSheet"')

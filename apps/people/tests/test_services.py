@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from apps.families.models import Family
-from apps.people.models import Person
+from apps.people.models import Person, person_profile_photo_upload_path
 from apps.people.services import (
     get_children,
     get_descendant_generation,
@@ -48,6 +48,16 @@ class PersonFullNameTests(TestCase):
             created_by=self.user,
         )
         self.assertEqual(person.full_name, "Charlie Brown")
+
+
+class PersonProfilePhotoPathTests(TestCase):
+    def test_profile_photo_upload_path_is_clean_and_unique(self):
+        first_path = person_profile_photo_upload_path(None, "Portrait.JPG")
+        second_path = person_profile_photo_upload_path(None, "Portrait.JPG")
+
+        self.assertTrue(first_path.startswith("people/profile-photos/"))
+        self.assertTrue(first_path.endswith(".jpg"))
+        self.assertNotEqual(first_path, second_path)
 
 
 class RelationshipDirectionTests(TestCase):

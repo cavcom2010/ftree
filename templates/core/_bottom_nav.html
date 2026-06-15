@@ -27,13 +27,8 @@
       <a
         href="{% url 'login' %}"
         class="add-main{% if request.path == '/accounts/login/' or request.path == '/accounts/signup/' %} active{% endif %}"
-        data-account-sheet-trigger
-        data-bottom-account-trigger
         data-nav-match="/accounts/login/ /accounts/signup/"
         aria-label="Account"
-        aria-haspopup="dialog"
-        aria-controls="accountSheet"
-        aria-expanded="false"
         {% if request.path == '/accounts/login/' or request.path == '/accounts/signup/' %}aria-current="page"{% endif %}>
         <i data-lucide="circle-user-round"></i>Account
       </a>

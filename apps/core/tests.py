@@ -235,7 +235,8 @@ class SeedDemoMediaCommandTests(TestCase):
 
         family = Family.objects.get(slug="johnson-family")
         expected_memory_count = len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS)
-        expected_story_count = len(STORY_ARTICLE_SEEDS)
+        base_story_count = 3  # seed_demo_media calls seed_demo_family, which seeds 3 base stories first.
+        expected_story_count = base_story_count + len(STORY_ARTICLE_SEEDS)
 
         self.assertEqual(Memory.objects.filter(family=family).count(), expected_memory_count)
         self.assertEqual(Story.objects.filter(family=family).count(), expected_story_count)

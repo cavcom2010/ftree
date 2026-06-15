@@ -97,14 +97,14 @@
   line-height: 1.45;
 }
 
-.tree-create-option[disabled] {
+.tree-create-option[aria-disabled="true"] {
   cursor: default;
   opacity: 0.72;
   box-shadow: none;
 }
 
-.tree-create-option[disabled]:active,
-.tree-create-option[disabled]:hover {
+.tree-create-option[aria-disabled="true"]:active,
+.tree-create-option[aria-disabled="true"]:hover {
   transform: none;
 }
 

@@ -120,6 +120,29 @@
   }
 }
 
+@media (max-width: 719px) {
+  .tree-reveal-drawer {
+    height: min(68dvh, 620px);
+    max-height: min(68dvh, 620px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .tree-reveal-panel {
+    min-height: 150px;
+    max-height: 32dvh;
+    overflow-y: auto;
+    align-content: flex-start;
+  }
+}
+
+@media (max-width: 380px) {
+  .tree-reveal-drawer {
+    height: min(72dvh, 640px);
+    max-height: min(72dvh, 640px);
+  }
+}
+
 @media (min-width: 720px) and (orientation: landscape) {
   .tree-reveal-backdrop,
   .tree-sheet-backdrop {
@@ -137,7 +160,7 @@
     grid-template-columns: minmax(240px, 0.85fr) minmax(360px, 1.15fr);
     grid-template-rows: auto auto 1fr;
     width: min(900px, calc(100vw - 56px));
-    max-height: min(58dvh, 430px);
+    max-height: min(68dvh, 520px);
     gap: 12px 18px;
     border-radius: 28px;
     padding: 14px 16px 16px;
@@ -189,7 +212,9 @@
   .tree-reveal-drawer .tree-reveal-panel {
     grid-column: 2;
     grid-row: 3;
-    min-height: 190px;
+    min-height: 230px;
+    max-height: 36dvh;
+    overflow-y: auto;
     align-content: start;
     border-radius: 22px;
   }

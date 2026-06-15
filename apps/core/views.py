@@ -20,16 +20,18 @@ def tree(request):
     if request.GET.get("family"):
         request.session["current_family_slug"] = request.GET["family"]
 
+    show_tree_onboarding = False
     if not FamilyMembership.objects.filter(user=request.user).exists():
         family = _create_starter_tree_for_user(request.user)
         request.session["current_family_slug"] = family.slug
+        request.session["tree_onboarding_seen"] = True
         family_slug = family.slug
+        show_tree_onboarding = True
 
-    return render(
-        request,
-        "tree/home.html",
-        build_tree_context(request.user, family_slug=family_slug),
-    )
+    context = build_tree_context(request.user, family_slug=family_slug)
+    context["show_tree_onboarding"] = show_tree_onboarding
+
+    return render(request, "tree/home.html", context)
 
 
 @transaction.atomic
@@ -99,4 +101,5 @@ def _empty_tree_context(user):
         "empty_state": True,
         "needs_anchor_choice": False,
         "needs_tree_setup": True,
+        "show_tree_onboarding": False,
     }

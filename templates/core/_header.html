@@ -11,10 +11,26 @@
       <span>Your family tree, but alive.</span>
     {% endif %}
   </div>
-  <button class="icon-btn" aria-label="Search" data-tree-search-trigger>
-    <i data-lucide="search"></i>
-  </button>
-  <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>
-    <i data-lucide="plus"></i>
-  </button>
+
+  {% if request.user.is_authenticated %}
+    <button class="icon-btn" aria-label="Search" data-tree-search-trigger>
+      <i data-lucide="search"></i>
+    </button>
+    <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>
+      <i data-lucide="plus"></i>
+    </button>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="icon-btn" type="submit" aria-label="Log out">
+        <i data-lucide="log-out"></i>
+      </button>
+    </form>
+  {% else %}
+    <a class="icon-btn" href="{% url 'login' %}" aria-label="Log in">
+      <i data-lucide="log-in"></i>
+    </a>
+    <a class="icon-btn" href="{% url 'signup' %}" aria-label="Create account">
+      <i data-lucide="user-plus"></i>
+    </a>
+  {% endif %}
 </header>

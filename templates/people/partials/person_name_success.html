@@ -1,0 +1,17 @@
+<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head">
+    <div>
+      <p class="tree-eyebrow">Saved</p>
+      <h2 id="tree-create-title">Name updated</h2>
+    </div>
+    <button type="button" data-create-sheet-close aria-label="Close name update message">&times;</button>
+  </div>
+  <div class="tree-invite-success">
+    <p><strong>{{ person.full_name }}</strong> is now the name shown across this family tree.</p>
+    <div class="tree-create-actions">
+      <button type="button" data-create-sheet-close>Done</button>
+    </div>
+  </div>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

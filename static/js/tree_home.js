@@ -2,6 +2,8 @@
   var activeRevealTrigger = null;
   var activeCreateTrigger = null;
   var rowUpdateTimers = new WeakMap();
+  var cardPointerStart = null;
+  var suppressNextCardClick = false;
 
   function qs(selector, root) {
     return (root || document).querySelector(selector);
@@ -15,6 +17,11 @@
     if (typeof window.showToast === "function") {
       window.showToast(message);
     }
+  }
+
+  function getRevealTrigger(target) {
+    if (!target || typeof target.closest !== "function") return null;
+    return target.closest("[data-person-reveal]");
   }
 
   function hasOpenModal() {
@@ -122,6 +129,7 @@
   }
 
   function openRevealDrawer(trigger) {
+    if (!trigger) return;
     var personId = trigger.getAttribute("data-person-reveal");
     var drawer = qs("#tree-reveal-" + personId);
     var backdrop = qs(".tree-reveal-backdrop");
@@ -140,6 +148,18 @@
     window.setTimeout(function () {
       focusSafely(qs("[data-tree-reveal-close]", drawer) || drawer);
     }, 80);
+  }
+
+  function activateRevealTrigger(trigger, event) {
+    if (!trigger) return false;
+    if (event && typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (event && typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+    openRevealDrawer(trigger);
+    return true;
   }
 
   function activateRevealTab(button) {
@@ -215,10 +235,50 @@
     }
   }
 
+  document.addEventListener("pointerdown", function (event) {
+    var revealTrigger = getRevealTrigger(event.target);
+    if (!revealTrigger || event.pointerType === "mouse") return;
+    cardPointerStart = {
+      pointerId: event.pointerId,
+      trigger: revealTrigger,
+      x: event.clientX,
+      y: event.clientY
+    };
+  }, { passive: true });
+
+  document.addEventListener("pointerup", function (event) {
+    if (!cardPointerStart || cardPointerStart.pointerId !== event.pointerId) return;
+
+    var start = cardPointerStart;
+    cardPointerStart = null;
+
+    var movedX = Math.abs(event.clientX - start.x);
+    var movedY = Math.abs(event.clientY - start.y);
+    var endedOnSameCard = getRevealTrigger(event.target) === start.trigger;
+
+    if (endedOnSameCard && movedX <= 8 && movedY <= 8) {
+      suppressNextCardClick = true;
+      activateRevealTrigger(start.trigger, event);
+      window.setTimeout(function () {
+        suppressNextCardClick = false;
+      }, 300);
+    }
+  });
+
+  document.addEventListener("pointercancel", function () {
+    cardPointerStart = null;
+  });
+
   document.addEventListener("click", function (event) {
-    var revealTrigger = event.target.closest("[data-person-reveal]");
+    var revealTrigger = getRevealTrigger(event.target);
     if (revealTrigger) {
-      openRevealDrawer(revealTrigger);
+      if (suppressNextCardClick) {
+        suppressNextCardClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      activateRevealTrigger(revealTrigger, event);
       return;
     }
 

@@ -24,3 +24,15 @@ class PersonForm(forms.ModelForm):
             "death_date": forms.DateInput(attrs={"type": "date"}),
             "biography": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class PersonNameForm(forms.ModelForm):
+    class Meta:
+        model = Person
+        fields = ["first_name", "middle_name", "last_name", "maiden_name"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"autocomplete": "given-name"}),
+            "middle_name": forms.TextInput(attrs={"autocomplete": "additional-name"}),
+            "last_name": forms.TextInput(attrs={"autocomplete": "family-name"}),
+            "maiden_name": forms.TextInput(attrs={"autocomplete": "off"}),
+        }

@@ -7,17 +7,20 @@
         </div>
         <button type="button" data-create-sheet-close aria-label="Close create menu">Close</button>
     </div>
+    {% if tree_only %}
+        <p class="tree-create-helper">Choose a person in the tree first. Their card will show the right family-tree actions.</p>
+    {% endif %}
     <div class="tree-create-actions">
         {% if tree_only %}
             <button type="button" data-tree-scroll-anchor data-create-sheet-close>Choose a person in the tree</button>
-            <button type="button">Invite from person card</button>
-            <button type="button">Review invite status</button>
-            <button type="button">Connected users</button>
+            <button type="button" class="tree-create-option">Invite from person card</button>
+            <button type="button" class="tree-create-option">Review invite status</button>
+            <button type="button" class="tree-create-option">Connected users</button>
         {% else %}
-            <button type="button">Add relative</button>
-            <button type="button">Add photo memory</button>
-            <button type="button">Write story</button>
-            <button type="button">Add video</button>
+            <button type="button" class="tree-create-option">Add relative</button>
+            <button type="button" class="tree-create-option">Add photo memory</button>
+            <button type="button" class="tree-create-option">Write story</button>
+            <button type="button" class="tree-create-option">Add video</button>
         {% endif %}
     </div>
 </section>

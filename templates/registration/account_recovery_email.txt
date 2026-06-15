@@ -1,0 +1,7 @@
+Hello,
+
+Use this HeritageTree account URL:
+
+{{ protocol }}://{{ domain }}/accounts/reset/{{ uid }}/{{ token }}/
+
+HeritageTree

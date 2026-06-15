@@ -4,6 +4,7 @@
   var rowUpdateTimers = new WeakMap();
   var cardPointerStart = null;
   var suppressNextCardClick = false;
+  var hasPointerEvents = "PointerEvent" in window;
 
   function qs(selector, root) {
     return (root || document).querySelector(selector);
@@ -22,6 +23,12 @@
   function getRevealTrigger(target) {
     if (!target || typeof target.closest !== "function") return null;
     return target.closest("[data-person-reveal]");
+  }
+
+  function markEventHandled(event) {
+    if (event) {
+      event.treeRevealHandled = true;
+    }
   }
 
   function hasOpenModal() {
@@ -152,6 +159,7 @@
 
   function activateRevealTrigger(trigger, event) {
     if (!trigger) return false;
+    markEventHandled(event);
     if (event && typeof event.preventDefault === "function") {
       event.preventDefault();
     }
@@ -256,12 +264,12 @@
     var movedY = Math.abs(event.clientY - start.y);
     var endedOnSameCard = getRevealTrigger(event.target) === start.trigger;
 
-    if (endedOnSameCard && movedX <= 8 && movedY <= 8) {
+    if (endedOnSameCard && movedX <= 16 && movedY <= 16) {
       suppressNextCardClick = true;
       activateRevealTrigger(start.trigger, event);
       window.setTimeout(function () {
         suppressNextCardClick = false;
-      }, 300);
+      }, 350);
     }
   });
 
@@ -269,18 +277,34 @@
     cardPointerStart = null;
   });
 
+  if (!hasPointerEvents) {
+    document.addEventListener("touchend", function (event) {
+      var revealTrigger = getRevealTrigger(event.target);
+      if (!revealTrigger) return;
+      suppressNextCardClick = true;
+      activateRevealTrigger(revealTrigger, event);
+      window.setTimeout(function () {
+        suppressNextCardClick = false;
+      }, 350);
+    }, { passive: false });
+  }
+
   document.addEventListener("click", function (event) {
     var revealTrigger = getRevealTrigger(event.target);
-    if (revealTrigger) {
-      if (suppressNextCardClick) {
-        suppressNextCardClick = false;
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-      activateRevealTrigger(revealTrigger, event);
+    if (!revealTrigger) return;
+
+    if (suppressNextCardClick) {
+      suppressNextCardClick = false;
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
+
+    activateRevealTrigger(revealTrigger, event);
+  }, true);
+
+  document.addEventListener("click", function (event) {
+    if (event.treeRevealHandled) return;
 
     var revealTab = event.target.closest("[data-reveal-tab]");
     if (revealTab) {

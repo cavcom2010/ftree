@@ -13,8 +13,13 @@ class PersonViewTests(TestCase):
         self.user = User.objects.create_user(username="tester", password="secret")
         self.client.force_login(self.user)
 
-    def test_person_create_returns_404_when_no_family_exists(self):
-        response = self.client.post(
+    def test_person_create_route_redirects_to_tree_without_creating_orphans(self):
+        response = self.client.get("/people/create/")
+
+        self.assertRedirects(response, reverse("tree"), fetch_redirect_response=False)
+        self.assertFalse(Person.objects.exists())
+
+        post_response = self.client.post(
             "/people/create/",
             {
                 "first_name": "Alice",
@@ -23,7 +28,7 @@ class PersonViewTests(TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(post_response, reverse("tree"), fetch_redirect_response=False)
         self.assertFalse(Person.objects.exists())
 
     def test_person_drawer_is_scoped_to_current_family(self):

@@ -75,6 +75,18 @@ class AccountFlowTests(TestCase):
         self.assertNotIn("You're receiving this email", message.body)
         self.assertNotIn("you\u2019ve", message.body)
 
+    @override_settings(DEBUG=True, EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    def test_password_reset_done_shows_local_development_shortcut_for_console_email(self):
+        User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
+
+        response = self.client.post(reverse("password_reset"), {"email": "reset@example.com"}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Local development shortcut")
+        self.assertContains(response, "Open password reset page")
+        self.assertContains(response, "/accounts/reset/")
+        self.assertContains(response, "data-local-reset-link")
+
     def test_password_reset_confirm_form_uses_styled_auth_fields(self):
         user = User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
         uid = urlsafe_base64_encode(force_bytes(user.pk))

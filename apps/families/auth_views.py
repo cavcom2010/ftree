@@ -6,14 +6,17 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import LoginView, PasswordResetDoneView, PasswordResetView
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.views.decorators.http import require_http_methods
 
 from apps.families.forms import SignupForm
@@ -46,6 +49,45 @@ class RateLimitedLoginView(LoginView):
             response.status_code = 429
             return response
         return super().post(request, *args, **kwargs)
+
+
+class LocalDeveloperPasswordResetView(PasswordResetView):
+    template_name = "registration/password_reset_form.html"
+    email_template_name = "registration/password_reset_email.txt"
+    subject_template_name = "registration/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        reset_url = self._build_local_reset_url(form)
+        if reset_url:
+            self.request.session["local_password_reset_url"] = reset_url
+        else:
+            self.request.session.pop("local_password_reset_url", None)
+        return response
+
+    def _build_local_reset_url(self, form):
+        if not _show_local_password_reset_link():
+            return ""
+        email = form.cleaned_data.get("email")
+        if not email:
+            return ""
+        user = next(form.get_users(email), None)
+        if not user:
+            return ""
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        return self.request.build_absolute_uri(reverse("password_reset_confirm", args=[uid, token]))
+
+
+class LocalDeveloperPasswordResetDoneView(PasswordResetDoneView):
+    template_name = "registration/password_reset_done.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if _show_local_password_reset_link():
+            context["local_password_reset_url"] = self.request.session.get("local_password_reset_url", "")
+        return context
 
 
 @require_http_methods(["GET", "POST"])
@@ -152,6 +194,10 @@ def _send_email_verification(request, verification):
         [verification.email],
         fail_silently=False,
     )
+
+
+def _show_local_password_reset_link():
+    return settings.DEBUG and settings.EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend"
 
 
 def _client_ip(request):

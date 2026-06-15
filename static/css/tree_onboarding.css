@@ -100,6 +100,14 @@
   height: 18px;
 }
 
+.tree-form-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
 @media (max-width: 760px) {
   .tree-onboarding-card {
     grid-template-columns: 1fr;
@@ -109,5 +117,101 @@
 
   .tree-onboarding-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 720px) and (orientation: landscape) {
+  .tree-reveal-backdrop,
+  .tree-sheet-backdrop {
+    background: rgba(15, 41, 30, 0.24);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  .tree-reveal-drawer {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: max(26px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: minmax(240px, 0.85fr) minmax(360px, 1.15fr);
+    grid-template-rows: auto auto 1fr;
+    width: min(900px, calc(100vw - 56px));
+    max-height: min(58dvh, 430px);
+    gap: 12px 18px;
+    border-radius: 28px;
+    padding: 14px 16px 16px;
+    transform: translate(-50%, 26px);
+    box-shadow: 0 26px 74px rgba(15, 41, 30, 0.22);
+  }
+
+  .tree-reveal-drawer.is-open {
+    transform: translate(-50%, 0);
+  }
+
+  .tree-reveal-drawer .tree-reveal-handle {
+    grid-column: 1 / -1;
+    width: 42px;
+    height: 4px;
+    margin-bottom: 2px;
+  }
+
+  .tree-reveal-drawer .tree-reveal-head {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    align-self: stretch;
+    grid-template-columns: 58px minmax(0, 1fr) 38px;
+    align-content: start;
+    border: 1px solid rgba(209, 240, 219, 0.9);
+    border-radius: 22px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 255, 255, 0.96));
+  }
+
+  .tree-reveal-drawer .tree-avatar.is-large {
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+  }
+
+  .tree-reveal-drawer .tree-reveal-pills {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    padding-bottom: 2px;
+  }
+
+  .tree-reveal-drawer .tree-reveal-pills button {
+    border-radius: 16px;
+    padding: 10px 14px;
+  }
+
+  .tree-reveal-drawer .tree-reveal-panel {
+    grid-column: 2;
+    grid-row: 3;
+    min-height: 190px;
+    align-content: start;
+    border-radius: 22px;
+  }
+
+  .tree-create-sheet {
+    left: 50%;
+    right: auto;
+    bottom: max(30px, env(safe-area-inset-bottom));
+    width: min(760px, calc(100vw - 56px));
+    max-height: min(72dvh, 560px);
+    overflow-y: auto;
+    border-radius: 28px;
+    padding: 16px;
+    transform: translate(-50%, 26px);
+    box-shadow: 0 26px 74px rgba(15, 41, 30, 0.22);
+  }
+
+  .tree-create-sheet.is-open {
+    transform: translate(-50%, 0);
+  }
+
+  .tree-create-sheet .tree-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

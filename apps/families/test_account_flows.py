@@ -1,10 +1,13 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
 from apps.families.models import EmailVerification, Family, FamilyMembership
@@ -36,6 +39,38 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, "auth-form")
         self.assertContains(response, 'class="auth-field"', count=4)
         self.assertContains(response, 'name="website"', count=1)
+
+    def test_resend_verification_form_uses_styled_auth_field(self):
+        response = self.client.get(reverse("email_verification_resend"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "auth-card")
+        self.assertContains(response, "auth-form")
+        self.assertContains(response, 'class="auth-field"', count=1)
+        self.assertContains(response, 'id="id_email"')
+
+    def test_password_reset_form_uses_styled_auth_field(self):
+        response = self.client.get(reverse("password_reset"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "auth-card")
+        self.assertContains(response, "auth-form")
+        self.assertContains(response, 'class="auth-field"', count=1)
+        self.assertContains(response, 'id="id_email"')
+
+    def test_password_reset_confirm_form_uses_styled_auth_fields(self):
+        user = User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        response = self.client.get(reverse("password_reset_confirm", args=[uid, token]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "auth-card")
+        self.assertContains(response, "auth-form")
+        self.assertContains(response, 'class="auth-field"', count=2)
+        self.assertContains(response, 'id="id_new_password1"')
+        self.assertContains(response, 'id="id_new_password2"')
 
     def test_signup_creates_inactive_user_and_verification_record(self):
         with self.assertLogs("apps.families.auth_views", level="WARNING") as captured:

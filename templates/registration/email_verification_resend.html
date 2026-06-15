@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Send account email again · HeritageTree{% endblock %}
 {% block content %}
-<section class="tree-card animate-in">
-  <div class="section-head"><div><h2>Send account email again</h2><p>Enter the email address you used when creating your account.</p></div></div>
-  <form method="post" class="person-form">
+<section class="tree-card auth-card animate-in">
+  <div class="section-head">
+    <div>
+      <h2>Send account email again</h2>
+      <p>Enter the email address you used when creating your account.</p>
+    </div>
+  </div>
+  <form method="post" class="person-form auth-form" novalidate>
     {% csrf_token %}
-    <p><label for="id_email">Email</label><input id="id_email" name="email" type="email" value="{{ email|default:'' }}" required></p>
-    <div class="form-actions"><button class="btn primary" type="submit">Send again</button><a class="btn soft" href="{% url 'login' %}">Back</a></div>
+    <label class="auth-field" for="id_email">
+      <span class="auth-label">Email</span>
+      <input id="id_email" name="email" type="email" value="{{ email|default:'' }}" autocomplete="email" required>
+    </label>
+    <div class="form-actions">
+      <button class="btn primary" type="submit">Send again</button>
+      <a class="btn soft" href="{% url 'login' %}">Back</a>
+    </div>
   </form>
 </section>
 {% endblock %}

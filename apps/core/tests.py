@@ -85,6 +85,26 @@ class TreePageTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    def test_tree_page_creates_starter_tree_for_new_signed_in_user(self):
+        user = User.objects.create_user(
+            username="newtreeuser",
+            email="newtreeuser@example.com",
+            first_name="New",
+            last_name="User",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 200)
+        membership = FamilyMembership.objects.select_related("family", "person").get(user=user)
+        self.assertEqual(membership.role, FamilyMembership.Role.OWNER)
+        self.assertEqual(membership.person.first_name, "New")
+        self.assertEqual(membership.person.last_name, "User")
+        self.assertEqual(membership.person.family, membership.family)
+        self.assertContains(response, "New&#x27;s Family Tree")
+        self.assertContains(response, "Me · Gen 0")
+
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
 

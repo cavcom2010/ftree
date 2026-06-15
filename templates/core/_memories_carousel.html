@@ -29,31 +29,25 @@
     </div>
   </article>
   {% empty %}
-  <article class="memory-card" onclick="showToast('Wedding 1968 opened')">
-    <span class="label"><i data-lucide="image"></i>Photo Story</span>
-    <h3>Wedding 1968</h3>
-    <p>New captions added by relatives who remembered the day.</p>
-    <div class="memory-meta">
-      <span><i data-lucide="heart"></i> 32</span>
-      <span><i data-lucide="message-circle"></i> 14</span>
-    </div>
-  </article>
-  <article class="memory-card" onclick="showToast('Voice memory opened')">
-    <span class="label"><i data-lucide="mic"></i>Voice Memory</span>
-    <h3>Grandma's Advice</h3>
-    <p>A 2m 34s recording preserved for the next generation.</p>
-    <div class="memory-meta">
-      <span><i data-lucide="play"></i> 41 plays</span>
-    </div>
-  </article>
-  <article class="memory-card" onclick="showToast('First house opened')">
-    <span class="label"><i data-lucide="map-pin"></i>Place Memory</span>
-    <h3>The First House</h3>
-    <p>Stories, photos and map location attached to the branch.</p>
-    <div class="memory-meta">
-      <span><i data-lucide="heart"></i> 18</span>
-      <span><i data-lucide="message-circle"></i> 7</span>
-    </div>
-  </article>
+    {% if is_demo_context %}
+    <article class="memory-card" onclick="showToast('Wedding portrait opened')">
+      <span class="label"><i data-lucide="image"></i>Photo Story</span>
+      <h3>Wedding portrait</h3>
+      <p>Example memory shown before sign in.</p>
+      <div class="memory-meta">
+        <span><i data-lucide="heart"></i> 32</span>
+        <span><i data-lucide="message-circle"></i> 14</span>
+      </div>
+    </article>
+    {% else %}
+    <article class="memory-card">
+      <span class="label"><i data-lucide="image-plus"></i>No memories yet</span>
+      <h3>Start preserving this family</h3>
+      <p>Add your first photo, voice note, or written memory when the memory flow is ready.</p>
+      <div class="memory-meta">
+        <span><i data-lucide="lock"></i> Private family space</span>
+      </div>
+    </article>
+    {% endif %}
   {% endfor %}
 </div>

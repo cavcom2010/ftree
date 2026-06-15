@@ -92,7 +92,7 @@
 
       <section class="tree-generation-stack" aria-label="Relative generations">
         {% for row in relative_generation_rows %}
-          <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}">
+          <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}" data-generation-number="{{ row.number }}">
             <button
               class="tree-generation-head"
               type="button"

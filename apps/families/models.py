@@ -185,7 +185,7 @@ class FamilyInvitation(models.Model):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=FamilyInvitation.Status.PENDING if False else "pending",
+        default=Status.PENDING,
     )
     sent_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)

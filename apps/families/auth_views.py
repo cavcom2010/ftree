@@ -1,5 +1,6 @@
 from datetime import timedelta
 from hashlib import sha256
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -19,6 +20,7 @@ from apps.families.forms import SignupForm
 from apps.families.models import EmailVerification
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 LOGIN_IP_LIMIT = 30
 LOGIN_USER_LIMIT = 8
@@ -134,6 +136,7 @@ def _create_email_verification(user):
 
 def _send_email_verification(request, verification):
     verification_url = request.build_absolute_uri(reverse("email_verify", args=[verification.token]))
+    logger.warning("HeritageTree verification URL for %s: %s", verification.email, verification_url)
     subject = "Verify your HeritageTree email address"
     message = render_to_string(
         "registration/email_verification_email.txt",

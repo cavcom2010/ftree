@@ -3,16 +3,33 @@
 {% block title %}Sign in · HeritageTree{% endblock %}
 
 {% block content %}
-<section class="tree-card animate-in">
+<section class="tree-card auth-card animate-in">
   <div class="section-head">
     <div>
       <h2>Sign in</h2>
       <p>Open your family trees and invitations.</p>
     </div>
   </div>
-  <form method="post" class="person-form">
+  <form method="post" class="person-form auth-form" novalidate>
     {% csrf_token %}
-    {{ form.as_p }}
+    {% if form.non_field_errors %}
+      <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+    {% endfor %}
+    {% for field in form.visible_fields %}
+      <label class="auth-field" for="{{ field.id_for_label }}">
+        <span class="auth-label">{{ field.label }}</span>
+        {{ field }}
+        {% if field.help_text %}
+          <small>{{ field.help_text|safe }}</small>
+        {% endif %}
+        {% for error in field.errors %}
+          <em>{{ error }}</em>
+        {% endfor %}
+      </label>
+    {% endfor %}
     <div class="form-actions">
       <button class="btn primary" type="submit">Sign in</button>
       <a class="btn soft" href="{% url 'signup' %}">Create account</a>

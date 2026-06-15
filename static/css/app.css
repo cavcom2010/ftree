@@ -1788,6 +1788,126 @@ body.account-sheet-open {
   margin-top: 6px;
 }
 
+/* ===== Auth Forms ===== */
+.auth-card {
+  position: relative;
+  max-width: 560px;
+  margin: 16px auto 0;
+  padding: 18px 14px;
+}
+
+.auth-card .section-head {
+  margin-bottom: 16px;
+}
+
+.auth-form {
+  gap: 13px;
+}
+
+.auth-field,
+.auth-form > p {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+}
+
+.auth-label,
+.auth-form > p > label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.auth-field input,
+.auth-form > p > input,
+.auth-form > p > select,
+.auth-form > p > textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid rgba(209, 240, 219, 0.95);
+  border-radius: 18px;
+  padding: 13px 14px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 5px 18px rgba(15, 41, 30, 0.05);
+  font-size: 1rem;
+  font-weight: 700;
+  outline: 0;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.auth-field input:focus,
+.auth-form > p > input:focus,
+.auth-form > p > select:focus,
+.auth-form > p > textarea:focus {
+  border-color: var(--green);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.13), 0 8px 24px rgba(15, 41, 30, 0.08);
+}
+
+.auth-field input::placeholder,
+.auth-form > p > input::placeholder {
+  color: rgba(90, 122, 107, 0.66);
+}
+
+.auth-field input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  box-shadow: 0 0 0 1000px #fff inset;
+}
+
+.auth-field small,
+.auth-form .helptext {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.auth-field small ul,
+.auth-form .helptext ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.auth-field em,
+.auth-form .errorlist {
+  color: #9a3412;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.auth-form .errorlist {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-form .form-errors,
+.form-errors {
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: 18px;
+  padding: 11px 12px;
+  color: #78350f;
+  background: #fef3c7;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.auth-form input[type="hidden"] {
+  display: none;
+}
+
+.auth-form .form-actions {
+  margin-top: 2px;
+}
+
 .btn-block {
   width: 100%;
 }

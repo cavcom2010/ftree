@@ -57,6 +57,9 @@ set +a
 HOME_PORT="${HOME_PORT:-8009}"
 HOME_UPSTREAM_PORT="${HOME_UPSTREAM_PORT:-8028}"
 HOME_IP="${HOME_IP:-$(detect_home_ip)}"
+EMAIL_BACKEND="${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}"
+HOME_STREAM_LOGS="${HOME_STREAM_LOGS:-1}"
+export EMAIL_BACKEND
 
 if [[ -z "$HOME_IP" ]]; then
   echo "Could not auto-detect HOME_IP. Set HOME_IP in your environment or .env." >&2
@@ -126,3 +129,10 @@ fi
 echo "Done."
 echo "Detected HOME_IP: ${HOME_IP}"
 echo "Open: ${SITE_BASE_URL}/"
+echo "Email backend: ${EMAIL_BACKEND}"
+
+if [[ "$HOME_STREAM_LOGS" == "1" ]]; then
+  echo "Streaming authentication emails from $ROOT/.home_nginx/logs/gunicorn-error.log"
+  echo "Verification emails will appear below. Press Ctrl+C to stop watching logs; services keep running."
+  tail -n 0 -F "$ROOT/.home_nginx/logs/gunicorn-error.log"
+fi

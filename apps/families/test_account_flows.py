@@ -18,23 +18,45 @@ class AccountFlowTests(TestCase):
     def setUp(self):
         cache.clear()
 
+    def test_login_form_uses_styled_auth_fields(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "auth-card")
+        self.assertContains(response, "auth-form")
+        self.assertContains(response, 'class="auth-field"', count=2)
+        self.assertContains(response, 'id="id_username"')
+        self.assertContains(response, 'id="id_password"')
+
+    def test_signup_form_uses_styled_auth_fields(self):
+        response = self.client.get(reverse("signup"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "auth-card")
+        self.assertContains(response, "auth-form")
+        self.assertContains(response, 'class="auth-field"', count=4)
+        self.assertContains(response, 'name="website"', count=1)
+
     def test_signup_creates_inactive_user_and_verification_record(self):
-        response = self.client.post(
-            reverse("signup"),
-            {
-                "username": "newuser",
-                "email": "new@example.com",
-                "password1": "StrongPass123!",
-                "password2": "StrongPass123!",
-                "website": "",
-            },
-        )
+        with self.assertLogs("apps.families.auth_views", level="WARNING") as captured:
+            response = self.client.post(
+                reverse("signup"),
+                {
+                    "username": "newuser",
+                    "email": "new@example.com",
+                    "password1": "StrongPass123!",
+                    "password2": "StrongPass123!",
+                    "website": "",
+                },
+            )
 
         self.assertEqual(response.status_code, 302)
         user = User.objects.get(username="newuser")
         self.assertFalse(user.is_active)
         self.assertEqual(EmailVerification.objects.filter(user=user).count(), 1)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("HeritageTree verification URL for new@example.com:", captured.output[0])
+        self.assertIn("/accounts/verify/", captured.output[0])
 
     def test_email_verification_activates_user(self):
         user = User.objects.create_user(username="inactive", email="inactive@example.com", is_active=False)

@@ -249,6 +249,8 @@ def create_relative_with_optional_invite(
     partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
+    partner_shared_children=None,
+    parent_shared_children=None,
 ):
     with transaction.atomic():
         person, relationship_type = create_relative(
@@ -261,6 +263,8 @@ def create_relative_with_optional_invite(
             partner_relationship_type=partner_relationship_type,
             other_parent=other_parent,
             shared_parents=shared_parents,
+            partner_shared_children=partner_shared_children,
+            parent_shared_children=parent_shared_children,
         )
         invitation = None
         if invitee_identifier:
@@ -291,6 +295,8 @@ def create_relative_invitation(
     partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
+    partner_shared_children=None,
+    parent_shared_children=None,
 ):
     person, invitation = create_relative_with_optional_invite(
         family=family,
@@ -305,6 +311,8 @@ def create_relative_invitation(
         partner_relationship_type=partner_relationship_type,
         other_parent=other_parent,
         shared_parents=shared_parents,
+        partner_shared_children=partner_shared_children,
+        parent_shared_children=parent_shared_children,
     )
     return invitation
 
@@ -320,6 +328,8 @@ def create_relative(
     partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
+    partner_shared_children=None,
+    parent_shared_children=None,
 ):
     require_invite_permission(family, inviter)
     if anchor_person.family_id != family.id:
@@ -351,6 +361,8 @@ def create_relative(
         relationship_type=relationship_type,
         other_parent=other_parent,
         shared_parents=shared_parents,
+        partner_shared_children=partner_shared_children,
+        parent_shared_children=parent_shared_children,
     )
     for relationship in relationships:
         relationship.full_clean()
@@ -382,6 +394,8 @@ def _relationships_for_new_relative(
     relationship_type,
     other_parent=None,
     shared_parents=None,
+    partner_shared_children=None,
+    parent_shared_children=None,
 ):
     relationships = []
     if relation_type == "parent":
@@ -393,6 +407,16 @@ def _relationships_for_new_relative(
                 relationship_type=relationship_type,
             )
         )
+        for sibling in parent_shared_children or []:
+            _validate_known_sibling(family, anchor_person, sibling)
+            relationships.append(
+                Relationship(
+                    family=family,
+                    from_person=new_person,
+                    to_person=sibling,
+                    relationship_type=relationship_type,
+                )
+            )
     elif relation_type == "child":
         relationships.append(
             Relationship(
@@ -421,6 +445,16 @@ def _relationships_for_new_relative(
                 relationship_type=relationship_type,
             )
         )
+        for child in partner_shared_children or []:
+            _validate_known_child(family, anchor_person, child)
+            relationships.append(
+                Relationship(
+                    family=family,
+                    from_person=new_person,
+                    to_person=child,
+                    relationship_type=Relationship.Type.PARENT_CHILD,
+                )
+            )
     elif relation_type == "sibling":
         relationships.append(
             Relationship(
@@ -467,6 +501,57 @@ def _validate_shared_parent(family, anchor_person, parent):
         relationship_type__in=PARENT_RELATIONSHIP_TYPES,
     ).exists():
         raise ValidationError("Shared parents must already be parents or guardians of this person.")
+
+
+def _validate_known_child(family, anchor_person, child):
+    if child.family_id != family.id:
+        raise ValidationError("Shared children must belong to this family.")
+    if not Relationship.objects.filter(
+        family=family,
+        from_person=anchor_person,
+        to_person=child,
+        relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+    ).exists():
+        raise ValidationError("Shared children must already be children of this person.")
+
+
+def _validate_known_sibling(family, anchor_person, sibling):
+    if sibling.family_id != family.id:
+        raise ValidationError("Selected siblings must belong to this family.")
+    if sibling.id == anchor_person.id:
+        raise ValidationError("Do not select yourself as a sibling.")
+    if _is_known_sibling(family, anchor_person, sibling):
+        return
+    raise ValidationError("Selected children must already be known siblings of this person.")
+
+
+def _is_known_sibling(family, person, sibling):
+    explicit_sibling = Relationship.objects.filter(
+        family=family,
+        relationship_type=Relationship.Type.SIBLING,
+    ).filter(
+        Q(from_person=person, to_person=sibling) | Q(from_person=sibling, to_person=person)
+    ).exists()
+    if explicit_sibling:
+        return True
+
+    person_parent_ids = set(
+        Relationship.objects.filter(
+            family=family,
+            to_person=person,
+            relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+        ).values_list("from_person_id", flat=True)
+    )
+    if not person_parent_ids:
+        return False
+    sibling_parent_ids = set(
+        Relationship.objects.filter(
+            family=family,
+            to_person=sibling,
+            relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+        ).values_list("from_person_id", flat=True)
+    )
+    return bool(person_parent_ids & sibling_parent_ids)
 
 
 def _strongest_role(existing_role, invited_role):

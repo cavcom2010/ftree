@@ -24,9 +24,11 @@
           <p>Choose who represents you so the tree can place parents, siblings, and descendants correctly.</p>
         {% endif %}
       </div>
-      <button class="tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
-        <i data-lucide="user-plus"></i>
-      </button>
+      {% if can_invite_relatives %}
+        <button class="tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
+          <i data-lucide="user-plus"></i>
+        </button>
+      {% endif %}
     </header>
 
     {% if received_invitations %}

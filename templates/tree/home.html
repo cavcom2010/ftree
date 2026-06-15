@@ -7,6 +7,7 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/tree_home.css' %}?v=20260615-tree-shell">
 <link rel="stylesheet" href="{% static 'css/tree_onboarding.css' %}?v=20260615-tree-onboarding">
+<link rel="stylesheet" href="{% static 'css/tree_quick_relatives.css' %}?v=20260615-quick-relatives">
 {% endblock %}
 
 {% block content %}
@@ -282,6 +283,37 @@
               <i data-lucide="x"></i>
             </button>
           </div>
+
+          {% if can_invite_relatives %}
+            <section class="tree-quick-relatives" aria-labelledby="tree-quick-relatives-title-{{ person.id }}">
+              <div>
+                <p class="tree-kicker">Add relatives</p>
+                <h3 id="tree-quick-relatives-title-{{ person.id }}">Add relatives for {{ person.full_name }}</h3>
+              </div>
+              <div class="tree-quick-actions" aria-label="Add relatives for {{ person.full_name }}">
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+                  <i data-lucide="arrow-up"></i>
+                  <span>Parent</span>
+                </button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+                  <i data-lucide="heart"></i>
+                  <span>Partner</span>
+                </button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+                  <i data-lucide="baby"></i>
+                  <span>Child</span>
+                </button>
+                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+                  <i data-lucide="users"></i>
+                  <span>Sibling</span>
+                </button>
+              </div>
+              <div class="tree-quick-helper">
+                <p><strong>Grandparents:</strong> open your parent’s card and add their parents.</p>
+                <p><strong>Aunties/uncles:</strong> open your parent’s card and add their siblings.</p>
+              </div>
+            </section>
+          {% endif %}
 
           <div class="tree-reveal-pills" role="tablist" aria-label="{{ person.full_name }} relationship groups">
             <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="parents-{{ person.id }}" data-reveal-tab="parents-{{ person.id }}">Parents</button>

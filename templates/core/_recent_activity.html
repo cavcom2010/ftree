@@ -30,32 +30,26 @@
     </div>
   </article>
   {% empty %}
-  <article class="activity" onclick="showToast('Branch details opened')">
-    <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
-      <i data-lucide="git-branch"></i>
-    </div>
-    <div>
-      <b>New branch revealed</b>
-      <p>3 descendants of James were added to the tree.</p>
-    </div>
-  </article>
-  <article class="activity" onclick="showToast('Story details opened')">
-    <div class="activity-icon" style="background:var(--blue-soft);color:var(--blue);">
-      <i data-lucide="file-text"></i>
-    </div>
-    <div>
-      <b>Story added</b>
-      <p>"The Journey to UK" was published by Sarah.</p>
-    </div>
-  </article>
-  <article class="activity" onclick="showToast('Achievement details opened')">
-    <div class="activity-icon" style="background:var(--gen1-soft);color:var(--gen1-primary);">
-      <i data-lucide="trophy"></i>
-    </div>
-    <div>
-      <b>Achievement earned</b>
-      <p>David became a Memory Keeper after uploading 10 photos.</p>
-    </div>
-  </article>
+    {% if is_demo_context %}
+    <article class="activity" onclick="showToast('Demo branch opened')">
+      <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
+        <i data-lucide="git-branch"></i>
+      </div>
+      <div>
+        <b>Demo branch revealed</b>
+        <p>Example activity shown before sign in.</p>
+      </div>
+    </article>
+    {% else %}
+    <article class="activity">
+      <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
+        <i data-lucide="sparkles"></i>
+      </div>
+      <div>
+        <b>No activity yet</b>
+        <p>Family changes will appear here after relatives, stories, or memories are added.</p>
+      </div>
+    </article>
+    {% endif %}
   {% endfor %}
 </div>

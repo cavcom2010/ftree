@@ -17,15 +17,9 @@
           <i data-lucide="plus"></i>Connect
         </a>
       {% endif %}
-      {% if request.path == '/tree/' or request.path == '/tree' %}
-        <button type="button" data-tree-scroll-anchor aria-label="Show people in the tree">
-          <i data-lucide="users"></i>People
-        </button>
-      {% else %}
-        <a href="/tree/#tree-generation-stack" aria-label="Show people in the tree">
-          <i data-lucide="users"></i>People
-        </a>
-      {% endif %}
+      <a href="{% url 'home' %}" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="home"></i>Home
+      </a>
       <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="menu"></i>Menu
       </a>

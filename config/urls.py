@@ -1,10 +1,16 @@
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.views import PasswordResetConfirmView
 from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path(
+        "r/<uidb64>/<token>/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_short_confirm",
+    ),
     path("", include("apps.core.urls")),
     path("", include("apps.families.urls")),
     path("", include("apps.people.urls")),

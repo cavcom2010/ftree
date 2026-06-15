@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Family, FamilyInvitation, FamilyMembership
+from .models import EmailVerification, Family, FamilyInvitation, FamilyMembership
 
 
 @admin.register(Family)
@@ -15,6 +15,14 @@ class FamilyMembershipAdmin(admin.ModelAdmin):
     list_display = ["family", "user", "person", "role", "joined_at"]
     list_filter = ["role", "family"]
     search_fields = ["user__username", "family__name", "person__first_name", "person__last_name"]
+
+
+@admin.register(EmailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ["email", "user", "created_at", "expires_at", "verified_at"]
+    list_filter = ["verified_at", "expires_at"]
+    search_fields = ["email", "user__username", "user__email"]
+    readonly_fields = ["token", "created_at", "verified_at"]
 
 
 @admin.register(FamilyInvitation)

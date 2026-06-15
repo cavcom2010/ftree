@@ -1,0 +1,95 @@
+<section class="family-dashboard animate-in" id="tree" aria-labelledby="family-dashboard-title">
+  <article class="my-profile-card">
+    <div class="profile-orb">
+      {% if dashboard.profile.avatar_url %}
+        <img src="{{ dashboard.profile.avatar_url }}" alt="{{ dashboard.profile.name }}">
+      {% else %}
+        <span>{{ dashboard.profile.initials }}</span>
+      {% endif %}
+    </div>
+    <div class="profile-copy">
+      <p class="mini">My Gen 0 profile</p>
+      <h1 id="family-dashboard-title">{{ dashboard.profile.name }}</h1>
+      <span>{{ dashboard.profile.relationship_label }} · {{ family.name }}</span>
+      <div class="completion-meter" aria-label="Profile completion {{ dashboard.profile_completion }} percent">
+        <span style="width:{{ dashboard.profile_completion }}%"></span>
+      </div>
+      <small>{{ dashboard.profile_completion }}% profile complete{% if dashboard.profile_missing %} · Add {{ dashboard.profile_missing.0 }} next{% endif %}</small>
+    </div>
+    <div class="profile-actions">
+      <a class="btn primary" href="/tree/">
+        <i data-lucide="git-branch"></i>Open tree
+      </a>
+      <a class="btn soft" href="/tree/">
+        <i data-lucide="edit-3"></i>Edit profile
+      </a>
+    </div>
+  </article>
+
+  <div class="section-head compact">
+    <div>
+      <h2>My Close Family</h2>
+      <p>Your homepage shows the relatives closest to you. The full visual tree stays on the Tree page.</p>
+    </div>
+    <a href="/tree/" class="link-btn">Full tree <i data-lucide="chevron-right"></i></a>
+  </div>
+
+  <div class="close-family-grid">
+    {% for group in dashboard.groups %}
+      <article class="close-family-card close-family-{{ group.key }}">
+        <div class="close-family-head">
+          <span><i data-lucide="{{ group.icon }}"></i></span>
+          <div>
+            <h3>{{ group.title }}</h3>
+            <p>{{ group.people|length }} connected</p>
+          </div>
+        </div>
+
+        <div class="close-family-people">
+          {% for person in group.people %}
+            <button class="mini-person-card"
+              type="button"
+              hx-get="/people/{{ person.source_id }}/drawer/"
+              hx-target="#personDrawer"
+              hx-swap="innerHTML">
+              <span class="mini-person-avatar">
+                {% if person.avatar_url %}
+                  <img src="{{ person.avatar_url }}" alt="{{ person.name }}">
+                {% else %}
+                  {{ person.initials }}
+                {% endif %}
+              </span>
+              <span>
+                <b>{{ person.name }}</b>
+                <small>{{ person.relationship_label }}</small>
+              </span>
+            </button>
+          {% empty %}
+            <div class="close-family-empty">
+              <p>{{ group.empty_text }}</p>
+            </div>
+          {% endfor %}
+        </div>
+
+        <a class="close-family-add" href="{{ group.action_href }}">
+          <i data-lucide="plus"></i>{{ group.action_label }}
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+
+  <div class="section-head compact" id="quick-actions">
+    <div>
+      <h2>Quick actions</h2>
+      <p>Shortcuts for the next useful thing to do.</p>
+    </div>
+  </div>
+  <div class="dashboard-actions">
+    {% for action in dashboard.quick_actions %}
+      <a class="dashboard-action {% if action.kind == 'primary' %}is-primary{% endif %}" href="{{ action.href }}">
+        <i data-lucide="{{ action.icon }}"></i>
+        <span>{{ action.label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>

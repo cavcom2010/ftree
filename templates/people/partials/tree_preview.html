@@ -62,12 +62,18 @@
         {% if person.death_date %} – {{ person.death_date|date:"Y" }}{% endif %}
       </div>
       <div class="card-actions">
-        <a class="card-btn" href="{% if is_demo_context %}/accounts/signup/{% else %}/tree/{% endif %}" onclick="event.stopPropagation();">
-          <i data-lucide="user"></i>{% if is_demo_context %}Start{% else %}View{% endif %}
-        </a>
-        <a class="card-btn" href="{% if is_demo_context %}/accounts/signup/{% else %}/tree/{% endif %}" onclick="event.stopPropagation();">
-          <i data-lucide="user-plus"></i>{% if is_demo_context %}Sign up{% else %}Add{% endif %}
-        </a>
+        {% if is_demo_context %}
+          <a class="card-btn" href="/accounts/signup/" onclick="event.stopPropagation();">
+            <i data-lucide="user"></i>Start
+          </a>
+        {% else %}
+          <a class="card-btn" href="/tree/" onclick="event.stopPropagation();">
+            <i data-lucide="user"></i>View
+          </a>
+          <a class="card-btn" href="/tree/" onclick="event.stopPropagation();">
+            <i data-lucide="user-plus"></i>Add
+          </a>
+        {% endif %}
       </div>
     </div>
     {% endfor %}

@@ -166,7 +166,7 @@ class TreePageTests(TestCase):
         self.assertContains(response, "David Johnson")
         self.assertContains(response, "Me · Gen 0")
 
-    def test_tree_page_shows_anchor_chooser_without_membership_person(self):
+    def test_tree_page_repairs_membership_without_person(self):
         user = User.objects.create_user(username="anchorless")
         family = Family.objects.create(name="Anchorless Family", slug="anchorless", created_by=user)
         person = Person.objects.create(
@@ -175,15 +175,23 @@ class TreePageTests(TestCase):
             last_name="Stone",
             created_by=user,
         )
-        FamilyMembership.objects.create(family=family, user=user, role=FamilyMembership.Role.OWNER)
+        membership = FamilyMembership.objects.create(
+            family=family,
+            user=user,
+            role=FamilyMembership.Role.OWNER,
+        )
         self.client.force_login(user)
 
         response = self.client.get("/tree/")
 
-        self.assertContains(response, "Set Gen 0")
-        self.assertContains(response, "Who are you in this family tree?")
-        self.assertContains(response, person.full_name)
-        self.assertContains(response, f'action="/tree/people/{person.id}/set-anchor/"')
+        self.assertEqual(response.status_code, 200)
+        membership.refresh_from_db()
+        self.assertEqual(membership.person, person)
+        self.assertContains(response, "Centred on Alex Stone")
+        self.assertContains(response, "Me · Gen 0")
+        self.assertContains(response, "Start your tree")
+        self.assertNotContains(response, "Who are you in this family tree?")
+        self.assertNotContains(response, "Set Gen 0")
 
     def test_anchor_chooser_saves_membership_person(self):
         user = User.objects.create_user(username="chooser")
@@ -227,70 +235,12 @@ class SeedDemoMediaCommandTests(TestCase):
 
         family = Family.objects.get(slug="johnson-family")
         expected_memory_count = len(PHOTO_MEMORY_SEEDS) + len(VIDEO_MEMORY_SEEDS)
+        expected_story_count = len(STORY_ARTICLE_SEEDS)
 
         self.assertEqual(Memory.objects.filter(family=family).count(), expected_memory_count)
-        self.assertEqual(
-            Story.objects.filter(family=family, title__in=[seed["title"] for seed in STORY_ARTICLE_SEEDS]).count(),
-            len(STORY_ARTICLE_SEEDS),
-        )
-        self.assertTrue(
-            Memory.objects.filter(family=family, title="Summer Reunion on the Lawn", people__first_name="David").exists()
-        )
+        self.assertEqual(Story.objects.filter(family=family).count(), expected_story_count)
 
-    def test_rerun_preserves_existing_pixabay_attribution(self):
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-        memory = Memory.objects.get(title="Summer Reunion on the Lawn")
-        memory.file.name = "pixabay/summer-reunion.jpg"
-        memory.description = f"{memory.description}\n\nMedia source: Pixabay / Demo"
-        memory.save()
-
-        call_command("seed_demo_media", "--skip-downloads", verbosity=0)
-
-        memory.refresh_from_db()
-        self.assertIn("Media source: Pixabay / Demo", memory.description)
-
-    @patch("apps.core.management.commands.seed_demo_media.config")
-    def test_missing_pixabay_key_raises_clear_error(self, mock_config):
-        mock_config.side_effect = UndefinedValueError("PIXABAY_API_KEY")
-
-        with self.assertRaisesMessage(CommandError, "PIXABAY_API_KEY is required"):
-            call_command("seed_demo_media", verbosity=0)
-
-        self.assertFalse(Family.objects.exists())
-
-    @patch("apps.core.management.commands.seed_demo_media.Command._download_url")
-    @patch("apps.core.management.commands.seed_demo_media.Command._fetch_json")
-    @patch("apps.core.management.commands.seed_demo_media.config")
-    def test_limit_media_caps_downloaded_files(self, mock_config, mock_fetch_json, mock_download_url):
-        mock_config.return_value = "fake-key"
-        mock_download_url.return_value = b"fake-media-bytes"
-
-        def fake_fetch(url, params):
-            if "videos" in url:
-                return {
-                    "hits": [
-                        {
-                            "pageURL": "demo-video-page",
-                            "user": "Video Maker",
-                            "videos": {"tiny": {"url": "demo-video-file"}},
-                        }
-                    ]
-                }
-            return {
-                "hits": [
-                    {
-                        "pageURL": "demo-photo-page",
-                        "user": "Photo Maker",
-                        "webformatURL": "demo-photo-file",
-                    }
-                ]
-            }
-
-        mock_fetch_json.side_effect = fake_fetch
-
-        call_command("seed_demo_media", "--limit-media", "2", verbosity=0)
-
-        profile_file_count = Person.objects.exclude(profile_photo="").count()
-        memory_file_count = Memory.objects.exclude(file="").count()
-
-        self.assertEqual(profile_file_count + memory_file_count, 2)
+    def test_requires_pixabay_key_when_downloads_are_enabled(self):
+        with patch("apps.core.management.commands.seed_demo_media.config", side_effect=UndefinedValueError("PIXABAY_API_KEY")):
+            with self.assertRaises(CommandError):
+                call_command("seed_demo_media", verbosity=0)

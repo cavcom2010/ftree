@@ -5,7 +5,7 @@
     {% if person.profile_photo %}
       <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
     {% else %}
-      {{ person.initials }}
+      {{ person.first_name|slice:":1" }}{{ person.last_name|slice:":1" }}
     {% endif %}
   </div>
   <div>

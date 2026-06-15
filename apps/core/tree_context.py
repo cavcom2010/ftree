@@ -16,7 +16,6 @@ from apps.relationships.models import Relationship
 
 
 MAX_TREE_DEPTH = 4
-DESCENDANT_PREVIEW_DEPTH = 2
 PARENT_TREE_TYPES = {
     Relationship.Type.PARENT_CHILD,
     Relationship.Type.ADOPTIVE_PARENT,
@@ -232,10 +231,6 @@ def _people_from_ids(person_ids, people_by_id):
     )
 
 
-def _ordered_person_ids(person_ids, people_by_id):
-    return [person.id for person in _people_from_ids(person_ids, people_by_id)]
-
-
 def _person_order(person):
     return (
         person.birth_date is None,
@@ -269,7 +264,6 @@ def _person_card(
         and getattr(current_user, "is_authenticated", False)
         and membership.user_id == current_user.id
     )
-    descendants = _descendant_preview(person.id, graph)
 
     return {
         "id": person.id,
@@ -295,69 +289,11 @@ def _person_card(
         "partners": [_mini_person(graph["people_by_id"][person_id]) for person_id in partner_ids if person_id in graph["people_by_id"]],
         "children": [_mini_person(graph["people_by_id"][person_id]) for person_id in child_ids if person_id in graph["people_by_id"]],
         "siblings": [_mini_person(graph["people_by_id"][person_id]) for person_id in sibling_ids if person_id in graph["people_by_id"]],
-        "descendants": descendants,
-        "descendant_count": descendants["total_count"],
         "parent_count": len(parent_ids),
         "partner_count": len(partner_ids),
         "child_count": len(child_ids),
         "sibling_count": len(sibling_ids),
     }
-
-
-def _descendant_preview(person_id, graph):
-    people_by_id = graph["people_by_id"]
-    children_by_parent = graph["children_by_parent"]
-    child_ids = _ordered_person_ids(children_by_parent.get(person_id, set()), people_by_id)
-    all_descendant_ids = _collect_descendant_ids(person_id, graph)
-    preview_ids = set()
-    branches = []
-
-    for child_id in child_ids:
-        if child_id not in people_by_id:
-            continue
-
-        grandchild_ids = _ordered_person_ids(children_by_parent.get(child_id, set()), people_by_id)
-        preview_ids.add(child_id)
-        preview_ids.update(grandchild_ids)
-        deeper_ids = _collect_descendant_ids(child_id, graph) - set(grandchild_ids)
-        branches.append(
-            {
-                "person": _mini_person(people_by_id[child_id]),
-                "grandchildren": [
-                    _mini_person(people_by_id[grandchild_id])
-                    for grandchild_id in grandchild_ids
-                    if grandchild_id in people_by_id
-                ],
-                "grandchild_count": len(grandchild_ids),
-                "has_more": bool(deeper_ids),
-            }
-        )
-
-    return {
-        "total_count": len(all_descendant_ids),
-        "preview_count": len(preview_ids),
-        "children": branches,
-        "has_more": len(all_descendant_ids - preview_ids) > 0,
-    }
-
-
-def _collect_descendant_ids(person_id, graph, max_depth=MAX_TREE_DEPTH):
-    children_by_parent = graph["children_by_parent"]
-    descendants = set()
-    current_ids = {person_id}
-
-    for _ in range(max_depth):
-        next_ids = set()
-        for current_id in current_ids:
-            next_ids.update(children_by_parent.get(current_id, set()))
-        next_ids.discard(person_id)
-        next_ids -= descendants
-        if not next_ids:
-            break
-        descendants.update(next_ids)
-        current_ids = next_ids
-
-    return descendants
 
 
 def _connection_label(membership, invitation, is_current_user):

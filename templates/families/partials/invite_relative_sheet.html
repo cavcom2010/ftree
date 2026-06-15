@@ -42,6 +42,14 @@
         {{ form.parent_relationship_type }}
         {{ form.parent_relationship_type.errors }}
       </label>
+      {% if form.parent_shared_children.field.queryset %}
+        <fieldset class="tree-check-list">
+          <legend>{{ form.parent_shared_children.label }}</legend>
+          <small>{{ form.parent_shared_children.help_text }}</small>
+          {{ form.parent_shared_children }}
+          {{ form.parent_shared_children.errors }}
+        </fieldset>
+      {% endif %}
     {% endif %}
     {% if relation_type == "partner" or relation_type == "spouse" %}
       <label>
@@ -49,6 +57,14 @@
         {{ form.partner_relationship_type }}
         {{ form.partner_relationship_type.errors }}
       </label>
+      {% if form.partner_shared_children.field.queryset %}
+        <fieldset class="tree-check-list">
+          <legend>{{ form.partner_shared_children.label }}</legend>
+          <small>{{ form.partner_shared_children.help_text }}</small>
+          {{ form.partner_shared_children }}
+          {{ form.partner_shared_children.errors }}
+        </fieldset>
+      {% endif %}
     {% endif %}
     {% if relation_type == "child" %}
       <label>

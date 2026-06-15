@@ -1,0 +1,34 @@
+/* Tree-page bottom navigation refinements */
+.tree-only-body .tree-stage {
+  padding-bottom: calc(138px + env(safe-area-inset-bottom));
+}
+
+.tree-only-body .tree-generation-stack {
+  padding-bottom: 24px;
+}
+
+.tree-only-body .tree-stage-header.has-create {
+  grid-template-columns: 40px minmax(0, 1fr);
+}
+
+.tree-only-body .tree-stage-header .tree-icon-button {
+  display: none;
+}
+
+.tree-only-body .bottom-nav-wrapper {
+  display: block;
+}
+
+.tree-only-body .bottom-nav .add-main {
+  min-width: 0;
+}
+
+.tree-only-body .bottom-nav .add-main:active {
+  transform: translateY(-8px) scale(0.96);
+}
+
+@media (min-width: 900px) {
+  .tree-only-body .tree-stage {
+    padding-bottom: calc(118px + env(safe-area-inset-bottom));
+  }
+}

@@ -3,45 +3,44 @@
     <h2>Today in Family History</h2>
     <p>Small reasons to return every day.</p>
   </div>
-  <button class="link-btn" onclick="showToast('Today page opened')">
+  <a class="link-btn" href="{% if request.user.is_authenticated %}/tree/{% else %}/accounts/signup/{% endif %}">
     View all <i data-lucide="chevron-right"></i>
-  </button>
+  </a>
 </div>
 <div class="today-grid animate-in delay-1">
-  <div class="today-card" onclick="showToast('Birthday memory opened')">
-    <div class="today-icon">
-      <i data-lucide="cake"></i>
-    </div>
-    <div>
-      <strong>Family Birthday</strong>
-      <span>Robert Mazhindu — born 14 June 1952</span>
-    </div>
-    <div class="arrow">
-      <i data-lucide="chevron-right"></i>
-    </div>
-  </div>
-  <div class="today-card" onclick="showToast('Anniversary memory opened')">
-    <div class="today-icon">
-      <i data-lucide="heart"></i>
-    </div>
-    <div>
-      <strong>Anniversary</strong>
-      <span>Robert & Margaret — 52 years</span>
-    </div>
-    <div class="arrow">
-      <i data-lucide="chevron-right"></i>
-    </div>
-  </div>
-  <div class="today-card" onclick="showToast('Reunion memory opened')">
-    <div class="today-icon">
-      <i data-lucide="camera"></i>
-    </div>
-    <div>
-      <strong>Family Reunion</strong>
-      <span>Harare gathering — 4 years ago today</span>
-    </div>
-    <div class="arrow">
-      <i data-lucide="chevron-right"></i>
-    </div>
-  </div>
+  {% for card in today_cards %}
+    {% if card.href %}
+      <a class="today-card" href="{{ card.href }}">
+    {% else %}
+      <div class="today-card" {% if card.toast %}onclick="showToast('{{ card.toast|escapejs }}')"{% endif %}>
+    {% endif %}
+        <div class="today-icon">
+          <i data-lucide="{{ card.icon|default:'sparkles' }}"></i>
+        </div>
+        <div>
+          <strong>{{ card.title }}</strong>
+          <span>{{ card.subtitle }}</span>
+        </div>
+        <div class="arrow">
+          <i data-lucide="chevron-right"></i>
+        </div>
+    {% if card.href %}
+      </a>
+    {% else %}
+      </div>
+    {% endif %}
+  {% empty %}
+    <a class="today-card" href="/tree/">
+      <div class="today-icon">
+        <i data-lucide="calendar-plus"></i>
+      </div>
+      <div>
+        <strong>No family dates yet</strong>
+        <span>Add birthdays, places, and memories from the tree page.</span>
+      </div>
+      <div class="arrow">
+        <i data-lucide="chevron-right"></i>
+      </div>
+    </a>
+  {% endfor %}
 </div>

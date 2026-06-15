@@ -136,7 +136,6 @@
     trigger.classList.add("is-selected");
     if (backdrop) backdrop.hidden = false;
     syncModalLock();
-    notify(trigger.querySelector("strong") ? trigger.querySelector("strong").textContent + " opened" : "Relative opened");
 
     window.setTimeout(function () {
       focusSafely(qs("[data-tree-reveal-close]", drawer) || drawer);
@@ -184,8 +183,21 @@
       window.setTimeout(function () {
         anchorRow.classList.remove("is-selected-row");
       }, 1100);
-      notify("Focused on Gen 0");
     }
+  }
+
+  function openAnchorCard() {
+    var anchorCard = qs(".tree-person-card.is-anchor") || qs("[data-person-reveal]");
+
+    if (!anchorCard) {
+      focusAnchorRow();
+      return;
+    }
+
+    anchorCard.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    window.setTimeout(function () {
+      openRevealDrawer(anchorCard);
+    }, 180);
   }
 
   function toggleGeneration(button) {
@@ -230,6 +242,12 @@
     var generationToggle = event.target.closest("[data-generation-toggle]");
     if (generationToggle) {
       toggleGeneration(generationToggle);
+      return;
+    }
+
+    var openAnchorTrigger = event.target.closest("[data-tree-open-anchor]");
+    if (openAnchorTrigger) {
+      openAnchorCard();
       return;
     }
 

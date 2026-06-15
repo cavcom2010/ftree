@@ -9,8 +9,8 @@
         <i data-lucide="image"></i>Memory
       </a>
       {% if request.path == '/tree/' or request.path == '/tree' %}
-        <button class="add-main" type="button" data-create-sheet-trigger aria-label="Add relative">
-          <i data-lucide="plus"></i>Add
+        <button class="add-main" type="button" data-tree-open-anchor aria-label="Open your person card to connect relatives">
+          <i data-lucide="plus"></i>Connect
         </button>
       {% else %}
         <a class="add-main" href="/tree/" aria-label="Connect relatives">

@@ -11,6 +11,10 @@ const sheet = document.getElementById("global-sheet");
 const sheetOverlay = document.getElementById("sheet-overlay");
 const detailSheet = document.getElementById("detailSheet");
 const detailSheetOverlay = document.getElementById("detailSheetOverlay");
+const accountSheet = document.getElementById("accountSheet");
+const accountSheetBackdrop = document.getElementById("accountSheetBackdrop");
+let activeAccountTrigger = null;
+let accountSheetTimer = null;
 
 function scrollToSection(id) {
   const el = document.getElementById(id);
@@ -71,6 +75,57 @@ function closeSheet() {
   if (sheetOverlay) sheetOverlay.classList.remove("show");
   if (detailSheet) detailSheet.classList.remove("show");
   if (detailSheetOverlay) detailSheetOverlay.classList.remove("show");
+}
+
+function setAccountTriggersExpanded(isExpanded) {
+  document.querySelectorAll("[data-account-sheet-trigger]").forEach((trigger) => {
+    trigger.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+  });
+}
+
+function openAccountSheet(trigger) {
+  if (!accountSheet || !accountSheetBackdrop) return false;
+
+  activeAccountTrigger = trigger || null;
+  window.clearTimeout(accountSheetTimer);
+  accountSheet.hidden = false;
+  accountSheetBackdrop.hidden = false;
+  accountSheet.setAttribute("aria-hidden", "false");
+  document.body.classList.add("account-sheet-open");
+  setAccountTriggersExpanded(true);
+
+  window.requestAnimationFrame(() => {
+    accountSheet.classList.add("show");
+    accountSheetBackdrop.classList.add("show");
+  });
+
+  window.setTimeout(() => {
+    const closeButton = accountSheet.querySelector("[data-account-sheet-close]");
+    if (closeButton) closeButton.focus({ preventScroll: true });
+  }, 80);
+
+  return true;
+}
+
+function closeAccountSheet(restoreFocus = true) {
+  if (!accountSheet || !accountSheetBackdrop || accountSheet.hidden) return;
+
+  accountSheet.classList.remove("show");
+  accountSheetBackdrop.classList.remove("show");
+  accountSheet.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("account-sheet-open");
+  setAccountTriggersExpanded(false);
+
+  window.clearTimeout(accountSheetTimer);
+  accountSheetTimer = window.setTimeout(() => {
+    accountSheet.hidden = true;
+    accountSheetBackdrop.hidden = true;
+  }, 260);
+
+  if (restoreFocus && activeAccountTrigger && typeof activeAccountTrigger.focus === "function") {
+    activeAccountTrigger.focus({ preventScroll: true });
+  }
+  activeAccountTrigger = null;
 }
 
 function openSheet(name, meta, initials, gradient, born, location, gen, children, relation) {
@@ -138,7 +193,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinks = document.querySelectorAll(".bottom-nav a");
   navLinks.forEach((link) => {
     link.classList.remove("active");
-    if (link.getAttribute("href") === path) {
+    const matches = (link.dataset.navMatch || "").split(/\s+/).filter(Boolean);
+    if (link.getAttribute("href") === path || matches.includes(path)) {
       link.classList.add("active");
     }
   });
@@ -148,7 +204,10 @@ document.addEventListener("DOMContentLoaded", () => {
   sideLinks.forEach((link) => {
     link.classList.remove("active");
     const href = link.getAttribute("href");
-    if (href && path.startsWith(href) && href !== "/") {
+    const matches = (link.dataset.navMatch || "").split(/\s+/).filter(Boolean);
+    if (matches.includes(path)) {
+      link.classList.add("active");
+    } else if (href && path.startsWith(href) && href !== "/") {
       link.classList.add("active");
     } else if (href === "/" && path === "/") {
       link.classList.add("active");
@@ -162,6 +221,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("click", (event) => {
+  const accountTrigger = event.target.closest("[data-account-sheet-trigger]");
+  if (accountTrigger && openAccountSheet(accountTrigger)) {
+    event.preventDefault();
+    return;
+  }
+
+  if (event.target.closest("[data-account-sheet-close]")) {
+    closeAccountSheet();
+    return;
+  }
+
   const treeSheet = document.getElementById("tree-create-sheet");
   if (!treeSheet && event.target.closest("[data-create-sheet-trigger]")) {
     showToast("Create menu is available from the tree homepage");
@@ -169,6 +239,12 @@ document.addEventListener("click", (event) => {
 
   if (!treeSheet && event.target.closest("[data-tree-search-trigger]")) {
     showToast("Search is available from the tree homepage");
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeAccountSheet();
   }
 });
 

@@ -1535,6 +1535,112 @@ button {
   transform: translateY(0);
 }
 
+/* ===== Account Sheet ===== */
+body.account-sheet-open {
+  overflow: hidden;
+}
+
+.account-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1320;
+  background: rgba(15, 41, 30, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.account-sheet-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.account-sheet {
+  position: fixed;
+  z-index: 1330;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 30px 30px 24px 24px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 -18px 60px rgba(15, 41, 30, 0.24);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(calc(100% + 150px));
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.account-sheet.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.account-sheet-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 12px;
+  align-items: start;
+}
+
+.account-sheet-head p {
+  margin: 0 0 5px;
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.account-sheet-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.18rem;
+  line-height: 1.08;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.account-sheet-head span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.account-sheet-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.account-sheet-actions .btn {
+  min-width: 0;
+  min-height: 48px;
+  border-radius: 17px;
+  padding-inline: 12px;
+}
+
+.bottom-nav .add-main[aria-expanded="true"],
+.side-link[aria-expanded="true"],
+.icon-btn[aria-expanded="true"] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.28);
+}
+
 /* ===== Toast ===== */
 .toast {
   position: fixed;
@@ -2156,6 +2262,14 @@ button {
     width: 420px;
   }
 
+  .account-sheet {
+    left: auto;
+    right: 20px;
+    bottom: 104px;
+    width: 420px;
+    margin: 0;
+  }
+
   .detail-sheet {
     left: 50%;
     right: auto;
@@ -2289,6 +2403,11 @@ button {
     left: auto;
     right: 40px;
     width: 420px;
+  }
+
+  .account-sheet {
+    right: 40px;
+    bottom: 40px;
   }
 }
 

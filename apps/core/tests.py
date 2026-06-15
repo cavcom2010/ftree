@@ -43,6 +43,33 @@ class HomepageShellTests(TestCase):
         self.assertContains(response, "memory-strip")
         self.assertLess(content.index('id="tree"'), content.index("memory-strip"))
 
+    def test_logged_out_navigation_uses_tree_and_single_account_entry(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "data-bottom-tree-link")
+        self.assertContains(response, "data-bottom-account-trigger")
+        self.assertContains(response, "data-header-account-trigger", count=1)
+        self.assertContains(response, 'id="accountSheet"')
+        self.assertContains(response, "data-account-login-link")
+        self.assertContains(response, "data-account-signup-link")
+        self.assertNotContains(response, 'aria-label="Log in"')
+        self.assertNotContains(response, 'aria-label="Create account"')
+        self.assertNotContains(response, 'data-lucide="log-in"></i>Log in')
+        self.assertNotContains(response, 'data-lucide="user-plus"></i>Sign up')
+
+    def test_authenticated_navigation_keeps_app_nav_without_account_sheet(self):
+        call_command("seed_demo_family", verbosity=0)
+        self.client.force_login(User.objects.get(username="demo"))
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "data-bottom-tree-link")
+        self.assertContains(response, 'href="/memories/"')
+        self.assertContains(response, 'aria-label="Connect"')
+        self.assertContains(response, 'href="/people/create/"')
+        self.assertNotContains(response, "data-bottom-account-trigger")
+        self.assertNotContains(response, 'id="accountSheet"')
+
 
 @override_settings(ALLOWED_HOSTS=["testserver"])
 class TreePageTests(TestCase):

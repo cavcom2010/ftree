@@ -2,7 +2,7 @@
 <div class="bottom-nav-wrapper">
   <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="Main navigation">
     {% if request.user.is_authenticated %}
-      <a href="/tree/" {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
+      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="tree-deciduous"></i>Tree
       </a>
       <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
@@ -21,11 +21,21 @@
       <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="home"></i>Home
       </a>
-      <a href="{% url 'login' %}" {% if request.path == '/accounts/login/' %}class="active" aria-current="page"{% endif %}>
-        <i data-lucide="log-in"></i>Log in
+      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="tree-deciduous"></i>Tree
       </a>
-      <a href="{% url 'signup' %}" class="add-main{% if request.path == '/accounts/signup/' %} active{% endif %}" {% if request.path == '/accounts/signup/' %}aria-current="page"{% endif %}>
-        <i data-lucide="user-plus"></i>Sign up
+      <a
+        href="{% url 'login' %}"
+        class="add-main{% if request.path == '/accounts/login/' or request.path == '/accounts/signup/' %} active{% endif %}"
+        data-account-sheet-trigger
+        data-bottom-account-trigger
+        data-nav-match="/accounts/login/ /accounts/signup/"
+        aria-label="Account"
+        aria-haspopup="dialog"
+        aria-controls="accountSheet"
+        aria-expanded="false"
+        {% if request.path == '/accounts/login/' or request.path == '/accounts/signup/' %}aria-current="page"{% endif %}>
+        <i data-lucide="circle-user-round"></i>Account
       </a>
       <a href="/#today">
         <i data-lucide="calendar"></i>Today

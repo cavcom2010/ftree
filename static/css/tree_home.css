@@ -32,24 +32,14 @@
 }
 
 .tree-home {
-  --tree-bg: var(--bg, #f0fdf4);
-  --tree-card: var(--card, #ffffff);
-  --tree-ink: var(--ink, #0f291e);
-  --tree-muted: var(--muted, #5a7a6b);
-  --tree-line: var(--line, #d1f0db);
-  --tree-green: var(--green, #059669);
-  --tree-green-bright: var(--green-bright, #10b981);
-  --tree-green-soft: var(--green-soft, #d1fae5);
-  --tree-green-glow: var(--green-glow, rgba(16, 185, 129, 0.15));
-  --tree-shadow: var(--shadow, 0 20px 60px rgba(15, 41, 30, 0.12));
-  --tree-shadow-sm: var(--shadow-sm, 0 4px 20px rgba(15, 41, 30, 0.06));
-  --tree-gen-primary: var(--tree-green);
-  --tree-gen-soft: var(--tree-green-soft);
+  --tree-gen-primary: var(--green);
+  --tree-gen-soft: var(--green-soft);
   --tree-gen-line: #a7f3d0;
   --tree-gen-ink: #064e3b;
+  isolation: isolate;
   min-width: 0;
   min-height: 100dvh;
-  color: var(--tree-ink);
+  color: var(--ink);
 }
 
 .tree-stage {
@@ -72,7 +62,7 @@
     radial-gradient(circle at 92% 92%, rgba(5, 150, 105, 0.10), transparent 34%),
     linear-gradient(rgba(5, 150, 105, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(5, 150, 105, 0.045) 1px, transparent 1px),
-    var(--tree-bg);
+    var(--bg);
   background-size: auto, auto, 36px 36px, 36px 36px, auto;
 }
 
@@ -89,36 +79,41 @@
 .tree-stage-header {
   position: sticky;
   top: calc(10px + env(safe-area-inset-top));
-  z-index: 40;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
-  align-items: center;
+  z-index: 1000;
+  grid-template-columns: 40px minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 14px;
   border: 1px solid rgba(209, 240, 219, 0.86);
-  border-radius: 28px;
-  padding: 12px;
+  border-radius: 24px;
+  padding: 10px 12px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(231, 247, 238, 0.88)), var(--tree-card);
-  box-shadow: var(--tree-shadow);
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  background: rgba(240, 253, 244, 0.92);
+  box-shadow: var(--shadow);
 }
 
-.tree-stage-header::after {
-  content: "";
-  position: absolute;
-  right: -58px;
-  top: -70px;
-  width: 160px;
-  height: 160px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.10);
-  pointer-events: none;
+.tree-stage-header.has-create {
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
 }
 
-.tree-home-link,
-.tree-icon-button,
+.tree-stage-header .icon-btn {
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+}
+
+.tree-stage-header .tree-icon-button {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.28);
+}
+
+.tree-stage-header .icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 41, 30, 0.10);
+}
+
 .tree-row-nav,
 .tree-reveal-head > button,
 .tree-create-head button {
@@ -126,30 +121,14 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  border: 1px solid var(--tree-line);
-  color: var(--tree-ink);
+  border: 1px solid var(--line);
+  color: var(--ink);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 4px 12px rgba(15, 41, 30, 0.06);
   text-decoration: none;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }
 
-.tree-home-link,
-.tree-icon-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-}
-
-.tree-icon-button {
-  background: linear-gradient(135deg, var(--tree-green), var(--tree-green-bright));
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35);
-}
-
-.tree-home-link:hover,
-.tree-icon-button:hover,
 .tree-row-nav:hover,
 .tree-reveal-head > button:hover,
 .tree-create-head button:hover {
@@ -168,46 +147,33 @@
   min-width: 0;
 }
 
+.tree-title-block strong {
+  font-weight: 900;
+}
+
 .tree-kicker {
   margin: 0 0 3px;
-  color: var(--tree-green);
+  color: var(--green);
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
-.tree-title-block h1,
 .tree-anchor-card h2,
 .tree-reveal-head h2,
 .tree-create-head h2 {
   margin: 0;
-  color: var(--tree-ink);
+  color: var(--ink);
   letter-spacing: -0.045em;
 }
 
-.tree-title-block h1 {
-  overflow: hidden;
-  font-size: clamp(1.15rem, 4.5vw, 1.55rem);
-  line-height: 1.02;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 900;
-}
-
-.tree-title-block p,
 .tree-anchor-card p,
 .tree-reveal-head p,
 .tree-invite-success p {
   margin: 4px 0 0;
-  color: var(--tree-muted);
+  color: var(--muted);
   line-height: 1.45;
-}
-
-.tree-title-block p {
-  display: none;
-  font-size: 0.84rem;
-  font-weight: 500;
 }
 
 .tree-toolbar {
@@ -220,11 +186,11 @@
 .tree-toolbar > div,
 .tree-toolbar > button {
   min-width: 0;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: var(--tree-shadow-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .tree-toolbar strong,
@@ -233,7 +199,7 @@
 }
 
 .tree-toolbar strong {
-  color: var(--tree-ink);
+  color: var(--ink);
   font-size: 1.08rem;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -242,7 +208,7 @@
 
 .tree-toolbar span {
   margin-top: 4px;
-  color: var(--tree-muted);
+  color: var(--muted);
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -252,7 +218,7 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  color: var(--tree-green);
+  color: var(--green);
   font-weight: 900;
 }
 
@@ -276,9 +242,9 @@
   border: 1px solid rgba(16, 185, 129, 0.22);
   border-radius: 20px;
   padding: 10px 12px;
-  color: var(--tree-ink);
+  color: var(--ink);
   background: rgba(209, 250, 229, 0.72);
-  box-shadow: var(--tree-shadow-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .tree-invite-strip strong,
@@ -289,10 +255,10 @@
 
 .tree-invite-strip a,
 .tree-family-switcher button {
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 11px;
-  color: var(--tree-green);
+  color: var(--green);
   background: #fff;
   font-size: 0.78rem;
   font-weight: 850;
@@ -306,7 +272,7 @@
 .tree-family-switcher button.is-active {
   border-color: transparent;
   color: #fff;
-  background: linear-gradient(135deg, var(--tree-green), var(--tree-green-bright));
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
 }
 
 .tree-generation-stack {
@@ -316,8 +282,8 @@
 }
 
 .tree-generation-row {
-  --tree-gen-primary: var(--tree-green);
-  --tree-gen-soft: var(--tree-green-soft);
+  --tree-gen-primary: var(--green);
+  --tree-gen-soft: var(--green-soft);
   --tree-gen-line: #a7f3d0;
   --tree-gen-ink: #064e3b;
   position: relative;
@@ -327,7 +293,7 @@
   border-radius: 24px;
   padding: 17px 16px;
   background: linear-gradient(135deg, #f0fdf4 0%, var(--tree-gen-soft) 100%);
-  box-shadow: var(--tree-shadow-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .tree-generation-row::before {
@@ -360,11 +326,11 @@
 }
 
 .tree-generation-row[data-generation-number="0"] {
-  --tree-gen-primary: var(--tree-green);
-  --tree-gen-soft: var(--tree-green-soft);
+  --tree-gen-primary: var(--green);
+  --tree-gen-soft: var(--green-soft);
   --tree-gen-line: #a7f3d0;
   --tree-gen-ink: #064e3b;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10), var(--tree-shadow-sm);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10), var(--shadow-sm);
 }
 
 .tree-generation-row[data-generation-number="1"] {
@@ -451,7 +417,7 @@
 .tree-generation-subtitle {
   display: block;
   margin-top: 5px;
-  color: var(--tree-muted);
+  color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.4;
   font-weight: 500;
@@ -476,7 +442,7 @@
 .tree-row-count {
   border: 1px solid color-mix(in srgb, var(--tree-gen-primary) 20%, #ffffff 80%);
   padding: 7px 10px;
-  color: var(--tree-muted);
+  color: var(--muted);
   background: rgba(255, 255, 255, 0.88);
   font-size: 0.75rem;
   white-space: nowrap;
@@ -566,7 +532,7 @@
   border-radius: 24px;
   padding: 16px 14px 14px;
   text-align: center;
-  color: var(--tree-ink);
+  color: var(--ink);
   background: #fff;
   box-shadow: 0 4px 16px rgba(15, 41, 30, 0.06);
   scroll-snap-align: start;
@@ -598,12 +564,12 @@
 }
 
 .tree-person-card.is-anchor {
-  border-color: var(--tree-green);
+  border-color: var(--green);
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15), 0 8px 24px rgba(5, 150, 105, 0.15);
 }
 
 .tree-person-card.is-connected::after {
-  background: var(--tree-green);
+  background: var(--green);
 }
 
 .tree-person-card.is-pending {
@@ -664,7 +630,7 @@
 }
 
 .tree-card-copy strong {
-  color: var(--tree-ink);
+  color: var(--ink);
   font-size: 0.96rem;
   line-height: 1.16;
   font-weight: 800;
@@ -673,7 +639,7 @@
 
 .tree-card-copy small {
   margin-top: 4px;
-  color: var(--tree-muted);
+  color: var(--muted);
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -738,7 +704,7 @@
   width: 24%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--tree-gen-primary), var(--tree-green-bright));
+  background: linear-gradient(90deg, var(--tree-gen-primary), var(--green-bright));
   transform-origin: left center;
   transition: transform 0.18s ease, width 0.18s ease;
 }
@@ -746,11 +712,11 @@
 .tree-anchor-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 28px;
   padding: 22px 18px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(231, 247, 238, 0.88)), var(--tree-card);
-  box-shadow: var(--tree-shadow);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(231, 247, 238, 0.88)), var(--card);
+  box-shadow: var(--shadow);
 }
 
 .tree-anchor-card::after {
@@ -778,12 +744,12 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 10px;
   text-align: left;
   background: #fff;
-  box-shadow: var(--tree-shadow-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .anchor-choice-grid span {
@@ -793,7 +759,7 @@
   height: 46px;
   border-radius: 16px;
   color: #fff;
-  background: linear-gradient(135deg, var(--tree-green), var(--tree-green-bright));
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
   font-weight: 950;
 }
 
@@ -803,7 +769,7 @@
 }
 
 .anchor-choice-grid small {
-  color: var(--tree-muted);
+  color: var(--muted);
 }
 
 .tree-reveal-backdrop,
@@ -835,7 +801,7 @@
   pointer-events: none;
   transform: translateY(calc(100% + 48px));
   transition: transform 0.24s ease, opacity 0.24s ease, visibility 0.24s ease;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 30px;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 -28px 80px rgba(15, 41, 30, 0.28);
@@ -913,10 +879,10 @@
 
 .tree-reveal-pills button {
   flex: 0 0 auto;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 9px 12px;
-  color: var(--tree-muted);
+  color: var(--muted);
   background: #fff;
   font-weight: 850;
 }
@@ -924,7 +890,7 @@
 .tree-reveal-pills button.is-active {
   border-color: transparent;
   color: #fff;
-  background: linear-gradient(135deg, var(--tree-green), var(--tree-green-bright));
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
   box-shadow: 0 8px 24px rgba(5, 150, 105, 0.22);
 }
 
@@ -933,7 +899,7 @@
   flex-wrap: wrap;
   gap: 8px;
   min-height: 84px;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 20px;
   padding: 12px;
   background: #f8fff9;
@@ -946,16 +912,16 @@
 .tree-reveal-panel span,
 .tree-reveal-panel button {
   align-self: flex-start;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 10px;
-  color: var(--tree-ink);
+  color: var(--ink);
   background: #fff;
   font-weight: 800;
 }
 
 .tree-reveal-panel button {
-  color: var(--tree-green);
+  color: var(--green);
 }
 
 .tree-reveal-panel dl {
@@ -971,7 +937,7 @@
 }
 
 .tree-reveal-panel dt {
-  color: var(--tree-muted);
+  color: var(--muted);
   font-weight: 750;
 }
 
@@ -997,10 +963,10 @@
 .tree-action-link {
   display: grid;
   place-items: center;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 17px;
   padding: 13px;
-  color: var(--tree-ink);
+  color: var(--ink);
   background: #fff;
   font-weight: 880;
   text-decoration: none;
@@ -1011,7 +977,7 @@
 .tree-action-link {
   border-color: transparent;
   color: #fff;
-  background: linear-gradient(135deg, var(--tree-green), var(--tree-green-bright));
+  background: linear-gradient(135deg, var(--green), var(--green-bright));
   box-shadow: 0 8px 24px rgba(5, 150, 105, 0.25);
 }
 
@@ -1026,13 +992,13 @@
 .tree-invite-success label {
   display: grid;
   gap: 6px;
-  color: var(--tree-muted);
+  color: var(--muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
 
 .tree-invite-form small {
-  color: var(--tree-muted);
+  color: var(--muted);
   font-size: 0.74rem;
   font-weight: 700;
   line-height: 1.35;
@@ -1042,10 +1008,10 @@
   display: grid;
   gap: 7px;
   min-width: 0;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 10px;
-  color: var(--tree-muted);
+  color: var(--muted);
   background: #fff;
   font-size: 0.78rem;
   font-weight: 850;
@@ -1053,7 +1019,7 @@
 
 .tree-check-list legend {
   padding-inline: 4px;
-  color: var(--tree-ink);
+  color: var(--ink);
   font-weight: 900;
 }
 
@@ -1078,10 +1044,10 @@
 .tree-invite-form textarea,
 .tree-invite-success input {
   width: 100%;
-  border: 1px solid var(--tree-line);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 10px 11px;
-  color: var(--tree-ink);
+  color: var(--ink);
   background: #fff;
   font: inherit;
 }
@@ -1116,15 +1082,19 @@
   }
 
   .tree-stage-header {
-    grid-template-columns: 40px minmax(0, 1fr) 40px;
-    border-radius: 24px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    border-radius: 22px;
     padding: 9px;
   }
 
-  .tree-home-link,
-  .tree-icon-button {
-    width: 40px;
-    height: 40px;
+  .tree-stage-header.has-create {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+  }
+
+  .tree-stage-header .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
   }
 
   .tree-toolbar {
@@ -1157,10 +1127,6 @@
 
   .tree-stage::before {
     background-size: auto, auto, 44px 44px, 44px 44px, auto;
-  }
-
-  .tree-title-block p {
-    display: block;
   }
 
   .tree-toolbar {

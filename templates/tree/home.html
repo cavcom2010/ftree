@@ -5,27 +5,26 @@
 {% block body_class %}tree-only-body{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/tree_home.css' %}">
+<link rel="stylesheet" href="{% static 'css/tree_home.css' %}?v=20260615-tree-shell">
 {% endblock %}
 
 {% block content %}
 <main class="tree-home" id="tree" data-tree-page>
   <section class="tree-stage" id="tree-canvas" aria-labelledby="tree-title">
-    <header class="tree-stage-header">
-      <a class="tree-home-link" href="/" aria-label="Back to home">
+    <header class="sticky-header tree-stage-header{% if can_invite_relatives %} has-create{% endif %}">
+      <a class="icon-btn tree-home-link" href="/" aria-label="Back to home">
         <i data-lucide="chevron-left"></i>
       </a>
-      <div class="tree-title-block">
-        <p class="tree-kicker">Family Tree</p>
-        <h1 id="tree-title">{{ family.name }}</h1>
+      <div class="brand-text tree-title-block">
+        <strong id="tree-title">{{ family.name }}</strong>
         {% if tree_anchor %}
-          <p>Centred on {{ tree_anchor.full_name }}. Each generation row scrolls independently.</p>
+          <span>Family Tree · Centred on {{ tree_anchor.full_name }}</span>
         {% else %}
-          <p>Choose who represents you so the tree can place parents, siblings, and descendants correctly.</p>
+          <span>Choose your Gen 0 anchor</span>
         {% endif %}
       </div>
       {% if can_invite_relatives %}
-        <button class="tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
+        <button class="icon-btn tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
           <i data-lucide="user-plus"></i>
         </button>
       {% endif %}

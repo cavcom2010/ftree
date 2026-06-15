@@ -34,11 +34,16 @@
         </button>
       </form>
     {% else %}
-      <a href="{% url 'login' %}" class="side-link {% if request.path == '/accounts/login/' %}active{% endif %}">
-        <i data-lucide="log-in"></i>Log in
-      </a>
-      <a href="{% url 'signup' %}" class="side-link {% if request.path == '/accounts/signup/' %}active{% endif %}">
-        <i data-lucide="user-plus"></i>Create account
+      <a
+        href="{% url 'login' %}"
+        class="side-link {% if request.path == '/accounts/login/' or request.path == '/accounts/signup/' %}active{% endif %}"
+        data-account-sheet-trigger
+        data-sidebar-account-trigger
+        data-nav-match="/accounts/login/ /accounts/signup/"
+        aria-haspopup="dialog"
+        aria-controls="accountSheet"
+        aria-expanded="false">
+        <i data-lucide="circle-user-round"></i>Account
       </a>
     {% endif %}
   </div>

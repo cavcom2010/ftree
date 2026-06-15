@@ -26,11 +26,16 @@
       </button>
     </form>
   {% else %}
-    <a class="icon-btn" href="{% url 'login' %}" aria-label="Log in">
-      <i data-lucide="log-in"></i>
-    </a>
-    <a class="icon-btn" href="{% url 'signup' %}" aria-label="Create account">
-      <i data-lucide="user-plus"></i>
+    <a
+      class="icon-btn"
+      href="{% url 'login' %}"
+      aria-label="Account"
+      data-account-sheet-trigger
+      data-header-account-trigger
+      aria-haspopup="dialog"
+      aria-controls="accountSheet"
+      aria-expanded="false">
+      <i data-lucide="circle-user-round"></i>
     </a>
   {% endif %}
 </header>

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260615-account-nav">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   {% block extra_head %}{% endblock %}
@@ -64,6 +64,44 @@
         <div class="sheet-info-row"><span>To you</span><span id="sheetRelation">Grandfather</span></div>
       </div>
     </div>
+  {% endif %}
+
+  {% if not tree_only and not request.user.is_authenticated %}
+    <div
+      class="account-sheet-backdrop"
+      id="accountSheetBackdrop"
+      data-account-sheet-close
+      hidden></div>
+    <section
+      class="account-sheet"
+      id="accountSheet"
+      role="dialog"
+      aria-modal="true"
+      aria-hidden="true"
+      aria-labelledby="accountSheetTitle"
+      hidden>
+      <div class="sheet-handle"></div>
+      <div class="account-sheet-head">
+        <div>
+          <p>Account</p>
+          <h2 id="accountSheetTitle">Open HeritageTree</h2>
+          <span>Sign in or create an account to start building your family tree.</span>
+        </div>
+        <button class="icon-btn" type="button" data-account-sheet-close aria-label="Close account menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="account-sheet-actions">
+        <a class="btn primary" href="{% url 'login' %}" data-account-login-link>
+          <i data-lucide="log-in"></i>
+          Log in
+        </a>
+        <a class="btn soft" href="{% url 'signup' %}" data-account-signup-link>
+          <i data-lucide="user-plus"></i>
+          Create account
+        </a>
+      </div>
+    </section>
   {% endif %}
 
   <div class="app-shell">
@@ -119,7 +157,7 @@
     <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
   {% endif %}
 
-  <script defer src="{% static 'js/app.js' %}"></script>
+  <script defer src="{% static 'js/app.js' %}?v=20260615-account-nav"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

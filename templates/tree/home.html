@@ -16,8 +16,10 @@
         <i data-lucide="chevron-left"></i>
       </a>
       <div class="brand-text tree-title-block">
-        <strong id="tree-title">{{ family.name }}</strong>
-        {% if tree_anchor %}
+        <strong id="tree-title">{% if family %}{{ family.name }}{% else %}Tree setup{% endif %}</strong>
+        {% if needs_tree_setup %}
+          <span>No family profile is linked to your account yet.</span>
+        {% elif tree_anchor %}
           <span>Family Tree · Centred on {{ tree_anchor.full_name }}</span>
         {% else %}
           <span>Choose your Gen 0 anchor</span>
@@ -41,7 +43,39 @@
       </section>
     {% endif %}
 
-    {% if needs_anchor_choice %}
+    {% if needs_tree_setup %}
+      <section class="tree-empty-card" aria-labelledby="tree-empty-title">
+        <p class="tree-kicker">Tree setup needed</p>
+        <h1 id="tree-empty-title">Your account is signed in, but not connected to a family person yet.</h1>
+        <p>
+          The private tree page can only draw relatives after your account belongs to a family and is linked to one person in that family.
+          That linked person becomes your <strong>Gen 0</strong> anchor.
+        </p>
+        <div class="tree-empty-steps" aria-label="How to unlock your tree">
+          <div>
+            <span>1</span>
+            <strong>Accept an invitation</strong>
+            <small>If another family member invited you, use the pending invite shown above.</small>
+          </div>
+          <div>
+            <span>2</span>
+            <strong>Create or seed family data</strong>
+            <small>For development, seed demo data or create a Family, Person, and Membership in admin.</small>
+          </div>
+          <div>
+            <span>3</span>
+            <strong>Set Gen 0</strong>
+            <small>Once people exist, this page will ask who you are in the tree.</small>
+          </div>
+        </div>
+        <div class="tree-empty-actions">
+          <a class="tree-action-link" href="/">Back to homepage</a>
+          {% if request.user.is_staff %}
+            <a class="tree-action-link is-secondary" href="/admin/">Open admin</a>
+          {% endif %}
+        </div>
+      </section>
+    {% elif needs_anchor_choice %}
       <section class="tree-anchor-card" aria-labelledby="anchor-title">
         <p class="tree-kicker">Set Gen 0</p>
         <h2 id="anchor-title">Who are you in this family tree?</h2>
@@ -153,7 +187,7 @@
     {% endif %}
   </section>
 
-  {% if not needs_anchor_choice %}
+  {% if not needs_anchor_choice and not needs_tree_setup %}
     <div class="tree-reveal-backdrop" data-tree-reveal-close hidden></div>
     {% for row in relative_generation_rows %}
       {% for person in row.people %}

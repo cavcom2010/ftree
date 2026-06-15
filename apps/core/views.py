@@ -4,6 +4,7 @@ from django.shortcuts import render
 from apps.core.homepage_context import build_homepage_context
 from apps.core.tree_context import build_tree_context
 from apps.families.models import FamilyMembership
+from apps.families.services import pending_invitations_for_user
 
 
 def home(request):
@@ -17,7 +18,7 @@ def tree(request):
         request.session["current_family_slug"] = request.GET["family"]
 
     if not FamilyMembership.objects.filter(user=request.user).exists():
-        return render(request, "tree/home.html", _empty_tree_context())
+        return render(request, "tree/home.html", _empty_tree_context(request.user))
 
     return render(
         request,
@@ -26,18 +27,19 @@ def tree(request):
     )
 
 
-def _empty_tree_context():
+def _empty_tree_context(user):
     return {
         "family": None,
         "tree_only": True,
         "tree_anchor": None,
         "anchor_choices": [],
         "available_families": [],
-        "received_invitations": [],
+        "received_invitations": list(pending_invitations_for_user(user)[:8]),
         "can_invite_relatives": False,
         "relative_generation_rows": [],
         "generation_count": 0,
         "people_count": 0,
         "empty_state": True,
         "needs_anchor_choice": False,
+        "needs_tree_setup": True,
     }

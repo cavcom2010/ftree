@@ -11,9 +11,19 @@
   <div class="empty-card-icon" style="font-size:4rem; margin-bottom:16px;">
     <i data-lucide="tree-deciduous"></i>
   </div>
-  <h1>Welcome to HeritageTree</h1>
-  <p>No family tree found yet. Seed the demo data to get started.</p>
-  <code>python manage.py seed_demo_family</code>
+  {% if request.user.is_authenticated %}
+    <h1>Start your private family tree</h1>
+    <p>Your account is signed in, but no family people are ready to display yet.</p>
+    <a href="/tree/" class="btn primary" style="margin-top:12px;">
+      <i data-lucide="git-branch"></i>Open tree setup
+    </a>
+  {% else %}
+    <h1>Welcome to HeritageTree</h1>
+    <p>Sign in to build your private family tree, or explore the demo preview first.</p>
+    <a href="/accounts/signup/" class="btn primary" style="margin-top:12px;">
+      <i data-lucide="user-plus"></i>Create account
+    </a>
+  {% endif %}
 </div>
 
 {% else %}

@@ -1,14 +1,11 @@
-import json
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.families.models import Family, FamilyMembership
 from apps.families.services import can_invite, current_family_for_user
-from apps.people.forms import PersonForm, PersonNameForm
+from apps.people.forms import PersonNameForm
 from apps.people.models import Person
 from apps.people.services import get_descendant_generation, get_generation_label
 from apps.social.models import Activity
@@ -27,15 +24,6 @@ def _family(request=None):
         if family:
             return family
     return Family.objects.first()
-
-
-def _user(request):
-    try:
-        if request.user.is_authenticated:
-            return request.user
-    except AttributeError:
-        pass
-    return User.objects.first()
 
 
 def _can_edit_person(person, user):
@@ -125,51 +113,13 @@ def person_descendants(request, person_id):
     )
 
 
+@login_required
 def person_create(request):
-    family = _family(request)
-    user = _user(request)
+    """Legacy route kept for old links.
 
-    if request.method == "POST":
-        if not family:
-            return HttpResponse("No family configured.", status=404)
-
-        form = PersonForm(request.POST)
-        if form.is_valid():
-            person = form.save(commit=False)
-            person.family = family
-            person.created_by = user
-            person.save()
-
-            Activity.objects.create(
-                family=family,
-                actor=user,
-                activity_type=Activity.Type.PERSON_ADDED,
-                message=f"Added {person.full_name} to the family tree",
-                person=person,
-            )
-
-            from apps.achievements.services import check_branch_builder
-            check_branch_builder(family, user)
-
-            response = HttpResponse("")
-            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} added!"})
-
-            extra = (
-                f'<div hx-swap-oob="true" id="global-sheet" class="global-sheet"></div>'
-                f'<div hx-swap-oob="true" id="sheet-overlay" class="sheet-overlay"></div>'
-            )
-            response.content = extra
-            return response
-
-        return render(request, "people/partials/person_form.html", {"form": form})
-
-    form = PersonForm()
-    return render(
-        request,
-        "people/person_form.html",
-        {
-            "form": form,
-            "family": family,
-            "title": "Add Person",
-        },
-    )
+    Family-tree people should be created through the /tree person-card relationship
+    flow so every new person is connected as a parent, partner, child, or sibling.
+    A standalone create page can create orphan records that do not appear in the
+    visual tree, so it now sends users back to the tree instead.
+    """
+    return redirect("tree")

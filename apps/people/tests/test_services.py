@@ -196,6 +196,24 @@ class GetGenerationRowsTests(TestCase):
             relationship_type=Relationship.Type.PARENT_CHILD,
         )
 
+    def add_legacy_parent_child_without_validation(self, parent, child):
+        """Create deliberately corrupt legacy data for service-level safety tests.
+
+        Normal application code must use Relationship.objects.create(), which now
+        validates and rejects ancestry cycles. This helper bypasses model save()
+        so get_generation_rows() can still prove it will not loop forever if old
+        or manually imported bad data already exists in the database.
+        """
+        [relationship] = Relationship.objects.bulk_create([
+            Relationship(
+                family=self.family,
+                from_person=parent,
+                to_person=child,
+                relationship_type=Relationship.Type.PARENT_CHILD,
+            )
+        ])
+        return relationship
+
     def row_names(self, rows):
         return [[person.first_name for person in row["people"]] for row in rows]
 
@@ -247,7 +265,7 @@ class GetGenerationRowsTests(TestCase):
         grandchild = self.make_person("Cara", birth_date=date(2010, 1, 1))
         self.add_parent_child(root, child)
         self.add_parent_child(child, grandchild)
-        self.add_parent_child(grandchild, child)
+        self.add_legacy_parent_child_without_validation(grandchild, child)
 
         rows = get_generation_rows(self.family)
 

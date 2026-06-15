@@ -9,6 +9,7 @@ urlpatterns = [
         views.invite_relative,
         name="family_invite_relative",
     ),
+    path("tree/people/<int:person_id>/set-anchor/", views.set_tree_anchor, name="family_set_tree_anchor"),
     path("invitations/<str:token>/", views.invitation_detail, name="family_invitation_detail"),
     path("invitations/<str:token>/accept/", views.invitation_accept, name="family_invitation_accept"),
     path("invitations/<str:token>/decline/", views.invitation_decline, name="family_invitation_decline"),

@@ -48,6 +48,15 @@ class HomepageShellTests(TestCase):
 class TreePageTests(TestCase):
     def setUp(self):
         call_command("seed_demo_family", verbosity=0)
+        self.demo_user = User.objects.get(username="demo")
+        self.client.force_login(self.demo_user)
+
+    def test_tree_page_requires_login(self):
+        self.client.logout()
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 302)
 
     def test_tree_page_returns_http_200(self):
         response = self.client.get("/tree/")
@@ -106,7 +115,7 @@ class TreePageTests(TestCase):
         self.assertContains(response, "Me · Gen 0")
 
     def test_tree_page_shows_anchor_chooser_without_membership_person(self):
-        user = User.objects.create_user(username="anchorless", password="demo12345")
+        user = User.objects.create_user(username="anchorless")
         family = Family.objects.create(name="Anchorless Family", slug="anchorless", created_by=user)
         person = Person.objects.create(
             family=family,
@@ -122,6 +131,32 @@ class TreePageTests(TestCase):
         self.assertContains(response, "Set Gen 0")
         self.assertContains(response, "Who are you in this family tree?")
         self.assertContains(response, person.full_name)
+        self.assertContains(response, f'action="/tree/people/{person.id}/set-anchor/"')
+
+    def test_anchor_chooser_saves_membership_person(self):
+        user = User.objects.create_user(username="chooser")
+        family = Family.objects.create(name="Chooser Family", slug="chooser-family", created_by=user)
+        person = Person.objects.create(
+            family=family,
+            first_name="Morgan",
+            last_name="Tree",
+            created_by=user,
+        )
+        membership = FamilyMembership.objects.create(
+            family=family,
+            user=user,
+            role=FamilyMembership.Role.OWNER,
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            f"/tree/people/{person.id}/set-anchor/",
+            {"family": family.slug},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        membership.refresh_from_db()
+        self.assertEqual(membership.person, person)
 
 
 class SeedDemoMediaCommandTests(TestCase):
@@ -154,7 +189,7 @@ class SeedDemoMediaCommandTests(TestCase):
         call_command("seed_demo_media", "--skip-downloads", verbosity=0)
         memory = Memory.objects.get(title="Summer Reunion on the Lawn")
         memory.file.name = "pixabay/summer-reunion.jpg"
-        memory.description = f"{memory.description}\n\nMedia source: Pixabay / Demo (https://pixabay.com/)"
+        memory.description = f"{memory.description}\n\nMedia source: Pixabay / Demo"
         memory.save()
 
         call_command("seed_demo_media", "--skip-downloads", verbosity=0)
@@ -183,18 +218,18 @@ class SeedDemoMediaCommandTests(TestCase):
                 return {
                     "hits": [
                         {
-                            "pageURL": "https://pixabay.com/videos/demo-1/",
+                            "pageURL": "demo-video-page",
                             "user": "Video Maker",
-                            "videos": {"tiny": {"url": "https://cdn.pixabay.com/video/demo_tiny.mp4"}},
+                            "videos": {"tiny": {"url": "demo-video-file"}},
                         }
                     ]
                 }
             return {
                 "hits": [
                     {
-                        "pageURL": "https://pixabay.com/photos/demo-1/",
+                        "pageURL": "demo-photo-page",
                         "user": "Photo Maker",
-                        "webformatURL": "https://cdn.pixabay.com/photo/demo_640.jpg",
+                        "webformatURL": "demo-photo-file",
                     }
                 ]
             }

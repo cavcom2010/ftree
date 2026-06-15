@@ -4,6 +4,7 @@
     <div class="legend-item">
       <span class="legend-dot" style="background:{{ lane.people.0.color1|default:'var(--green)' }}"></span>
       {{ lane.label }} {{ lane.title }}
+      {% if is_demo_context %}<span class="sr-only">Generation {{ lane.number }}</span>{% endif %}
     </div>
   {% empty %}
     <div class="legend-item">

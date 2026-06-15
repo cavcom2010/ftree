@@ -300,6 +300,7 @@
             <dl>
               <div><dt>Place</dt><dd>{{ person.location }}</dd></div>
               <div><dt>Life</dt><dd>{{ person.life_years|default:"Not recorded" }}</dd></div>
+              {% if person.maiden_name %}<div><dt>Birth/maiden surname</dt><dd>{{ person.maiden_name }}</dd></div>{% endif %}
               <div><dt>Children</dt><dd>{{ person.child_count }}</dd></div>
               <div><dt>Status</dt><dd>{{ person.connection_label }}</dd></div>
             </dl>

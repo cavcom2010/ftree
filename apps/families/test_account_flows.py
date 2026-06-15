@@ -30,6 +30,8 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, 'class="auth-field"', count=2)
         self.assertContains(response, 'id="id_username"')
         self.assertContains(response, 'id="id_password"')
+        self.assertContains(response, reverse("password_reset"))
+        self.assertContains(response, "Forgot password?")
 
     def test_signup_form_uses_styled_auth_fields(self):
         response = self.client.get(reverse("signup"))

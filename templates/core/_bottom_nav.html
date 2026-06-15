@@ -1,20 +1,38 @@
 <!-- templates/core/_bottom_nav.html -->
 <div class="bottom-nav-wrapper">
   <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="Main navigation">
-    <a href="/tree/" {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
-      <i data-lucide="tree-deciduous"></i>Tree
-    </a>
-    <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
-      <i data-lucide="image"></i>Memory
-    </a>
-    <button class="add-main" aria-label="Connect">
-      <i data-lucide="plus"></i>Connect
-    </button>
-    <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
-      <i data-lucide="users"></i>People
-    </a>
-    <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
-      <i data-lucide="menu"></i>Menu
-    </a>
+    {% if request.user.is_authenticated %}
+      <a href="/tree/" {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="tree-deciduous"></i>Tree
+      </a>
+      <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="image"></i>Memory
+      </a>
+      <button class="add-main" aria-label="Connect">
+        <i data-lucide="plus"></i>Connect
+      </button>
+      <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="users"></i>People
+      </a>
+      <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="menu"></i>Menu
+      </a>
+    {% else %}
+      <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="home"></i>Home
+      </a>
+      <a href="{% url 'login' %}" {% if request.path == '/accounts/login/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="log-in"></i>Log in
+      </a>
+      <a href="{% url 'signup' %}" class="add-main{% if request.path == '/accounts/signup/' %} active{% endif %}" {% if request.path == '/accounts/signup/' %}aria-current="page"{% endif %}>
+        <i data-lucide="user-plus"></i>Sign up
+      </a>
+      <a href="/#today">
+        <i data-lucide="calendar"></i>Today
+      </a>
+      <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="menu"></i>Menu
+      </a>
+    {% endif %}
   </nav>
 </div>

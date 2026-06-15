@@ -45,20 +45,20 @@ RELATIONSHIP_DIRECTIONS = {
 
 
 def current_family_for_user(user, family_slug=None):
-    if getattr(user, "is_authenticated", False):
-        memberships = FamilyMembership.objects.filter(user=user).select_related("family")
-        if family_slug:
-            membership = memberships.filter(family__slug=family_slug).first()
-            if membership:
-                return membership.family
-        membership = memberships.order_by("joined_at", "family__name").first()
+    if not getattr(user, "is_authenticated", False):
+        return None
+
+    memberships = FamilyMembership.objects.filter(user=user).select_related("family")
+    if family_slug:
+        membership = memberships.filter(family__slug=family_slug).first()
         if membership:
             return membership.family
-    if family_slug:
-        family = Family.objects.filter(slug=family_slug).first()
-        if family:
-            return family
-    return Family.objects.order_by("name").first()
+        return None
+
+    membership = memberships.order_by("joined_at", "family__name").first()
+    if membership:
+        return membership.family
+    return None
 
 
 def membership_for_user(family, user):
@@ -118,101 +118,123 @@ def create_invitation(
     if invitee_user:
         existing_membership = FamilyMembership.objects.filter(family=family, user=invitee_user).first()
         if existing_membership and existing_membership.person_id == person.id:
-            raise ValidationError(f"{invitee_user} is already connected to {person.full_name}.")
-        if existing_membership and existing_membership.person_id and existing_membership.person_id != person.id:
-            raise ValidationError(f"{invitee_user} is already connected to another person in this family.")
+            raise ValidationError("This user is already linked to that person in this family.")
+        if existing_membership and existing_membership.person_id:
+            raise ValidationError("This user is already linked to another person in this family.")
+    if FamilyInvitation.objects.filter(family=family, person=person, status=FamilyInvitation.Status.PENDING).exists():
+        raise ValidationError("This person already has a pending invitation.")
 
-    if FamilyMembership.objects.filter(family=family, person=person).exists():
-        raise ValidationError(f"{person.full_name} is already connected to a user.")
-
-    duplicate = FamilyInvitation.objects.filter(
-        family=family,
-        person=person,
-        status=FamilyInvitation.Status.PENDING,
-    ).first()
-    if duplicate:
-        raise ValidationError(f"{person.full_name} already has a pending invitation.")
-
-    invitation = FamilyInvitation.objects.create(
+    invitation = FamilyInvitation(
         family=family,
         inviter=inviter,
         invitee_user=invitee_user,
-        invitee_email=invitee_email or "",
+        invitee_email=invitee_email if not invitee_user else invitee_user.email,
         person=person,
         anchor_person=anchor_person,
-        relationship_type=relationship_type or "",
+        relationship_type=relationship_type,
         role=role,
         message=message,
-        token=_unique_token(),
-        expires_at=timezone.now() + timedelta(days=21),
+        token=secrets.token_urlsafe(32),
+        expires_at=timezone.now() + timedelta(days=14),
     )
-    Activity.objects.create(
+    invitation.full_clean()
+    invitation.save()
+    _record_activity(
         family=family,
-        actor=inviter,
-        activity_type=Activity.Type.PERSON_ADDED,
-        message=f"Invited {invitation.invitee_label} to claim {person.full_name}",
-        person=person,
+        user=inviter,
+        verb="invited",
+        target=person,
+        description=f"Invited {invitation.invitee_label} to claim {person.full_name}.",
     )
     return invitation
 
 
-@transaction.atomic
-def create_relative(
-    *,
-    family,
-    inviter,
-    anchor_person,
-    relation_type,
-    person_data,
-    parent_relationship_type=Relationship.Type.PARENT_CHILD,
-    partner_relationship_type=Relationship.Type.SPOUSE,
-    other_parent=None,
-    shared_parents=None,
-):
-    require_invite_permission(family, inviter)
-    if anchor_person.family_id != family.id:
-        raise ValidationError("Anchor person must belong to this family.")
-    if other_parent and other_parent.family_id != family.id:
-        raise ValidationError("Other parent must belong to this family.")
-    shared_parents = list(shared_parents or [])
-    if any(parent.family_id != family.id for parent in shared_parents):
-        raise ValidationError("Shared parents must belong to this family.")
-    if relation_type == "child" and other_parent and not _people_are_partners(family, anchor_person, other_parent):
-        raise ValidationError("Other parent must be a known partner for this person.")
-    if relation_type == "sibling":
-        valid_parent_ids = _parent_ids_for_person(family, anchor_person)
-        if any(parent.id not in valid_parent_ids for parent in shared_parents):
-            raise ValidationError("Shared parents must already be parents of this person.")
+def accept_invitation(invitation, user):
+    if not invitation.is_pending:
+        raise ValidationError("This invitation is no longer active.")
+    if invitation.invitee_user and invitation.invitee_user_id != user.id:
+        raise PermissionDenied("This invitation belongs to another user.")
+    if invitation.invitee_email and user.email and invitation.invitee_email.lower() != user.email.lower():
+        raise PermissionDenied("Sign in with the invited email address to accept this invitation.")
 
-    person = Person.objects.create(
-        family=family,
-        created_by=inviter,
-        first_name=person_data["first_name"],
-        last_name=person_data["last_name"],
-        gender=person_data.get("gender") or Person.Gender.UNKNOWN,
-        birth_date=person_data.get("birth_date"),
+    with transaction.atomic():
+        membership, created = FamilyMembership.objects.get_or_create(
+            family=invitation.family,
+            user=user,
+            defaults={"role": invitation.role, "person": invitation.person},
+        )
+        if not created:
+            if membership.person_id and membership.person_id != invitation.person_id:
+                raise ValidationError("Your account is already linked to another person in this family.")
+            membership.role = _strongest_role(membership.role, invitation.role)
+            membership.person = invitation.person
+            membership.full_clean()
+            membership.save(update_fields=["role", "person"])
+        invitation.status = FamilyInvitation.Status.ACCEPTED
+        invitation.invitee_user = user
+        invitation.responded_at = timezone.now()
+        invitation.save(update_fields=["status", "invitee_user", "responded_at"])
+    _record_activity(
+        family=invitation.family,
+        user=user,
+        verb="joined",
+        target=invitation.person,
+        description=f"{user.get_username()} joined as {invitation.person.full_name}.",
     )
-    relationship_type = create_relationship_for_relative(
-        family,
-        anchor_person,
-        person,
-        relation_type,
-        parent_relationship_type=parent_relationship_type,
-        partner_relationship_type=partner_relationship_type,
-        other_parent=other_parent,
-        shared_parents=shared_parents,
-    )
-    Activity.objects.create(
-        family=family,
-        actor=inviter,
-        activity_type=Activity.Type.PERSON_ADDED,
-        message=f"Added {person.full_name} to the family tree",
-        person=person,
-    )
-    return person, relationship_type
+    return membership
 
 
-@transaction.atomic
+def decline_invitation(invitation, user):
+    return _respond_to_invitation(invitation, user, FamilyInvitation.Status.DECLINED)
+
+
+def ignore_invitation(invitation, user):
+    return _respond_to_invitation(invitation, user, FamilyInvitation.Status.IGNORED)
+
+
+def _respond_to_invitation(invitation, user, status):
+    if not invitation.is_pending:
+        raise ValidationError("This invitation is no longer active.")
+    if invitation.invitee_user and invitation.invitee_user_id != user.id:
+        raise PermissionDenied("This invitation belongs to another user.")
+    if invitation.invitee_email and user.email and invitation.invitee_email.lower() != user.email.lower():
+        raise PermissionDenied("Sign in with the invited email address to respond to this invitation.")
+    invitation.status = status
+    invitation.responded_at = timezone.now()
+    invitation.save(update_fields=["status", "responded_at"])
+    return invitation
+
+
+def pending_invitations_for_user(user):
+    if not getattr(user, "is_authenticated", False):
+        return FamilyInvitation.objects.none()
+    user_email = (user.email or "").lower()
+    invitations = FamilyInvitation.objects.filter(status=FamilyInvitation.Status.PENDING)
+    query = Q(invitee_user=user)
+    if user_email:
+        query |= Q(invitee_email__iexact=user_email)
+    return invitations.filter(query).select_related("family", "person", "inviter").order_by("-sent_at")
+
+
+def memberships_by_person(family, people=None):
+    person_ids = [person.id for person in people] if people is not None else None
+    queryset = FamilyMembership.objects.filter(family=family, person__isnull=False).select_related("user", "person")
+    if person_ids is not None:
+        queryset = queryset.filter(person_id__in=person_ids)
+    return {membership.person_id: membership for membership in queryset}
+
+
+def invitation_counts_for_people(family, people=None):
+    person_ids = [person.id for person in people] if people is not None else None
+    queryset = FamilyInvitation.objects.filter(family=family, status=FamilyInvitation.Status.PENDING)
+    if person_ids is not None:
+        queryset = queryset.filter(person_id__in=person_ids)
+    counts = {}
+    for invitation in queryset:
+        counts[invitation.person_id] = counts.get(invitation.person_id, 0) + 1
+    return counts
+
+
 def create_relative_with_optional_invite(
     *,
     family,
@@ -223,39 +245,38 @@ def create_relative_with_optional_invite(
     invitee_identifier="",
     role=FamilyMembership.Role.MEMBER,
     message="",
-    parent_relationship_type=Relationship.Type.PARENT_CHILD,
-    partner_relationship_type=Relationship.Type.SPOUSE,
+    parent_relationship_type=None,
+    partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
 ):
-    person, relationship_type = create_relative(
-        family=family,
-        inviter=inviter,
-        anchor_person=anchor_person,
-        relation_type=relation_type,
-        person_data=person_data,
-        parent_relationship_type=parent_relationship_type,
-        partner_relationship_type=partner_relationship_type,
-        other_parent=other_parent,
-        shared_parents=shared_parents,
-    )
-    if not (invitee_identifier or "").strip():
-        return person, None
-
-    invitation = create_invitation(
-        family=family,
-        inviter=inviter,
-        person=person,
-        invitee_identifier=invitee_identifier,
-        role=role,
-        message=message,
-        anchor_person=anchor_person,
-        relationship_type=relationship_type,
-    )
+    with transaction.atomic():
+        person, relationship_type = create_relative(
+            family=family,
+            inviter=inviter,
+            anchor_person=anchor_person,
+            relation_type=relation_type,
+            person_data=person_data,
+            parent_relationship_type=parent_relationship_type,
+            partner_relationship_type=partner_relationship_type,
+            other_parent=other_parent,
+            shared_parents=shared_parents,
+        )
+        invitation = None
+        if invitee_identifier:
+            invitation = create_invitation(
+                family=family,
+                inviter=inviter,
+                person=person,
+                invitee_identifier=invitee_identifier,
+                role=role,
+                message=message,
+                anchor_person=anchor_person,
+                relationship_type=relationship_type,
+            )
     return person, invitation
 
 
-@transaction.atomic
 def create_relative_invitation(
     *,
     family,
@@ -266,232 +287,213 @@ def create_relative_invitation(
     invitee_identifier,
     role=FamilyMembership.Role.MEMBER,
     message="",
-    parent_relationship_type=Relationship.Type.PARENT_CHILD,
-    partner_relationship_type=Relationship.Type.SPOUSE,
+    parent_relationship_type=None,
+    partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
 ):
-    if not (invitee_identifier or "").strip():
-        raise ValidationError("Enter a username or email address.")
-    person, relationship_type = create_relative(
+    person, invitation = create_relative_with_optional_invite(
         family=family,
         inviter=inviter,
         anchor_person=anchor_person,
         relation_type=relation_type,
         person_data=person_data,
+        invitee_identifier=invitee_identifier,
+        role=role,
+        message=message,
         parent_relationship_type=parent_relationship_type,
         partner_relationship_type=partner_relationship_type,
         other_parent=other_parent,
         shared_parents=shared_parents,
     )
-    return create_invitation(
-        family=family,
-        inviter=inviter,
-        person=person,
-        invitee_identifier=invitee_identifier,
-        role=role,
-        message=message,
-        anchor_person=anchor_person,
-        relationship_type=relationship_type,
-    )
+    return invitation
 
 
-def create_relationship_for_relative(
+def create_relative(
+    *,
     family,
+    inviter,
     anchor_person,
-    relative,
     relation_type,
-    parent_relationship_type=Relationship.Type.PARENT_CHILD,
-    partner_relationship_type=Relationship.Type.SPOUSE,
+    person_data,
+    parent_relationship_type=None,
+    partner_relationship_type=None,
     other_parent=None,
     shared_parents=None,
 ):
-    normalized = relation_type if relation_type in RELATIONSHIP_DIRECTIONS else "child"
-    relationship_type = _relationship_type_for_relative(
-        normalized,
+    require_invite_permission(family, inviter)
+    if anchor_person.family_id != family.id:
+        raise ValidationError("Anchor person must belong to this family.")
+    if relation_type not in RELATIONSHIP_DIRECTIONS:
+        raise ValidationError("Choose a valid relationship type.")
+
+    person = Person(
+        family=family,
+        created_by=inviter,
+        first_name=person_data.get("first_name", "").strip(),
+        last_name=person_data.get("last_name", "").strip(),
+        gender=person_data.get("gender") or Person.Gender.UNKNOWN,
+        birth_date=person_data.get("birth_date"),
+    )
+    person.full_clean()
+    person.save()
+
+    relationship_type = _relationship_type_for_relation(
+        relation_type,
         parent_relationship_type=parent_relationship_type,
         partner_relationship_type=partner_relationship_type,
     )
-    if normalized == "parent":
-        from_person, to_person = relative, anchor_person
-    else:
-        from_person, to_person = anchor_person, relative
-
-    _create_relationship_edge(family, from_person, to_person, relationship_type)
-    if normalized == "child" and other_parent:
-        _create_relationship_edge(
-            family,
-            other_parent,
-            relative,
-            Relationship.Type.PARENT_CHILD,
-        )
-    if normalized == "sibling":
-        for shared_parent in shared_parents or []:
-            _create_relationship_edge(
-                family,
-                shared_parent,
-                relative,
-                Relationship.Type.PARENT_CHILD,
-            )
-    return relationship_type
-
-
-def _relationship_type_for_relative(
-    relation_type,
-    parent_relationship_type=Relationship.Type.PARENT_CHILD,
-    partner_relationship_type=Relationship.Type.SPOUSE,
-):
-    if relation_type == "parent":
-        return (
-            parent_relationship_type
-            if parent_relationship_type in PARENT_RELATIONSHIP_TYPES
-            else Relationship.Type.PARENT_CHILD
-        )
-    if relation_type in {"partner", "spouse"}:
-        return (
-            partner_relationship_type
-            if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
-            else Relationship.Type.SPOUSE
-        )
-    return RELATIONSHIP_DIRECTIONS.get(relation_type, Relationship.Type.PARENT_CHILD)
-
-
-def _create_relationship_edge(family, from_person, to_person, relationship_type):
-    Relationship.objects.get_or_create(
+    relationships = _relationships_for_new_relative(
         family=family,
-        from_person=from_person,
-        to_person=to_person,
+        anchor_person=anchor_person,
+        new_person=person,
+        relation_type=relation_type,
         relationship_type=relationship_type,
+        other_parent=other_parent,
+        shared_parents=shared_parents,
     )
+    for relationship in relationships:
+        relationship.full_clean()
+        relationship.save()
+    _record_activity(
+        family=family,
+        user=inviter,
+        verb="added",
+        target=person,
+        description=f"Added {person.full_name} as a {relation_type} of {anchor_person.full_name}.",
+    )
+    return person, relationship_type
 
 
-def _people_are_partners(family, first_person, second_person):
-    return Relationship.objects.filter(
-        Q(from_person=first_person, to_person=second_person)
-        | Q(from_person=second_person, to_person=first_person),
+def _relationship_type_for_relation(relation_type, parent_relationship_type=None, partner_relationship_type=None):
+    if relation_type == "parent":
+        return parent_relationship_type if parent_relationship_type in PARENT_RELATIONSHIP_TYPES else Relationship.Type.PARENT_CHILD
+    if relation_type in {"partner", "spouse"}:
+        return partner_relationship_type if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES else Relationship.Type.SPOUSE
+    return RELATIONSHIP_DIRECTIONS[relation_type]
+
+
+def _relationships_for_new_relative(
+    *,
+    family,
+    anchor_person,
+    new_person,
+    relation_type,
+    relationship_type,
+    other_parent=None,
+    shared_parents=None,
+):
+    relationships = []
+    if relation_type == "parent":
+        relationships.append(
+            Relationship(
+                family=family,
+                from_person=new_person,
+                to_person=anchor_person,
+                relationship_type=relationship_type,
+            )
+        )
+    elif relation_type == "child":
+        relationships.append(
+            Relationship(
+                family=family,
+                from_person=anchor_person,
+                to_person=new_person,
+                relationship_type=relationship_type,
+            )
+        )
+        if other_parent:
+            _validate_known_partner(family, anchor_person, other_parent)
+            relationships.append(
+                Relationship(
+                    family=family,
+                    from_person=other_parent,
+                    to_person=new_person,
+                    relationship_type=Relationship.Type.PARENT_CHILD,
+                )
+            )
+    elif relation_type in {"partner", "spouse"}:
+        relationships.append(
+            Relationship(
+                family=family,
+                from_person=anchor_person,
+                to_person=new_person,
+                relationship_type=relationship_type,
+            )
+        )
+    elif relation_type == "sibling":
+        relationships.append(
+            Relationship(
+                family=family,
+                from_person=anchor_person,
+                to_person=new_person,
+                relationship_type=relationship_type,
+            )
+        )
+        for parent in shared_parents or []:
+            _validate_shared_parent(family, anchor_person, parent)
+            relationships.append(
+                Relationship(
+                    family=family,
+                    from_person=parent,
+                    to_person=new_person,
+                    relationship_type=Relationship.Type.PARENT_CHILD,
+                )
+            )
+    return relationships
+
+
+def _validate_known_partner(family, anchor_person, other_parent):
+    if other_parent.family_id != family.id:
+        raise ValidationError("Other parent must belong to this family.")
+    is_partner = Relationship.objects.filter(
         family=family,
         relationship_type__in=PARTNER_RELATIONSHIP_TYPES,
+    ).filter(
+        Q(from_person=anchor_person, to_person=other_parent)
+        | Q(from_person=other_parent, to_person=anchor_person)
     ).exists()
+    if not is_partner:
+        raise ValidationError("Other parent must be a known partner of this person.")
 
 
-def _parent_ids_for_person(family, person):
-    return set(
-        Relationship.objects.filter(
-            family=family,
-            to_person=person,
-            relationship_type__in=PARENT_RELATIONSHIP_TYPES,
-        ).values_list("from_person_id", flat=True)
-    )
-
-
-@transaction.atomic
-def accept_invitation(invitation, user):
-    _require_pending_invitation_for_user(invitation, user)
-    membership, _ = FamilyMembership.objects.get_or_create(
-        family=invitation.family,
-        user=user,
-        defaults={
-            "role": invitation.role,
-            "person": invitation.person,
-        },
-    )
-    if membership.person_id and membership.person_id != invitation.person_id:
-        raise ValidationError("Your account is already connected to another person in this family.")
-
-    membership.role = membership.role or invitation.role
-    membership.person = invitation.person
-    membership.full_clean()
-    membership.save(update_fields=["role", "person"])
-
-    invitation.invitee_user = user
-    invitation.status = FamilyInvitation.Status.ACCEPTED
-    invitation.responded_at = timezone.now()
-    invitation.save(update_fields=["invitee_user", "status", "responded_at"])
-
-    Activity.objects.create(
-        family=invitation.family,
-        actor=user,
-        activity_type=Activity.Type.PERSON_ADDED,
-        message=f"{user.username} connected as {invitation.person.full_name}",
-        person=invitation.person,
-    )
-    return membership
-
-
-def decline_invitation(invitation, user):
-    _respond_without_membership(invitation, user, FamilyInvitation.Status.DECLINED)
-
-
-def ignore_invitation(invitation, user):
-    _respond_without_membership(invitation, user, FamilyInvitation.Status.IGNORED)
-
-
-def pending_invitations_for_user(user):
-    if not getattr(user, "is_authenticated", False):
-        return FamilyInvitation.objects.none()
-    query = Q(invitee_user=user)
-    if user.email:
-        query |= Q(invitee_email__iexact=user.email)
-    return (
-        FamilyInvitation.objects.filter(query, status=FamilyInvitation.Status.PENDING)
-        .select_related("family", "person", "inviter")
-        .order_by("-sent_at")
-    )
-
-
-def invitation_counts_for_people(family, people):
-    person_ids = [person.id for person in people]
-    invitations = FamilyInvitation.objects.filter(
+def _validate_shared_parent(family, anchor_person, parent):
+    if parent.family_id != family.id:
+        raise ValidationError("Shared parents must belong to this family.")
+    if not Relationship.objects.filter(
         family=family,
-        person_id__in=person_ids,
-        status=FamilyInvitation.Status.PENDING,
-    ).select_related("invitee_user")
-    return {invitation.person_id: invitation for invitation in invitations}
+        from_person=parent,
+        to_person=anchor_person,
+        relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+    ).exists():
+        raise ValidationError("Shared parents must already be parents or guardians of this person.")
 
 
-def memberships_by_person(family, people):
-    person_ids = [person.id for person in people]
-    memberships = FamilyMembership.objects.filter(
-        family=family,
-        person_id__in=person_ids,
-    ).select_related("user", "person")
-    return {membership.person_id: membership for membership in memberships}
+def _strongest_role(existing_role, invited_role):
+    priority = [
+        FamilyMembership.Role.VIEWER,
+        FamilyMembership.Role.MEMBER,
+        FamilyMembership.Role.ADMIN,
+        FamilyMembership.Role.OWNER,
+    ]
+    return max([existing_role, invited_role], key=priority.index)
 
 
-def connected_users_for_family(family):
-    return User.objects.filter(
-        family_memberships__family=family,
-        family_memberships__person__isnull=False,
-    ).distinct()
+def _activity_type_for_verb(verb):
+    if verb == "added":
+        return Activity.Type.PERSON_ADDED
+    if verb in {"invited", "joined"}:
+        return Activity.Type.PERSON_ADDED
+    return Activity.Type.PERSON_ADDED
 
 
-def _respond_without_membership(invitation, user, status):
-    _require_pending_invitation_for_user(invitation, user)
-    invitation.invitee_user = invitation.invitee_user or user
-    invitation.status = status
-    invitation.responded_at = timezone.now()
-    invitation.save(update_fields=["invitee_user", "status", "responded_at"])
-
-
-def _require_pending_invitation_for_user(invitation, user):
-    if not getattr(user, "is_authenticated", False):
-        raise PermissionDenied("Sign in to respond to this invitation.")
-    if invitation.status != FamilyInvitation.Status.PENDING:
-        raise ValidationError("This invitation is no longer pending.")
-    if invitation.is_expired:
-        invitation.status = FamilyInvitation.Status.EXPIRED
-        invitation.save(update_fields=["status"])
-        raise ValidationError("This invitation has expired.")
-    if invitation.invitee_user_id and invitation.invitee_user_id != user.id:
-        raise PermissionDenied("This invitation is for another user.")
-    if invitation.invitee_email and user.email and invitation.invitee_email.lower() != user.email.lower():
-        raise PermissionDenied("This invitation is for another email address.")
-    if invitation.invitee_email and not user.email and not invitation.invitee_user_id:
-        raise PermissionDenied("Add an email address to your account before accepting this invitation.")
-
-
-def _unique_token():
-    while True:
-        token = secrets.token_urlsafe(32)
-        if not FamilyInvitation.objects.filter(token=token).exists():
-            return token
+def _record_activity(*, family, user, verb, target, description):
+    data = {
+        "family": family,
+        "actor": user if getattr(user, "is_authenticated", False) else None,
+        "activity_type": _activity_type_for_verb(verb),
+        "message": description,
+    }
+    if isinstance(target, Person):
+        data["person"] = target
+    Activity.objects.create(**data)

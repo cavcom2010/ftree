@@ -98,6 +98,37 @@ class InviteRelativeForm(InvitePersonForm):
                 self.initial["shared_parents"] = list(shared_parent_queryset.values_list("id", flat=True))
 
 
+class SignupForm(UserCreationForm):
+    email = forms.EmailField(required=True, max_length=254)
+    website = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput,
+        help_text="Leave this field blank.",
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = get_user_model()
+        fields = ("username", "email")
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if get_user_model().objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("A user with that username already exists.")
+        return username
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if get_user_model().objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email address already exists.")
+        return email
+
+    def clean_website(self):
+        value = self.cleaned_data.get("website")
+        if value:
+            raise forms.ValidationError("Invalid signup submission.")
+        return value
+
+
 def _partners_for_person(family, person):
     partner_types = [
         Relationship.Type.SPOUSE,
@@ -132,11 +163,3 @@ def _parents_for_person(family, person):
         relationship_type__in=parent_types,
     ).values_list("from_person_id", flat=True)
     return Person.objects.filter(family=family, id__in=parent_ids).order_by("first_name", "last_name")
-
-
-class SignupForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-
-    class Meta(UserCreationForm.Meta):
-        model = get_user_model()
-        fields = ("username", "email")

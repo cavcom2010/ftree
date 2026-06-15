@@ -55,7 +55,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
             ],
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
@@ -104,3 +104,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/tree/"
 LOGOUT_REDIRECT_URL = "/"
+
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="HeritageTree <noreply@localhost>")
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+AUTH_EMAIL_VERIFICATION_EXPIRY_HOURS = config("AUTH_EMAIL_VERIFICATION_EXPIRY_HOURS", default=24, cast=int)

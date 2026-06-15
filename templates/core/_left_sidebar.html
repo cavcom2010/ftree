@@ -25,6 +25,25 @@
   </div>
 
   <div>
+    <div class="side-title">Account</div>
+    {% if request.user.is_authenticated %}
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="side-link">
+          <i data-lucide="log-out"></i>Log out
+        </button>
+      </form>
+    {% else %}
+      <a href="{% url 'login' %}" class="side-link {% if request.path == '/accounts/login/' %}active{% endif %}">
+        <i data-lucide="log-in"></i>Log in
+      </a>
+      <a href="{% url 'signup' %}" class="side-link {% if request.path == '/accounts/signup/' %}active{% endif %}">
+        <i data-lucide="user-plus"></i>Create account
+      </a>
+    {% endif %}
+  </div>
+
+  <div>
     <div class="side-title">Discover</div>
     <a href="/#today" class="side-link">
       <i data-lucide="calendar"></i>Today

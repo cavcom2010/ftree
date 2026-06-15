@@ -29,6 +29,11 @@
           <em>{{ error }}</em>
         {% endfor %}
       </label>
+      {% if field.name == "password" %}
+        <div class="auth-inline-help">
+          <a href="{% url 'password_reset' %}">Forgot password?</a>
+        </div>
+      {% endif %}
     {% endfor %}
     <div class="form-actions">
       <button class="btn primary" type="submit">Sign in</button>

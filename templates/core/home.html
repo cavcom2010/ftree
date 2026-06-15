@@ -5,7 +5,7 @@
 {% block title %}HeritageTree{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260615-close-family-dashboard">
+<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260615-balanced-homepage">
 {% endblock %}
 
 {% block content %}
@@ -23,9 +23,9 @@
     </a>
   {% else %}
     <h1>Welcome to HeritageTree</h1>
-    <p>Sign in to build your private family tree, or explore the demo preview first.</p>
+    <p>Create your profile first, then build your private family tree around yourself as Gen 0.</p>
     <a href="/accounts/signup/" class="btn primary" style="margin-top:12px;">
-      <i data-lucide="user-plus"></i>Create account
+      <i data-lucide="tree-deciduous"></i>Create my tree
     </a>
   {% endif %}
 </div>
@@ -34,7 +34,17 @@
 
 {% if is_demo_context %}
   {% include "core/_hero.html" %}
+  {% include "core/_guest_conversion.html" %}
   {% include "core/_today_in_history.html" %}
+  <div class="section-head demo-tree-head animate-in delay-2" id="demo-tree-preview">
+    <div>
+      <h2>See how a family can look</h2>
+      <p>This is only an example. Your real tree starts privately after you create an account.</p>
+    </div>
+    <a href="/accounts/signup/" class="link-btn">
+      Create yours <i data-lucide="chevron-right"></i>
+    </a>
+  </div>
   {% include "people/partials/tree_preview.html" %}
 {% else %}
   {% include "core/_close_family_dashboard.html" %}

@@ -1,51 +1,46 @@
 <!-- templates/people/partials/tree_preview.html -->
 <section class="tree-legend animate-in delay-2" id="tree">
-  <div class="legend-item">
-    <span class="legend-dot" style="background:var(--gen1-primary)"></span>
-    Gen 1 Founders
-  </div>
-  <div class="legend-item">
-    <span class="legend-dot" style="background:var(--gen2-primary)"></span>
-    Gen 2 Children
-  </div>
-  <div class="legend-item">
-    <span class="legend-dot" style="background:var(--gen3-primary)"></span>
-    Gen 3 Grandchildren
-  </div>
-  <div class="legend-item">
-    <span class="legend-dot" style="background:var(--gen4-primary)"></span>
-    Gen 4 Descendants
-  </div>
+  {% for lane in generation_rows %}
+    <div class="legend-item">
+      <span class="legend-dot" style="background:{{ lane.people.0.color1|default:'var(--green)' }}"></span>
+      {{ lane.label }} {{ lane.title }}
+    </div>
+  {% empty %}
+    <div class="legend-item">
+      <span class="legend-dot" style="background:var(--green)"></span>
+      Start your tree
+    </div>
+  {% endfor %}
 </section>
 
 {% for lane in generation_rows %}
 <div class="gen-band animate-in delay-{{ forloop.counter|add:1 }}" data-gen="{{ lane.number }}">
   <div class="gen-header">
     <span class="gen-badge">
-      {% if lane.number == 1 %}
+      {% if lane.number < 0 %}
         <i data-lucide="crown"></i>
-      {% elif lane.number == 2 %}
-        <i data-lucide="users"></i>
-      {% elif lane.number == 3 %}
+      {% elif lane.number == 0 %}
+        <i data-lucide="target"></i>
+      {% elif lane.number == 1 %}
         <i data-lucide="baby"></i>
       {% else %}
         <i data-lucide="sparkles"></i>
       {% endif %}
-      Generation {{ lane.number }}
+      {{ lane.label }}
     </span>
-    <span class="gen-title">{{ lane.label }}</span>
+    <span class="gen-title">{{ lane.title }}</span>
     <span class="gen-count">{{ lane.people|length }} people</span>
   </div>
+  {% if lane.subtitle %}<p class="gen-subtitle">{{ lane.subtitle }}</p>{% endif %}
 
   <div class="scroll-container">
     {% for person in lane.people %}
-    <div class="person-card"
+    <article class="person-card"
          {% if not is_demo_context %}
            hx-get="/people/{{ person.id }}/drawer/"
            hx-target="#personDrawer"
            hx-swap="innerHTML"
-         {% endif %}
-         onclick="openSheet('{{ person.full_name|escapejs }}', '{{ person.role|default:lane.label|escapejs }}', '{{ person.initials|escapejs }}', 'linear-gradient(135deg,{{ person.color1|default:'#d97706' }},{{ person.color2|default:'#f59e0b' }})', '{{ person.birth_date|date:'Y'|default:'Unknown' }}', '{{ person.birth_place|default:person.current_place|default:'Unknown'|escapejs }}', '{{ lane.label }}', '{{ person.children_count|default:0 }}', 'Relative')">
+         {% endif %}>
       <div class="card-avatar" style="background:linear-gradient(135deg,{{ person.color1|default:'#d97706' }},{{ person.color2|default:'#f59e0b' }});">
         <span class="card-avatar-fallback">{{ person.initials }}</span>
         {% if person.profile_photo %}
@@ -56,26 +51,26 @@
         {% endif %}
       </div>
       <div class="card-name">{{ person.first_name }}</div>
-      <div class="card-role">{{ person.role|default:lane.label }}</div>
+      <div class="card-role">{{ person.role|default:lane.title }}</div>
       <div class="card-dates">
         {% if person.birth_date %}{{ person.birth_date|date:"Y" }}{% endif %}
         {% if person.death_date %} – {{ person.death_date|date:"Y" }}{% endif %}
       </div>
       <div class="card-actions">
         {% if is_demo_context %}
-          <a class="card-btn" href="/accounts/signup/" onclick="event.stopPropagation();">
+          <a class="card-btn" href="/accounts/signup/">
             <i data-lucide="user"></i>Start
           </a>
         {% else %}
-          <a class="card-btn" href="/tree/" onclick="event.stopPropagation();">
+          <a class="card-btn" href="/tree/">
             <i data-lucide="user"></i>View
           </a>
-          <a class="card-btn" href="/tree/" onclick="event.stopPropagation();">
+          <a class="card-btn" href="/tree/">
             <i data-lucide="user-plus"></i>Add
           </a>
         {% endif %}
       </div>
-    </div>
+    </article>
     {% endfor %}
   </div>
 </div>

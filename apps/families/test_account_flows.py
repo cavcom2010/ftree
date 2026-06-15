@@ -60,6 +60,21 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, 'class="auth-field"', count=1)
         self.assertContains(response, 'id="id_email"')
 
+    def test_password_reset_email_uses_copy_friendly_template(self):
+        User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
+
+        response = self.client.post(reverse("password_reset"), {"email": "reset@example.com"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, "Reset your HeritageTree password")
+        self.assertIn("Copy and open this reset link:\n\n", message.body)
+        self.assertIn("/accounts/reset/", message.body)
+        self.assertIn("Your username is: reset-user", message.body)
+        self.assertNotIn("You're receiving this email", message.body)
+        self.assertNotIn("you\u2019ve", message.body)
+
     def test_password_reset_confirm_form_uses_styled_auth_fields(self):
         user = User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
         uid = urlsafe_base64_encode(force_bytes(user.pk))

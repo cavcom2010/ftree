@@ -100,6 +100,7 @@ def invite_relative(request, person_id, relation_type):
                     shared_parents=form.cleaned_data["shared_parents"],
                     partner_shared_children=form.cleaned_data["partner_shared_children"],
                     parent_shared_children=form.cleaned_data["parent_shared_children"],
+                    existing_person=form.cleaned_data["existing_person"],
                 )
             except (ValidationError, PermissionDenied) as exc:
                 _add_form_error(form, exc)

@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import render
 from django.utils.text import slugify
 
@@ -13,18 +14,39 @@ from apps.people.models import Person
 def home(request):
     family_slug = request.session.get("current_family_slug")
     if request.user.is_authenticated:
-        family, _created_or_repaired = _ensure_starter_tree_for_user(
-            request.user,
-            family_slug=family_slug,
-        )
-        request.session["current_family_slug"] = family.slug
-        family_slug = family.slug
+        if not (_is_global_tree_admin(request.user) and not _has_family_membership(request.user)):
+            family, _created_or_repaired = _ensure_starter_tree_for_user(
+                request.user,
+                family_slug=family_slug,
+            )
+            request.session["current_family_slug"] = family.slug
+            family_slug = family.slug
 
     return render(request, "core/home.html", build_homepage_context(request.user, family_slug=family_slug))
 
 
 @login_required
 def tree(request):
+    is_global_admin = _is_global_tree_admin(request.user)
+    if is_global_admin:
+        explicit_family_slug = request.GET.get("family")
+        if not explicit_family_slug and not _has_family_membership(request.user):
+            return render(request, "tree/home.html", _admin_family_picker_context(request.user))
+
+        if explicit_family_slug and not Family.objects.filter(slug=explicit_family_slug).exists():
+            return render(request, "tree/home.html", _admin_family_picker_context(request.user))
+
+        if explicit_family_slug:
+            request.session["current_family_slug"] = explicit_family_slug
+            context = build_tree_context(
+                request.user,
+                family_slug=explicit_family_slug,
+                anchor_id=_anchor_id_from_request(request),
+                global_admin_view=True,
+            )
+            context["show_tree_onboarding"] = False
+            return render(request, "tree/home.html", context)
+
     family_slug = request.GET.get("family") or request.session.get("current_family_slug")
     if request.GET.get("family"):
         request.session["current_family_slug"] = request.GET["family"]
@@ -46,6 +68,52 @@ def tree(request):
     )
 
     return render(request, "tree/home.html", context)
+
+
+def _is_global_tree_admin(user):
+    return bool(getattr(user, "is_authenticated", False) and (user.is_staff or user.is_superuser))
+
+
+def _has_family_membership(user):
+    return FamilyMembership.objects.filter(user=user).exists()
+
+
+def _anchor_id_from_request(request):
+    value = request.GET.get("anchor")
+    if not value:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _admin_family_picker_context(user):
+    families = list(
+        Family.objects.annotate(people_count=Count("people"))
+        .order_by("name", "id")
+    )
+    return {
+        "family": None,
+        "tree_only": True,
+        "tree_anchor": None,
+        "anchor_choices": [],
+        "available_families": families,
+        "admin_family_choices": families,
+        "admin_anchor_choices": [],
+        "received_invitations": list(pending_invitations_for_user(user)[:8]),
+        "can_invite_relatives": False,
+        "relative_generation_rows": [],
+        "person_cards": {},
+        "generation_count": 0,
+        "people_count": sum(family.people_count for family in families),
+        "empty_state": not families,
+        "needs_anchor_choice": False,
+        "needs_family_choice": True,
+        "needs_tree_setup": False,
+        "show_tree_onboarding": False,
+        "is_global_admin_view": True,
+    }
 
 
 @transaction.atomic

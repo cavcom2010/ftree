@@ -33,6 +33,7 @@ PARTNER_RELATIONSHIP_TYPES = {
     Relationship.Type.SPOUSE,
     Relationship.Type.PARTNER,
     Relationship.Type.EX_PARTNER,
+    Relationship.Type.CO_PARENT,
 }
 
 RELATIONSHIP_DIRECTIONS = {
@@ -251,6 +252,7 @@ def create_relative_with_optional_invite(
     shared_parents=None,
     partner_shared_children=None,
     parent_shared_children=None,
+    existing_person=None,
 ):
     with transaction.atomic():
         person, relationship_type = create_relative(
@@ -265,6 +267,7 @@ def create_relative_with_optional_invite(
             shared_parents=shared_parents,
             partner_shared_children=partner_shared_children,
             parent_shared_children=parent_shared_children,
+            existing_person=existing_person,
         )
         invitation = None
         if invitee_identifier:
@@ -297,6 +300,7 @@ def create_relative_invitation(
     shared_parents=None,
     partner_shared_children=None,
     parent_shared_children=None,
+    existing_person=None,
 ):
     person, invitation = create_relative_with_optional_invite(
         family=family,
@@ -313,6 +317,7 @@ def create_relative_invitation(
         shared_parents=shared_parents,
         partner_shared_children=partner_shared_children,
         parent_shared_children=parent_shared_children,
+        existing_person=existing_person,
     )
     return invitation
 
@@ -330,6 +335,7 @@ def create_relative(
     shared_parents=None,
     partner_shared_children=None,
     parent_shared_children=None,
+    existing_person=None,
 ):
     require_invite_permission(family, inviter)
     if anchor_person.family_id != family.id:
@@ -337,23 +343,37 @@ def create_relative(
     if relation_type not in RELATIONSHIP_DIRECTIONS:
         raise ValidationError("Choose a valid relationship type.")
 
-    person = Person(
-        family=family,
-        created_by=inviter,
-        first_name=person_data.get("first_name", "").strip(),
-        last_name=person_data.get("last_name", "").strip(),
-        maiden_name=person_data.get("maiden_name", "").strip(),
-        gender=person_data.get("gender") or Person.Gender.UNKNOWN,
-        birth_date=person_data.get("birth_date"),
-    )
-    person.full_clean()
-    person.save()
+    person_data = person_data or {}
+    person = existing_person
+    if person:
+        _validate_existing_person_connection(family, anchor_person, person, relation_type)
+    else:
+        person = Person(
+            family=family,
+            created_by=inviter,
+            first_name=person_data.get("first_name", "").strip(),
+            last_name=person_data.get("last_name", "").strip(),
+            maiden_name=person_data.get("maiden_name", "").strip(),
+            gender=person_data.get("gender") or Person.Gender.UNKNOWN,
+            birth_date=person_data.get("birth_date"),
+        )
+        person.full_clean()
+        person.save()
 
     relationship_type = _relationship_type_for_relation(
         relation_type,
         parent_relationship_type=parent_relationship_type,
         partner_relationship_type=partner_relationship_type,
     )
+    if existing_person and relation_type in {"partner", "spouse"}:
+        relationship_type = (
+            _existing_partner_relationship_type(family, anchor_person, person)
+            or (
+                relationship_type
+                if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
+                else Relationship.Type.CO_PARENT
+            )
+        )
     relationships = _relationships_for_new_relative(
         family=family,
         anchor_person=anchor_person,
@@ -366,14 +386,17 @@ def create_relative(
         parent_shared_children=parent_shared_children,
     )
     for relationship in relationships:
-        relationship.full_clean()
-        relationship.save()
+        _save_relationship_if_missing(relationship)
     _record_activity(
         family=family,
         user=inviter,
         verb="added",
         target=person,
-        description=f"Added {person.full_name} as a {relation_type} of {anchor_person.full_name}.",
+        description=(
+            f"Connected {person.full_name} as a {relation_type} of {anchor_person.full_name}."
+            if existing_person
+            else f"Added {person.full_name} as a {relation_type} of {anchor_person.full_name}."
+        ),
     )
     return person, relationship_type
 
@@ -492,6 +515,59 @@ def _validate_known_partner(family, anchor_person, other_parent):
         raise ValidationError("Other parent must be a known partner of this person.")
 
 
+def _validate_existing_person_connection(family, anchor_person, existing_person, relation_type):
+    if existing_person.family_id != family.id:
+        raise ValidationError("Existing person must belong to this family.")
+    if existing_person.id == anchor_person.id:
+        raise ValidationError("A person cannot be connected to themself.")
+    if relation_type in {"partner", "spouse"}:
+        if _is_parent_child_between(family, anchor_person, existing_person):
+            raise ValidationError("A partner or co-parent cannot be a direct parent or child of this person.")
+        if _is_known_sibling(family, anchor_person, existing_person):
+            raise ValidationError("A partner or co-parent cannot be a sibling of this person.")
+
+
+def _existing_partner_relationship_type(family, person, partner):
+    relationship = (
+        Relationship.objects.filter(
+            family=family,
+            relationship_type__in=PARTNER_RELATIONSHIP_TYPES,
+        )
+        .filter(
+            Q(from_person=person, to_person=partner)
+            | Q(from_person=partner, to_person=person)
+        )
+        .order_by("created_at", "id")
+        .first()
+    )
+    return relationship.relationship_type if relationship else ""
+
+
+def _save_relationship_if_missing(relationship):
+    existing = Relationship.objects.filter(
+        family=relationship.family,
+        from_person=relationship.from_person,
+        to_person=relationship.to_person,
+        relationship_type=relationship.relationship_type,
+    ).first()
+    if existing:
+        return existing
+
+    if relationship.relationship_type in Relationship.SYMMETRIC_TYPES:
+        reverse = Relationship.objects.filter(
+            family=relationship.family,
+            from_person=relationship.to_person,
+            to_person=relationship.from_person,
+            relationship_type=relationship.relationship_type,
+        ).first()
+        if reverse:
+            return reverse
+
+    relationship.full_clean()
+    relationship.save()
+    return relationship
+
+
 def _validate_shared_parent(family, anchor_person, parent):
     if parent.family_id != family.id:
         raise ValidationError("Shared parents must belong to this family.")
@@ -514,6 +590,16 @@ def _validate_known_child(family, anchor_person, child):
         relationship_type__in=PARENT_RELATIONSHIP_TYPES,
     ).exists():
         raise ValidationError("Shared children must already be children of this person.")
+
+
+def _is_parent_child_between(family, person, other_person):
+    return Relationship.objects.filter(
+        family=family,
+        relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+    ).filter(
+        Q(from_person=person, to_person=other_person)
+        | Q(from_person=other_person, to_person=person)
+    ).exists()
 
 
 def _validate_known_sibling(family, anchor_person, sibling):

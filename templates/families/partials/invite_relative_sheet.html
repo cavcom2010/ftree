@@ -12,6 +12,16 @@
     {% if form.non_field_errors %}
       <div class="tree-form-errors">{{ form.non_field_errors }}</div>
     {% endif %}
+    {% if relation_type == "partner" or relation_type == "spouse" %}
+      {% if form.existing_person.field.queryset %}
+        <label>
+          <span>{{ form.existing_person.label }}</span>
+          {{ form.existing_person }}
+          {% if form.existing_person.help_text %}<small>{{ form.existing_person.help_text }}</small>{% endif %}
+          {{ form.existing_person.errors }}
+        </label>
+      {% endif %}
+    {% endif %}
     <div class="tree-form-grid">
       <label>
         <span>{{ form.first_name.label }}</span>

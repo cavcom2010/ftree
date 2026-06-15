@@ -4,6 +4,10 @@
 
 {% block title %}HeritageTree{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260615-close-family-dashboard">
+{% endblock %}
+
 {% block content %}
 {% if empty_state %}
 
@@ -28,11 +32,14 @@
 
 {% else %}
 
-{% include "core/_hero.html" %}
-
-{% include "core/_today_in_history.html" %}
-
-{% include "people/partials/tree_preview.html" %}
+{% if is_demo_context %}
+  {% include "core/_hero.html" %}
+  {% include "core/_today_in_history.html" %}
+  {% include "people/partials/tree_preview.html" %}
+{% else %}
+  {% include "core/_close_family_dashboard.html" %}
+  {% include "core/_today_in_history.html" %}
+{% endif %}
 
 {% include "core/_family_prompt.html" %}
 

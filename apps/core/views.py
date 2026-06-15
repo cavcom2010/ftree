@@ -61,16 +61,20 @@ def _ensure_starter_tree_for_user(user, family_slug=None):
         return _create_starter_tree_for_user(user), True
 
     family = membership.family
-    if not Person.objects.filter(family=family).exists():
-        person = _create_person_for_user(user, family)
-        membership.person = person
-        membership.save(update_fields=["person"])
-        return family, True
-
     if membership.person_id:
         return family, False
 
-    return family, False
+    person = (
+        Person.objects.filter(family=family, created_by=user)
+        .order_by("birth_date", "first_name", "last_name", "id")
+        .first()
+    )
+    if not person:
+        person = _create_person_for_user(user, family)
+
+    membership.person = person
+    membership.save(update_fields=["person"])
+    return family, True
 
 
 @transaction.atomic

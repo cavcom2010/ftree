@@ -700,6 +700,106 @@
     chips.forEach((chip) => container.appendChild(chip));
   }
 
+  function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function setVisible(el, visible) {
+    if (!el) return;
+    el.style.display = visible ? '' : 'none';
+  }
+
+  function setDetailStatus(person) {
+    const statusEl = document.getElementById('detail-status');
+    if (!statusEl) return;
+    statusEl.innerHTML = '';
+
+    if (person.claimed_by_me) {
+      statusEl.textContent = 'Connected to your account';
+      statusEl.className = 'detail-status is-claimed';
+    } else if (person.is_claimed && person.claimed_by) {
+      statusEl.textContent = `Claimed by ${person.claimed_by}`;
+      statusEl.className = 'detail-status is-claimed';
+    } else {
+      statusEl.textContent = 'Not connected to a user account';
+      statusEl.className = 'detail-status is-unclaimed';
+    }
+  }
+
+  function setDetailToolbar(person) {
+    const editBtn = document.getElementById('detail-action-edit');
+    const inviteBtn = document.getElementById('detail-action-invite');
+    const anchorBtn = document.getElementById('detail-action-anchor');
+    const descendantsBtn = document.getElementById('detail-action-descendants');
+    const storyLink = document.getElementById('detail-action-story');
+    const addRelativeWrap = document.getElementById('detail-action-add-relative');
+
+    setVisible(editBtn, person.can_edit);
+    setVisible(inviteBtn, person.can_invite);
+    setVisible(anchorBtn, person.can_set_anchor);
+    setVisible(descendantsBtn, true);
+    setVisible(storyLink, true);
+    setVisible(addRelativeWrap, person.can_edit);
+
+    if (editBtn) editBtn.dataset.url = person.urls.edit_name;
+    if (inviteBtn) inviteBtn.dataset.url = person.urls.invite;
+    if (anchorBtn) anchorBtn.dataset.url = person.urls.set_anchor;
+    if (descendantsBtn) descendantsBtn.dataset.url = person.urls.descendants;
+    if (storyLink) storyLink.href = person.urls.story_create;
+
+    ['parent', 'child', 'partner', 'sibling'].forEach((rel) => {
+      const btn = document.querySelector(`[data-detail-action="add_${rel}"]`);
+      if (btn && person.urls.add_relative) {
+        btn.dataset.url = person.urls.add_relative[rel];
+      }
+    });
+  }
+
+  function setDetailBio(person) {
+    const section = document.getElementById('detail-about-section');
+    const bioEl = document.getElementById('detail-bio');
+    if (!section || !bioEl) return;
+    if (person.biography) {
+      bioEl.textContent = person.biography;
+      setVisible(section, true);
+    } else {
+      setVisible(section, false);
+    }
+  }
+
+  function setDetailContent(person) {
+    const section = document.getElementById('detail-content-section');
+    const statsEl = document.getElementById('detail-content-stats');
+    if (!section || !statsEl) return;
+
+    const hasMemories = person.memory_count > 0;
+    const hasStories = person.story_count > 0;
+    if (!hasMemories && !hasStories) {
+      setVisible(section, false);
+      return;
+    }
+
+    setVisible(section, true);
+    statsEl.innerHTML = '';
+
+    if (hasMemories) {
+      const memory = document.createElement('a');
+      memory.className = 'detail-content-stat';
+      memory.href = '/memories/';
+      memory.innerHTML = `<strong>${person.memory_count}</strong> <span>Memory${person.memory_count === 1 ? '' : 'ies'}</span>`;
+      statsEl.appendChild(memory);
+    }
+
+    if (hasStories) {
+      const story = document.createElement('a');
+      story.className = 'detail-content-stat';
+      story.href = '/stories/';
+      story.innerHTML = `<strong>${person.story_count}</strong> <span>Story${person.story_count === 1 ? '' : 'ies'}</span>`;
+      statsEl.appendChild(story);
+    }
+  }
+
   function openDetail(personId) {
     const person = peopleMap.get(personId);
     if (!person) return;
@@ -736,8 +836,13 @@
     }
 
     if (profileLink) {
-      profileLink.href = `/people/${person.id}/drawer/`;
+      profileLink.href = person.urls.drawer;
     }
+
+    setDetailStatus(person);
+    setDetailToolbar(person);
+    setDetailBio(person);
+    setDetailContent(person);
 
     populateRelatives(
       'detail-parents',
@@ -800,6 +905,35 @@
     if (target.closest('.detail-overlay.is-open')) {
       closeDetail();
       return;
+    }
+    const detailAction = target.closest('[data-detail-action]');
+    if (detailAction) {
+      const action = detailAction.dataset.detailAction;
+      const url = detailAction.dataset.url;
+      if (action === 'anchor' && url) {
+        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() } })
+          .then((res) => {
+            if (res.ok) {
+              showToast('Anchor updated');
+              window.location.reload();
+            } else {
+              showToast('Could not update anchor');
+            }
+          })
+          .catch(() => showToast('Could not update anchor'));
+      } else if (url) {
+        window.location.href = url;
+      }
+      return;
+    }
+    const menuToggle = target.closest('[data-detail-menu-toggle]');
+    if (menuToggle) {
+      const menu = menuToggle.closest('.detail-tool.has-menu');
+      if (menu) menu.classList.toggle('is-open');
+      return;
+    }
+    if (!target.closest('.detail-tool.has-menu')) {
+      document.querySelectorAll('.detail-tool.has-menu.is-open').forEach((m) => m.classList.remove('is-open'));
     }
     if (target.closest('[data-create-sheet-trigger]')) {
       openCreateSheet(target.closest('[data-create-sheet-trigger]'));

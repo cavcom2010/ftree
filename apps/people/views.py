@@ -101,9 +101,15 @@ def person_edit_name(request, person_id):
     else:
         form = PersonNameForm(instance=person)
 
+    template = (
+        "people/partials/person_name_form.html"
+        if request.headers.get("HX-Request")
+        else "people/edit_name.html"
+    )
+
     return render(
         request,
-        "people/partials/person_name_form.html",
+        template,
         {
             "person": person,
             "form": form,

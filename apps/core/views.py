@@ -5,12 +5,13 @@ from django.db import transaction
 from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils.text import slugify
 
 from apps.core.homepage_context import build_homepage_context
 from apps.core.tree_context import build_tree_context
 from apps.families.models import Family, FamilyMembership
-from apps.families.services import pending_invitations_for_user
+from apps.families.services import can_invite, membership_for_user, pending_invitations_for_user
 from apps.people.models import Person
 
 
@@ -53,7 +54,7 @@ def tree(request):
             if family and not context.get("needs_anchor_choice"):
                 anchor_person = _resolve_tree_anchor(request, family, context)
                 if anchor_person:
-                    tree_data = _tree_data_for_family(family, anchor_person)
+                    tree_data = _tree_data_for_family(family, anchor_person, user=request.user)
                     context["tree_anchor_person"] = anchor_person
             context["tree_json"] = json.dumps(tree_data)
             return render(request, "tree/home.html", context)
@@ -87,7 +88,7 @@ def tree(request):
     ):
         anchor_person = _resolve_tree_anchor(request, family, context)
         if anchor_person:
-            tree_data = _tree_data_for_family(family, anchor_person)
+            tree_data = _tree_data_for_family(family, anchor_person, user=request.user)
             context["tree_anchor_person"] = anchor_person
 
     context["tree_json"] = json.dumps(tree_data)
@@ -330,11 +331,11 @@ def _compute_generation_map(anchor, people, parents_by_child, children_by_parent
     return gen_map
 
 
-def _tree_data_for_family(family, anchor):
+def _tree_data_for_family(family, anchor, user=None):
     """Return the JSON payload consumed by the radial tree renderer."""
     from apps.relationships.models import Relationship
 
-    people = list(Person.objects.filter(family=family))
+    people = list(Person.objects.filter(family=family).prefetch_related("memories", "stories"))
     person_ids = {person.id for person in people}
 
     parents_by_child = {person.id: set() for person in people}
@@ -368,8 +369,75 @@ def _tree_data_for_family(family, anchor):
         anchor, people, parents_by_child, children_by_parent, partners, siblings
     )
 
+    membership = membership_for_user(family, user) if user else None
+    user_membership_person_id = membership.person_id if membership else None
+    user_can_invite = can_invite(family, user) if user else False
+
+    memberships_by_person = {
+        m.person_id: m
+        for m in FamilyMembership.objects.filter(
+            family=family, person_id__in=person_ids
+        )
+        .select_related("user")
+        if m.person_id
+    }
+
+    def enrich(person):
+        data = person.to_tree_dict(generation=gen_map.get(person.id, 0))
+        claimed_membership = memberships_by_person.get(person.id)
+        is_claimed = claimed_membership is not None
+        claimed_by_me = bool(
+            membership and claimed_membership and claimed_membership.user_id == user.id
+        )
+
+        can_edit = False
+        if user and getattr(user, "is_authenticated", False):
+            if membership and membership.person_id == person.id:
+                can_edit = True
+            elif membership and membership.role in {
+                FamilyMembership.Role.OWNER,
+                FamilyMembership.Role.ADMIN,
+            }:
+                can_edit = True
+            elif user_can_invite and not is_claimed:
+                can_edit = True
+
+        data.update(
+            {
+                "biography": person.biography or "",
+                "memory_count": person.memories.count(),
+                "story_count": person.stories.count(),
+                "is_claimed": is_claimed,
+                "claimed_by_me": claimed_by_me,
+                "claimed_by": claimed_membership.user.get_full_name() or claimed_membership.user.username
+                if claimed_membership and claimed_membership.user
+                else None,
+                "can_edit": can_edit,
+                "can_invite": user_can_invite and not is_claimed,
+                "can_set_anchor": bool(
+                    membership and not is_claimed and person.id != user_membership_person_id
+                ),
+                "is_anchor": person.id == anchor.id,
+                "urls": {
+                    "drawer": reverse("person_drawer", args=[person.id]),
+                    "edit_name": reverse("person_edit_name", args=[person.id]),
+                    "invite": reverse("family_invite_person", args=[person.id]),
+                    "add_relative": {
+                        "parent": reverse("family_invite_relative", args=[person.id, "parent"]),
+                        "child": reverse("family_invite_relative", args=[person.id, "child"]),
+                        "partner": reverse("family_invite_relative", args=[person.id, "partner"]),
+                        "sibling": reverse("family_invite_relative", args=[person.id, "sibling"]),
+                    },
+                    "set_anchor": reverse("family_set_tree_anchor", args=[person.id]),
+                    "descendants": reverse("person_descendants", args=[person.id]),
+                    "story_create": reverse("story_create"),
+                },
+            }
+        )
+        return data
+
     return {
-        "people": [p.to_tree_dict(generation=gen_map.get(p.id, 0)) for p in people],
+        "people": [enrich(p) for p in people],
         "root_id": str(anchor.id),
     }
 
@@ -398,4 +466,4 @@ def tree_json(request):
     if not anchor:
         return JsonResponse({"people": [], "root_id": None})
 
-    return JsonResponse(_tree_data_for_family(family, anchor))
+    return JsonResponse(_tree_data_for_family(family, anchor, user=request.user))

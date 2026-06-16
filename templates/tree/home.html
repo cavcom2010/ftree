@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260616-radial-v14">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260616-radial-v16">
 {% endblock %}
 
 {% block content %}
@@ -198,6 +198,53 @@
             </div>
           </div>
 
+          <div class="detail-status" id="detail-status"></div>
+
+          <div class="detail-toolbar" id="detail-toolbar">
+            <button class="detail-tool" type="button" data-detail-action="edit" id="detail-action-edit">
+              <i data-lucide="pencil"></i>
+              <span>Edit</span>
+            </button>
+            <div class="detail-tool has-menu" id="detail-action-add-relative">
+              <button class="detail-tool" type="button" data-detail-menu-toggle>
+                <i data-lucide="user-plus"></i>
+                <span>Add relative</span>
+              </button>
+              <div class="detail-tool-menu">
+                <button type="button" data-detail-action="add_parent">Parent</button>
+                <button type="button" data-detail-action="add_child">Child</button>
+                <button type="button" data-detail-action="add_partner">Partner</button>
+                <button type="button" data-detail-action="add_sibling">Sibling</button>
+              </div>
+            </div>
+            <button class="detail-tool" type="button" data-detail-action="invite" id="detail-action-invite">
+              <i data-lucide="mail"></i>
+              <span>Invite</span>
+            </button>
+            <button class="detail-tool" type="button" data-detail-action="anchor" id="detail-action-anchor">
+              <i data-lucide="locate"></i>
+              <span>Set anchor</span>
+            </button>
+            <button class="detail-tool" type="button" data-detail-action="descendants" id="detail-action-descendants">
+              <i data-lucide="git-branch"></i>
+              <span>Descendants</span>
+            </button>
+            <a class="detail-tool" id="detail-action-story" href="#">
+              <i data-lucide="book-open"></i>
+              <span>Story</span>
+            </a>
+          </div>
+
+          <div class="detail-section" id="detail-about-section">
+            <h3 class="detail-section-title">About</h3>
+            <p class="detail-bio" id="detail-bio"></p>
+          </div>
+
+          <div class="detail-section" id="detail-content-section">
+            <h3 class="detail-section-title">Memories & Stories</h3>
+            <div class="detail-content-stats" id="detail-content-stats"></div>
+          </div>
+
           <div class="detail-section" id="detail-parents-section">
             <h3 class="detail-section-title">Parents</h3>
             <div class="detail-relatives" id="detail-parents"></div>
@@ -239,5 +286,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script defer src="{% static 'js/tree.js' %}?v=20260616-radial-v12"></script>
+<script defer src="{% static 'js/tree.js' %}?v=20260616-radial-v15"></script>
 {% endblock %}

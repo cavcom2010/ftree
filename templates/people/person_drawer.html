@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ person.full_name }} · {{ family.name|default:"HeritageTree" }}{% endblock %}
+{% block body_class %}tree-only-body{% endblock %}
+
+{% block content %}
+<section class="person-drawer show" aria-label="{{ person.full_name }}">
+  {% include "people/partials/person_drawer.html" %}
+</section>
+{% endblock %}

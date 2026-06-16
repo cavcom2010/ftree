@@ -58,15 +58,14 @@ def _can_edit_person(person, user):
 
 def person_drawer(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
-    return render(
-        request,
-        "people/partials/person_drawer.html",
-        {
-            "person": person,
-            "generation_label": get_generation_label(person),
-            "can_edit_name": _can_edit_person(person, request.user),
-        },
-    )
+    context = {
+        "person": person,
+        "generation_label": get_generation_label(person),
+        "can_edit_name": _can_edit_person(person, request.user),
+    }
+    if request.headers.get("HX-Request"):
+        return render(request, "people/partials/person_drawer.html", context)
+    return render(request, "people/person_drawer.html", context)
 
 
 @login_required

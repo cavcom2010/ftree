@@ -1,6 +1,9 @@
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.text import slugify
 
@@ -45,6 +48,14 @@ def tree(request):
                 global_admin_view=True,
             )
             context["show_tree_onboarding"] = False
+            tree_data = {"people": [], "root_id": None}
+            family = Family.objects.filter(slug=explicit_family_slug).first()
+            if family and not context.get("needs_anchor_choice"):
+                anchor_person = _resolve_tree_anchor(request, family, context)
+                if anchor_person:
+                    tree_data = _tree_data_for_family(family, anchor_person)
+                    context["tree_anchor_person"] = anchor_person
+            context["tree_json"] = json.dumps(tree_data)
             return render(request, "tree/home.html", context)
 
     family_slug = request.GET.get("family") or request.session.get("current_family_slug")
@@ -66,6 +77,20 @@ def tree(request):
             and context.get("people_count", 0) <= 1
         )
     )
+
+    tree_data = {"people": [], "root_id": None}
+    if (
+        family
+        and not context.get("needs_tree_setup")
+        and not context.get("needs_family_choice")
+        and not context.get("needs_anchor_choice")
+    ):
+        anchor_person = _resolve_tree_anchor(request, family, context)
+        if anchor_person:
+            tree_data = _tree_data_for_family(family, anchor_person)
+            context["tree_anchor_person"] = anchor_person
+
+    context["tree_json"] = json.dumps(tree_data)
 
     return render(request, "tree/home.html", context)
 
@@ -221,3 +246,156 @@ def _empty_tree_context(user):
         "needs_tree_setup": True,
         "show_tree_onboarding": False,
     }
+
+
+# ---------------------------------------------------------------------------
+# Radial tree JSON helpers
+# ---------------------------------------------------------------------------
+
+PARENT_TREE_TYPES = {
+    "parent_child",
+    "adoptive_parent",
+    "step_parent",
+    "guardian",
+}
+
+PARTNER_TREE_TYPES = {
+    "spouse",
+    "partner",
+    "ex_partner",
+    "co_parent",
+}
+
+
+def _resolve_tree_anchor(request, family, context=None):
+    """Return the Person that should be the Gen 0 anchor for the radial tree."""
+    context = context or {}
+    explicit_anchor = _anchor_id_from_request(request)
+    is_global_admin = _is_global_tree_admin(request.user)
+
+    if is_global_admin and explicit_anchor:
+        return Person.objects.filter(family=family, id=explicit_anchor).first()
+
+    membership = (
+        family.memberships.select_related("person").filter(user=request.user).first()
+    )
+    if membership and membership.person:
+        return membership.person
+
+    return (
+        Person.objects.filter(family=family)
+        .order_by("birth_date", "first_name", "last_name", "id")
+        .first()
+    )
+
+
+def _compute_generation_map(anchor, people, parents_by_child, children_by_parent, partners, siblings):
+    """Compute generation numbers relative to the anchor (anchor=0, parents>0, children<0)."""
+    gen_map = {anchor.id: 0}
+    queue = [anchor.id]
+    visited = {anchor.id}
+
+    while queue:
+        person_id = queue.pop(0)
+        gen = gen_map[person_id]
+
+        for parent_id in parents_by_child.get(person_id, set()):
+            if parent_id not in gen_map:
+                gen_map[parent_id] = gen + 1
+            if parent_id not in visited:
+                visited.add(parent_id)
+                queue.append(parent_id)
+
+        for child_id in children_by_parent.get(person_id, set()):
+            if child_id not in gen_map:
+                gen_map[child_id] = gen - 1
+            if child_id not in visited:
+                visited.add(child_id)
+                queue.append(child_id)
+
+        for sibling_id in siblings.get(person_id, set()):
+            if sibling_id not in gen_map:
+                gen_map[sibling_id] = gen
+            if sibling_id not in visited:
+                visited.add(sibling_id)
+                queue.append(sibling_id)
+
+        for partner_id in partners.get(person_id, set()):
+            if partner_id not in gen_map:
+                gen_map[partner_id] = gen
+            if partner_id not in visited:
+                visited.add(partner_id)
+                queue.append(partner_id)
+
+    return gen_map
+
+
+def _tree_data_for_family(family, anchor):
+    """Return the JSON payload consumed by the radial tree renderer."""
+    from apps.relationships.models import Relationship
+
+    people = list(Person.objects.filter(family=family))
+    person_ids = {person.id for person in people}
+
+    parents_by_child = {person.id: set() for person in people}
+    children_by_parent = {person.id: set() for person in people}
+    partners = {person.id: set() for person in people}
+    siblings = {person.id: set() for person in people}
+
+    relationships = Relationship.objects.filter(
+        family=family,
+        from_person_id__in=person_ids,
+        to_person_id__in=person_ids,
+    ).values_list("from_person_id", "to_person_id", "relationship_type")
+
+    for from_id, to_id, relationship_type in relationships:
+        if relationship_type in PARENT_TREE_TYPES:
+            children_by_parent[from_id].add(to_id)
+            parents_by_child[to_id].add(from_id)
+        elif relationship_type in PARTNER_TREE_TYPES:
+            partners[from_id].add(to_id)
+            partners[to_id].add(from_id)
+        elif relationship_type == "sibling":
+            siblings[from_id].add(to_id)
+            siblings[to_id].add(from_id)
+
+    for child_id, parent_ids in parents_by_child.items():
+        for parent_id in parent_ids:
+            siblings[child_id].update(children_by_parent.get(parent_id, set()))
+        siblings[child_id].discard(child_id)
+
+    gen_map = _compute_generation_map(
+        anchor, people, parents_by_child, children_by_parent, partners, siblings
+    )
+
+    return {
+        "people": [p.to_tree_dict(generation=gen_map.get(p.id, 0)) for p in people],
+        "root_id": str(anchor.id),
+    }
+
+
+@login_required
+def tree_json(request):
+    """JSON API for the radial tree renderer."""
+    is_global_admin = _is_global_tree_admin(request.user)
+    explicit_family_slug = request.GET.get("family")
+
+    if is_global_admin and explicit_family_slug:
+        family = Family.objects.filter(slug=explicit_family_slug).first()
+    else:
+        family_slug = request.GET.get("family") or request.session.get("current_family_slug")
+        if request.GET.get("family"):
+            request.session["current_family_slug"] = request.GET["family"]
+        family, _created = _ensure_starter_tree_for_user(
+            request.user,
+            family_slug=family_slug,
+        )
+
+    if not family:
+        return JsonResponse({"people": [], "root_id": None})
+
+    anchor = _resolve_tree_anchor(request, family)
+    if not anchor:
+        return JsonResponse({"people": [], "root_id": None})
+
+    return JsonResponse(_tree_data_for_family(family, anchor))

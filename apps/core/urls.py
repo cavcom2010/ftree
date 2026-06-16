@@ -5,4 +5,5 @@ from . import views
 urlpatterns = [
     path("", views.home, name="home"),
     path("tree/", views.tree, name="tree"),
+    path("tree/json/", views.tree_json, name="tree_json"),
 ]

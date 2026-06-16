@@ -1,7 +1,11 @@
+import django
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import connection, transaction
+from django.db.migrations.executor import MigrationExecutor
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.homepage_context import build_homepage_context
@@ -11,10 +15,44 @@ from apps.families.services import pending_invitations_for_user
 from apps.people.models import Person
 
 
+def health(request):
+    db_ok = True
+    db_error = None
+    try:
+        connection.ensure_connection()
+        db_ok = True
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)
+
+    pending_migrations = -1
+    if db_ok:
+        try:
+            executor = MigrationExecutor(connection)
+            plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
+            pending_migrations = len(plan)
+        except Exception:
+            pending_migrations = -1
+
+    return JsonResponse(
+        {
+            "status": "healthy" if db_ok else "unhealthy",
+            "database": "connected" if db_ok else f"error: {db_error}",
+            "pending_migrations": pending_migrations,
+            "timestamp": timezone.now().isoformat(),
+            "django_version": django.get_version(),
+        },
+        status=200 if db_ok else 503,
+    )
+
+
 def home(request):
     family_slug = request.session.get("current_family_slug")
     if request.user.is_authenticated:
-        if not (_is_global_tree_admin(request.user) and not _has_family_membership(request.user)):
+        if not (
+            _is_global_tree_admin(request.user)
+            and not _has_family_membership(request.user)
+        ):
             family, _created_or_repaired = _ensure_starter_tree_for_user(
                 request.user,
                 family_slug=family_slug,
@@ -22,7 +60,11 @@ def home(request):
             request.session["current_family_slug"] = family.slug
             family_slug = family.slug
 
-    return render(request, "core/home.html", build_homepage_context(request.user, family_slug=family_slug))
+    return render(
+        request,
+        "core/home.html",
+        build_homepage_context(request.user, family_slug=family_slug),
+    )
 
 
 @login_required
@@ -31,10 +73,17 @@ def tree(request):
     if is_global_admin:
         explicit_family_slug = request.GET.get("family")
         if not explicit_family_slug and not _has_family_membership(request.user):
-            return render(request, "tree/home.html", _admin_family_picker_context(request.user))
+            return render(
+                request, "tree/home.html", _admin_family_picker_context(request.user)
+            )
 
-        if explicit_family_slug and not Family.objects.filter(slug=explicit_family_slug).exists():
-            return render(request, "tree/home.html", _admin_family_picker_context(request.user))
+        if (
+            explicit_family_slug
+            and not Family.objects.filter(slug=explicit_family_slug).exists()
+        ):
+            return render(
+                request, "tree/home.html", _admin_family_picker_context(request.user)
+            )
 
         if explicit_family_slug:
             request.session["current_family_slug"] = explicit_family_slug
@@ -47,7 +96,9 @@ def tree(request):
             context["show_tree_onboarding"] = False
             return render(request, "tree/home.html", context)
 
-    family_slug = request.GET.get("family") or request.session.get("current_family_slug")
+    family_slug = request.GET.get("family") or request.session.get(
+        "current_family_slug"
+    )
     if request.GET.get("family"):
         request.session["current_family_slug"] = request.GET["family"]
 
@@ -71,7 +122,10 @@ def tree(request):
 
 
 def _is_global_tree_admin(user):
-    return bool(getattr(user, "is_authenticated", False) and (user.is_staff or user.is_superuser))
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and (user.is_staff or user.is_superuser)
+    )
 
 
 def _has_family_membership(user):
@@ -90,8 +144,7 @@ def _anchor_id_from_request(request):
 
 def _admin_family_picker_context(user):
     families = list(
-        Family.objects.annotate(people_count=Count("people"))
-        .order_by("name", "id")
+        Family.objects.annotate(people_count=Count("people")).order_by("name", "id")
     )
     return {
         "family": None,
@@ -118,7 +171,9 @@ def _admin_family_picker_context(user):
 
 @transaction.atomic
 def _ensure_starter_tree_for_user(user, family_slug=None):
-    membership_qs = FamilyMembership.objects.filter(user=user).select_related("family", "person")
+    membership_qs = FamilyMembership.objects.filter(user=user).select_related(
+        "family", "person"
+    )
     membership = None
     if family_slug:
         membership = membership_qs.filter(family__slug=family_slug).first()
@@ -184,7 +239,13 @@ def _person_name_for_user(user):
     display_name = user.get_full_name().strip()
     if not display_name:
         identity = user.email.split("@", 1)[0] if user.email else user.get_username()
-        display_name = identity.replace(".", " ").replace("_", " ").replace("-", " ").strip().title()
+        display_name = (
+            identity.replace(".", " ")
+            .replace("_", " ")
+            .replace("-", " ")
+            .strip()
+            .title()
+        )
 
     parts = [part for part in display_name.split() if part]
     if not parts:
@@ -195,7 +256,9 @@ def _person_name_for_user(user):
 
 
 def _unique_family_slug(user):
-    base = slugify(f"{user.get_username()} family tree") or f"user-{user.pk}-family-tree"
+    base = (
+        slugify(f"{user.get_username()} family tree") or f"user-{user.pk}-family-tree"
+    )
     slug = base
     counter = 2
     while Family.objects.filter(slug=slug).exists():

@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import TestCase
@@ -12,8 +14,11 @@ from apps.families.services import (
     create_relative_with_optional_invite,
     decline_invitation,
 )
+from apps.memories.models import Memory
 from apps.people.models import Person
 from apps.relationships.models import Relationship
+from apps.social.models import Activity
+from apps.stories.models import Story
 
 User = get_user_model()
 
@@ -580,6 +585,10 @@ class FamilyInvitationViewTests(TestCase):
             role=FamilyMembership.Role.OWNER,
         )
 
+    def _tree_person_data(self, response, person):
+        tree_data = json.loads(response.context["tree_json"])
+        return next(item for item in tree_data["people"] if item["id"] == str(person.id))
+
     def test_tree_invite_person_endpoint_creates_pending_invitation(self):
         self.client.force_login(self.owner)
 
@@ -595,6 +604,159 @@ class FamilyInvitationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invite sent")
         self.assertTrue(FamilyInvitation.objects.filter(person=self.target, invitee_user=self.invitee).exists())
+
+    def test_tree_create_drawer_exposes_wired_actions(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-tree-choose-person")
+        self.assertContains(response, "data-tree-open-root-detail")
+        self.assertContains(response, 'data-tree-sheet-panel="invite-status"')
+        self.assertContains(response, 'data-tree-sheet-panel="connected-users"')
+        self.assertNotContains(response, "Pending invites show on person cards")
+        self.assertNotContains(response, "Accepted invitations connect users")
+
+    def test_tree_create_drawer_lists_pending_invites_and_connections(self):
+        create_invitation(
+            family=self.family,
+            inviter=self.owner,
+            person=self.target,
+            invitee_identifier="invitee@example.com",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+
+        self.assertContains(response, "Pending invite status")
+        self.assertContains(response, "Target Person")
+        self.assertContains(response, "invitee")
+        self.assertContains(response, "Connected users")
+        self.assertContains(response, "Owner Person")
+        self.assertContains(response, "owner")
+
+    def test_tree_json_separates_edit_from_add_relative_permission(self):
+        viewer = User.objects.create_user(username="viewer", email="viewer@example.com", password="secret")
+        FamilyMembership.objects.create(
+            family=self.family,
+            user=viewer,
+            person=self.target,
+            role=FamilyMembership.Role.VIEWER,
+        )
+        self.client.force_login(viewer)
+
+        response = self.client.get("/tree/")
+        target_data = self._tree_person_data(response, self.target)
+
+        self.assertTrue(target_data["can_edit"])
+        self.assertFalse(target_data["can_add_relative"])
+        self.assertFalse(target_data["can_invite"])
+
+    def test_tree_json_hides_invite_when_person_has_pending_invitation(self):
+        create_invitation(
+            family=self.family,
+            inviter=self.owner,
+            person=self.target,
+            invitee_identifier="invitee@example.com",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        target_data = self._tree_person_data(response, self.target)
+
+        self.assertTrue(target_data["can_add_relative"])
+        self.assertFalse(target_data["can_invite"])
+
+    def test_tree_json_allows_add_relative_for_inviting_member(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        anchor_data = self._tree_person_data(response, self.anchor)
+
+        self.assertTrue(anchor_data["can_add_relative"])
+        self.assertFalse(anchor_data["can_invite"])
+
+    def test_tree_json_hides_set_anchor_for_linked_account(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        target_data = self._tree_person_data(response, self.target)
+
+        self.assertFalse(target_data["can_set_anchor"])
+
+    def test_set_tree_anchor_does_not_reassign_linked_account(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(f"/tree/people/{self.target.id}/set-anchor/")
+
+        self.assertEqual(response.status_code, 302)
+        membership = FamilyMembership.objects.get(family=self.family, user=self.owner)
+        self.assertEqual(membership.person, self.anchor)
+
+    def test_set_tree_anchor_allows_unlinked_membership_to_claim_person(self):
+        viewer = User.objects.create_user(username="viewer", email="viewer@example.com", password="secret")
+        FamilyMembership.objects.create(
+            family=self.family,
+            user=viewer,
+            role=FamilyMembership.Role.VIEWER,
+        )
+        self.client.force_login(viewer)
+
+        response = self.client.post(f"/tree/people/{self.target.id}/set-anchor/")
+
+        self.assertEqual(response.status_code, 302)
+        membership = FamilyMembership.objects.get(family=self.family, user=viewer)
+        self.assertEqual(membership.person, self.target)
+
+    def test_set_tree_anchor_blocks_claimed_person(self):
+        viewer = User.objects.create_user(username="viewer", email="viewer@example.com", password="secret")
+        FamilyMembership.objects.create(
+            family=self.family,
+            user=viewer,
+            role=FamilyMembership.Role.VIEWER,
+        )
+        self.client.force_login(viewer)
+
+        response = self.client.post(f"/tree/people/{self.anchor.id}/set-anchor/")
+
+        self.assertEqual(response.status_code, 302)
+        membership = FamilyMembership.objects.get(family=self.family, user=viewer)
+        self.assertIsNone(membership.person)
+
+    def test_tree_json_includes_person_social_context(self):
+        story = Story.objects.create(
+            family=self.family,
+            title="Target Story",
+            body="A story about Target.",
+            author=self.owner,
+        )
+        story.people.add(self.target)
+        memory = Memory.objects.create(
+            family=self.family,
+            title="Target Memory",
+            memory_type=Memory.Type.PHOTO,
+            uploaded_by=self.owner,
+        )
+        memory.people.add(self.target)
+        Activity.objects.create(
+            family=self.family,
+            actor=self.owner,
+            activity_type=Activity.Type.STORY_ADDED,
+            message="Published Target Story",
+            story=story,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        target_data = self._tree_person_data(response, self.target)
+
+        self.assertEqual(target_data["social"]["story_count"], 1)
+        self.assertEqual(target_data["social"]["memory_count"], 1)
+        self.assertEqual(
+            target_data["social"]["recent_activity"][0]["message"],
+            "Published Target Story",
+        )
 
     def test_tree_invite_relative_endpoint_creates_pending_person(self):
         self.client.force_login(self.owner)
@@ -801,7 +963,7 @@ class FamilyInvitationViewTests(TestCase):
         self.assertContains(parent_response, "Step-parent")
         self.assertContains(partner_response, "Ex-partner")
 
-    def test_tree_drawer_always_shows_add_another_actions(self):
+    def test_tree_detail_menu_always_shows_add_relative_actions(self):
         partner = Person.objects.create(
             family=self.family,
             first_name="Existing",
@@ -830,8 +992,36 @@ class FamilyInvitationViewTests(TestCase):
 
         response = self.client.get("/tree/")
 
-        self.assertContains(response, "Add another partner")
-        self.assertContains(response, "Add another child")
+        self.assertContains(response, 'data-detail-menu-toggle aria-expanded="false"')
+        self.assertContains(response, 'id="detail-relation-picker"')
+        self.assertContains(response, 'data-detail-action="add_parent"')
+        self.assertContains(response, 'data-detail-action="add_partner"')
+        self.assertContains(response, 'data-detail-action="add_child"')
+        self.assertContains(response, 'data-detail-action="add_sibling"')
+
+    def test_parent_card_can_open_add_sibling_sheet(self):
+        father = Person.objects.create(
+            family=self.family,
+            first_name="Father",
+            last_name="Person",
+            created_by=self.owner,
+        )
+        Relationship.objects.create(
+            family=self.family,
+            from_person=father,
+            to_person=self.anchor,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        father_data = self._tree_person_data(response, father)
+
+        self.assertTrue(father_data["can_add_relative"])
+        self.assertEqual(
+            father_data["urls"]["add_relative"]["sibling"],
+            f"/tree/people/{father.id}/invite-relative/sibling/",
+        )
 
     def test_tree_invite_relative_endpoint_shows_errors_without_creating_person(self):
         self.client.force_login(self.owner)

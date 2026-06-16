@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 from decouple import UndefinedValueError
@@ -77,6 +78,9 @@ class TreePageTests(TestCase):
         self.demo_user = User.objects.get(username="demo")
         self.client.force_login(self.demo_user)
 
+    def _tree_data(self, response):
+        return json.loads(response.context["tree_json"])
+
     def test_tree_page_requires_login(self):
         self.client.logout()
 
@@ -102,12 +106,10 @@ class TreePageTests(TestCase):
         self.assertEqual(membership.person.last_name, "User")
         self.assertEqual(membership.person.family, membership.family)
         self.assertContains(response, "New&#x27;s Family Tree")
-        self.assertContains(response, "Me · Gen 0")
-        self.assertContains(response, "Start your tree")
-        self.assertContains(response, "You are Gen 0. Build your first family links.")
-        self.assertContains(response, "Add parent")
-        self.assertContains(response, "Add partner")
-        self.assertContains(response, "Add child")
+        self.assertContains(response, "New User · Gen 0")
+        self.assertContains(response, 'data-create-sheet-trigger')
+        self.assertContains(response, "Add to the family tree")
+        self.assertContains(response, "Choose a person in the tree")
 
     def test_staff_without_membership_sees_family_picker_without_starter_tree(self):
         staff = User.objects.create_user(
@@ -142,9 +144,12 @@ class TreePageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Johnson Family")
         self.assertContains(response, "All families")
-        self.assertContains(response, "Family Tree · Centred on")
+        self.assertContains(response, "Robert Johnson · Gen 0")
         self.assertNotContains(response, "Start your tree")
-        self.assertNotContains(response, "invite-relative")
+        self.assertNotContains(response, 'data-create-sheet-trigger')
+        tree_data = self._tree_data(response)
+        self.assertTrue(tree_data["people"])
+        self.assertFalse(any(person["can_add_relative"] for person in tree_data["people"]))
         self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
 
     def test_staff_can_choose_anchor_in_selected_family(self):
@@ -159,7 +164,7 @@ class TreePageTests(TestCase):
         response = self.client.get(f"/tree/?family=johnson-family&anchor={anchor.id}")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Family Tree · Centred on Robert Johnson")
+        self.assertContains(response, "Robert Johnson · Gen 0")
         self.assertContains(response, 'aria-current="true"')
 
     def test_staff_homepage_without_membership_does_not_create_starter_tree(self):
@@ -210,21 +215,24 @@ class TreePageTests(TestCase):
     def test_tree_page_contains_relative_generation_rows(self):
         response = self.client.get("/tree/")
 
-        self.assertContains(response, "Gen -2")
-        self.assertContains(response, "Gen -1")
-        self.assertContains(response, "Gen 0")
-        self.assertContains(response, "Gen +1")
+        tree_data = self._tree_data(response)
+        generations = {person["generation"] for person in tree_data["people"]}
+        self.assertIn(0, generations)
+        self.assertLess(min(generations), 0)
+        self.assertGreater(max(generations), 0)
 
     def test_tree_page_has_independent_horizontal_scroll_rows(self):
         response = self.client.get("/tree/")
 
-        self.assertContains(response, 'data-tree-row-track', count=4)
-        self.assertContains(response, 'data-generation-row="Gen 0"')
+        self.assertContains(response, 'id="tree-svg"')
+        self.assertContains(response, 'id="labels-container"')
+        self.assertContains(response, 'id="nodes-container"')
+        self.assertContains(response, 'data-zoom-fit')
 
     def test_tree_page_contains_reveal_drawer_pills(self):
         response = self.client.get("/tree/")
         self.assertContains(response, "Parents")
-        self.assertContains(response, "Partners")
+        self.assertContains(response, "Partner")
         self.assertContains(response, "Children")
         self.assertContains(response, "Siblings")
 

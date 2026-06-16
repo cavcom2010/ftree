@@ -205,17 +205,11 @@
               <i data-lucide="pencil"></i>
               <span>Edit</span>
             </button>
-            <div class="detail-tool has-menu" id="detail-action-add-relative">
-              <button class="detail-tool" type="button" data-detail-menu-toggle>
+            <div class="detail-tool-group" id="detail-action-add-relative">
+              <button class="detail-tool" type="button" data-detail-menu-toggle aria-expanded="false" aria-controls="detail-relation-picker">
                 <i data-lucide="user-plus"></i>
                 <span>Add relative</span>
               </button>
-              <div class="detail-tool-menu">
-                <button type="button" data-detail-action="add_parent">Parent</button>
-                <button type="button" data-detail-action="add_child">Child</button>
-                <button type="button" data-detail-action="add_partner">Partner</button>
-                <button type="button" data-detail-action="add_sibling">Sibling</button>
-              </div>
             </div>
             <button class="detail-tool" type="button" data-detail-action="invite" id="detail-action-invite">
               <i data-lucide="mail"></i>
@@ -231,8 +225,14 @@
             </button>
             <a class="detail-tool" id="detail-action-story" href="#">
               <i data-lucide="book-open"></i>
-              <span>Story</span>
+              <span>Write story</span>
             </a>
+          </div>
+          <div class="detail-relation-picker" id="detail-relation-picker" hidden>
+            <button type="button" data-detail-action="add_parent">Parent</button>
+            <button type="button" data-detail-action="add_child">Child</button>
+            <button type="button" data-detail-action="add_partner">Partner</button>
+            <button type="button" data-detail-action="add_sibling">Sibling</button>
           </div>
 
           <div class="detail-section" id="detail-about-section">
@@ -243,6 +243,11 @@
           <div class="detail-section" id="detail-content-section">
             <h3 class="detail-section-title">Memories & Stories</h3>
             <div class="detail-content-stats" id="detail-content-stats"></div>
+          </div>
+
+          <div class="detail-section" id="detail-social-section">
+            <h3 class="detail-section-title">Family activity</h3>
+            <div class="detail-social" id="detail-social"></div>
           </div>
 
           <div class="detail-section" id="detail-parents-section">

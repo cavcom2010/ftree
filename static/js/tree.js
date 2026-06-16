@@ -3,9 +3,17 @@
 
   const TREE_DATA = window.TREE_DATA || { people: [], root_id: null };
   const people = TREE_DATA.people || [];
-  const root_id = TREE_DATA.root_id || null;
+  const root_id = TREE_DATA.root_id ? String(TREE_DATA.root_id) : null;
   const peopleMap = new Map();
-  people.forEach((p) => peopleMap.set(p.id, p));
+  people.forEach((p) => {
+    p.id = String(p.id);
+    if (p.father_id) p.father_id = String(p.father_id);
+    if (p.mother_id) p.mother_id = String(p.mother_id);
+    if (p.partner_id) p.partner_id = String(p.partner_id);
+    p.sibling_ids = (p.sibling_ids || []).map(String);
+    p.child_ids = (p.child_ids || []).map(String);
+    peopleMap.set(p.id, p);
+  });
 
   let expandedNodes = new Set(root_id ? [root_id] : []);
   let scale = 1;
@@ -347,6 +355,7 @@
 
       const node = document.createElement('div');
       node.className = `person-node${isRoot ? ' is-root' : ''}`;
+      node.dataset.personId = id;
       node.style.left = `${pos.x - 34}px`;
       node.style.top = `${pos.y - 34}px`;
       node.style.animationDelay = `${Math.random() * 0.15}s`;
@@ -615,13 +624,21 @@
   // Create sheet
   // -------------------------------------------------------------------------
 
-  const createSheet = document.getElementById('tree-create-sheet');
-  const createSheetBackdrop = document.getElementById('tree-sheet-backdrop');
   let activeCreateTrigger = null;
 
+  function getCreateSheet() {
+    return document.getElementById('tree-create-sheet');
+  }
+
+  function getCreateSheetBackdrop() {
+    return document.getElementById('tree-sheet-backdrop');
+  }
+
   function openCreateSheet(trigger) {
+    const createSheet = getCreateSheet();
+    const createSheetBackdrop = getCreateSheetBackdrop();
     if (!createSheet || !createSheetBackdrop) return;
-    activeCreateTrigger = trigger;
+    activeCreateTrigger = trigger || activeCreateTrigger;
     createSheet.classList.add('is-open');
     createSheetBackdrop.classList.add('is-open');
     createSheet.setAttribute('aria-hidden', 'false');
@@ -631,7 +648,10 @@
   }
 
   function closeCreateSheet() {
+    const createSheet = getCreateSheet();
+    const createSheetBackdrop = getCreateSheetBackdrop();
     if (!createSheet || !createSheetBackdrop) return;
+    closeTreeSheetPanels(createSheet);
     createSheet.classList.remove('is-open');
     createSheetBackdrop.classList.remove('is-open');
     createSheet.setAttribute('aria-hidden', 'true');
@@ -640,6 +660,82 @@
       activeCreateTrigger.focus({ preventScroll: true });
       activeCreateTrigger = null;
     }
+  }
+
+  function closeTreeSheetPanels(sheet) {
+    const createSheet = sheet || getCreateSheet();
+    if (!createSheet) return;
+    createSheet.querySelectorAll('[data-tree-sheet-panel-content]').forEach((panel) => {
+      panel.hidden = true;
+    });
+    const actions = createSheet.querySelector('.tree-create-actions');
+    if (actions) actions.hidden = false;
+  }
+
+  function openTreeSheetPanel(panelName) {
+    const createSheet = getCreateSheet();
+    if (!createSheet) return;
+    let activePanel = null;
+    createSheet.querySelectorAll('[data-tree-sheet-panel-content]').forEach((panel) => {
+      const isActive = panel.dataset.treeSheetPanelContent === panelName;
+      panel.hidden = !isActive;
+      if (isActive) activePanel = panel;
+    });
+    if (!activePanel) return;
+    const actions = createSheet.querySelector('.tree-create-actions');
+    if (actions) actions.hidden = true;
+    openCreateSheet();
+    const closeBtn = activePanel.querySelector('[data-tree-sheet-panel-close]');
+    if (closeBtn) setTimeout(() => closeBtn.focus({ preventScroll: true }), 80);
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === 'function') {
+      return window.CSS.escape(value);
+    }
+    return value.replace(/"/g, '\\"');
+  }
+
+  function focusPersonInTree(personId) {
+    const targetId = String(personId || root_id || '');
+    if (!targetId) return;
+    const node = document.querySelector(`.person-node[data-person-id="${cssEscape(targetId)}"]`);
+    if (!node) return;
+    node.classList.add('is-highlighted');
+    showToast('Choose a person card to add or invite relatives');
+    setTimeout(() => node.classList.remove('is-highlighted'), 1400);
+  }
+
+  function openRootDetail() {
+    if (!root_id || !peopleMap.has(root_id)) {
+      showToast('Choose a person in the tree first');
+      return;
+    }
+    openDetail(root_id);
+  }
+
+  function loadTreeSheet(url) {
+    if (!url) return;
+    closeDetail();
+    if (window.htmx && typeof window.htmx.ajax === 'function' && getCreateSheet()) {
+      window.htmx.ajax('GET', url, {
+        target: '#tree-create-sheet',
+        swap: 'outerHTML',
+      });
+      return;
+    }
+    window.location.href = url;
+  }
+
+  function actionLoadsTreeSheet(action) {
+    return [
+      'edit',
+      'invite',
+      'add_parent',
+      'add_child',
+      'add_partner',
+      'add_sibling',
+    ].includes(action);
   }
 
   // -------------------------------------------------------------------------
@@ -710,6 +806,32 @@
     el.style.display = visible ? '' : 'none';
   }
 
+  function getRelationPicker() {
+    return document.getElementById('detail-relation-picker');
+  }
+
+  function getRelationToggle() {
+    return document.querySelector('[data-detail-menu-toggle]');
+  }
+
+  function setDetailRelationPickerOpen(isOpen) {
+    const picker = getRelationPicker();
+    const toggle = getRelationToggle();
+    const wrap = document.getElementById('detail-action-add-relative');
+    if (picker) picker.hidden = !isOpen;
+    if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (wrap) wrap.classList.toggle('is-open', isOpen);
+  }
+
+  function closeDetailRelationPicker() {
+    setDetailRelationPickerOpen(false);
+  }
+
+  function toggleDetailRelationPicker() {
+    const picker = getRelationPicker();
+    setDetailRelationPickerOpen(!(picker && !picker.hidden));
+  }
+
   function setDetailStatus(person) {
     const statusEl = document.getElementById('detail-status');
     if (!statusEl) return;
@@ -740,7 +862,8 @@
     setVisible(anchorBtn, person.can_set_anchor);
     setVisible(descendantsBtn, true);
     setVisible(storyLink, true);
-    setVisible(addRelativeWrap, person.can_edit);
+    setVisible(addRelativeWrap, person.can_add_relative);
+    closeDetailRelationPicker();
 
     if (editBtn) editBtn.dataset.url = person.urls.edit_name;
     if (inviteBtn) inviteBtn.dataset.url = person.urls.invite;
@@ -800,6 +923,75 @@
     }
   }
 
+  function appendSocialRow(container, label, value) {
+    if (!value) return;
+    const row = document.createElement('div');
+    row.className = 'detail-social-row';
+    const labelEl = document.createElement('span');
+    labelEl.textContent = label;
+    const valueEl = document.createElement('strong');
+    valueEl.textContent = value;
+    row.appendChild(labelEl);
+    row.appendChild(valueEl);
+    container.appendChild(row);
+  }
+
+  function setDetailSocial(person) {
+    const section = document.getElementById('detail-social-section');
+    const container = document.getElementById('detail-social');
+    if (!section || !container) return;
+
+    const social = person.social || {};
+    const recentActivity = social.recent_activity || [];
+    const hasSocial =
+      social.connected_label ||
+      social.pending_invite_label ||
+      social.story_count > 0 ||
+      social.memory_count > 0 ||
+      recentActivity.length > 0;
+
+    if (!hasSocial) {
+      setVisible(section, false);
+      container.innerHTML = '';
+      return;
+    }
+
+    setVisible(section, true);
+    container.innerHTML = '';
+    appendSocialRow(container, 'Connected account', social.connected_label);
+    appendSocialRow(container, 'Pending invite', social.pending_invite_label);
+
+    const stats = document.createElement('div');
+    stats.className = 'detail-social-stats';
+    if (social.story_count > 0) {
+      const story = document.createElement('span');
+      story.textContent = `${social.story_count} tagged ${social.story_count === 1 ? 'story' : 'stories'}`;
+      stats.appendChild(story);
+    }
+    if (social.memory_count > 0) {
+      const memory = document.createElement('span');
+      memory.textContent = `${social.memory_count} tagged ${social.memory_count === 1 ? 'memory' : 'memories'}`;
+      stats.appendChild(memory);
+    }
+    if (stats.children.length) container.appendChild(stats);
+
+    if (recentActivity.length) {
+      const list = document.createElement('div');
+      list.className = 'detail-social-activity';
+      recentActivity.forEach((item) => {
+        const activity = document.createElement('div');
+        const message = document.createElement('strong');
+        message.textContent = item.message;
+        const date = document.createElement('span');
+        date.textContent = item.date;
+        activity.appendChild(message);
+        activity.appendChild(date);
+        list.appendChild(activity);
+      });
+      container.appendChild(list);
+    }
+  }
+
   function openDetail(personId) {
     const person = peopleMap.get(personId);
     if (!person) return;
@@ -843,6 +1035,7 @@
     setDetailToolbar(person);
     setDetailBio(person);
     setDetailContent(person);
+    setDetailSocial(person);
 
     populateRelatives(
       'detail-parents',
@@ -864,6 +1057,7 @@
   }
 
   function closeDetail() {
+    closeDetailRelationPicker();
     detailOverlay.classList.remove('is-open');
     detailPanel.classList.remove('is-open');
   }
@@ -922,21 +1116,44 @@
           })
           .catch(() => showToast('Could not update anchor'));
       } else if (url) {
-        window.location.href = url;
+        if (actionLoadsTreeSheet(action)) {
+          closeDetailRelationPicker();
+          loadTreeSheet(url);
+        } else {
+          window.location.href = url;
+        }
       }
       return;
     }
     const menuToggle = target.closest('[data-detail-menu-toggle]');
     if (menuToggle) {
-      const menu = menuToggle.closest('.detail-tool.has-menu');
-      if (menu) menu.classList.toggle('is-open');
+      toggleDetailRelationPicker();
       return;
     }
-    if (!target.closest('.detail-tool.has-menu')) {
-      document.querySelectorAll('.detail-tool.has-menu.is-open').forEach((m) => m.classList.remove('is-open'));
+    if (!target.closest('#detail-action-add-relative') && !target.closest('#detail-relation-picker')) {
+      closeDetailRelationPicker();
     }
     if (target.closest('[data-create-sheet-trigger]')) {
       openCreateSheet(target.closest('[data-create-sheet-trigger]'));
+      return;
+    }
+    const treeSheetPanel = target.closest('[data-tree-sheet-panel]');
+    if (treeSheetPanel) {
+      openTreeSheetPanel(treeSheetPanel.dataset.treeSheetPanel);
+      return;
+    }
+    if (target.closest('[data-tree-sheet-panel-close]')) {
+      closeTreeSheetPanels();
+      return;
+    }
+    if (target.closest('[data-tree-choose-person]')) {
+      closeCreateSheet();
+      focusPersonInTree(root_id);
+      return;
+    }
+    if (target.closest('[data-tree-open-root-detail]')) {
+      closeCreateSheet();
+      openRootDetail();
       return;
     }
     if (target.closest('[data-create-sheet-close]')) {
@@ -948,7 +1165,8 @@
       if (message) showToast(message);
       return;
     }
-    if (createSheetBackdrop && createSheetBackdrop.classList.contains('is-open')) {
+    const createSheetBackdrop = getCreateSheetBackdrop();
+    if (target === createSheetBackdrop && createSheetBackdrop.classList.contains('is-open')) {
       closeCreateSheet();
     }
   });
@@ -975,7 +1193,15 @@
       event.detail.target &&
       event.detail.target.id === 'tree-create-sheet'
     ) {
-      const closeBtn = createSheet.querySelector('[data-create-sheet-close]');
+      const createSheet = getCreateSheet();
+      const createSheetBackdrop = getCreateSheetBackdrop();
+      if (createSheet) {
+        createSheet.classList.add('is-open');
+        createSheet.setAttribute('aria-hidden', 'false');
+      }
+      if (createSheetBackdrop) createSheetBackdrop.classList.add('is-open');
+      document.body.classList.add('is-tree-modal-open');
+      const closeBtn = createSheet ? createSheet.querySelector('[data-create-sheet-close]') : null;
       if (closeBtn) closeBtn.focus({ preventScroll: true });
     }
   });

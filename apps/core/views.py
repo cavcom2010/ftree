@@ -10,9 +10,12 @@ from django.utils.text import slugify
 
 from apps.core.homepage_context import build_homepage_context
 from apps.core.tree_context import build_tree_context
-from apps.families.models import Family, FamilyMembership
+from apps.families.models import Family, FamilyInvitation, FamilyMembership
 from apps.families.services import can_invite, membership_for_user, pending_invitations_for_user
+from apps.memories.models import Memory
 from apps.people.models import Person
+from apps.social.models import Activity
+from apps.stories.models import Story
 
 
 def home(request):
@@ -57,6 +60,7 @@ def tree(request):
                     tree_data = _tree_data_for_family(family, anchor_person, user=request.user)
                     context["tree_anchor_person"] = anchor_person
             context["tree_json"] = json.dumps(tree_data)
+            _attach_tree_sheet_context(context, family)
             return render(request, "tree/home.html", context)
 
     family_slug = request.GET.get("family") or request.session.get("current_family_slug")
@@ -92,6 +96,7 @@ def tree(request):
             context["tree_anchor_person"] = anchor_person
 
     context["tree_json"] = json.dumps(tree_data)
+    _attach_tree_sheet_context(context, family)
 
     return render(request, "tree/home.html", context)
 
@@ -102,6 +107,28 @@ def _is_global_tree_admin(user):
 
 def _has_family_membership(user):
     return FamilyMembership.objects.filter(user=user).exists()
+
+
+def _attach_tree_sheet_context(context, family):
+    if not family:
+        context["tree_pending_invitations"] = []
+        context["tree_connected_memberships"] = []
+        return context
+
+    context["tree_pending_invitations"] = list(
+        FamilyInvitation.objects.filter(
+            family=family,
+            status=FamilyInvitation.Status.PENDING,
+        )
+        .select_related("person", "inviter", "invitee_user")
+        .order_by("-sent_at", "id")[:12]
+    )
+    context["tree_connected_memberships"] = list(
+        FamilyMembership.objects.filter(family=family, person__isnull=False)
+        .select_related("person", "user")
+        .order_by("person__first_name", "person__last_name", "user__username")[:24]
+    )
+    return context
 
 
 def _anchor_id_from_request(request):
@@ -381,6 +408,27 @@ def _tree_data_for_family(family, anchor, user=None):
         .select_related("user")
         if m.person_id
     }
+    pending_invitation_person_ids = set(
+        FamilyInvitation.objects.filter(
+            family=family,
+            status=FamilyInvitation.Status.PENDING,
+            person_id__in=person_ids,
+        ).values_list("person_id", flat=True)
+    )
+    pending_invitations_by_person = {
+        invitation.person_id: invitation
+        for invitation in FamilyInvitation.objects.filter(
+            family=family,
+            status=FamilyInvitation.Status.PENDING,
+            person_id__in=person_ids,
+        ).select_related("invitee_user")
+    }
+    social_by_person = _tree_social_context(
+        family=family,
+        people=people,
+        memberships_by_person=memberships_by_person,
+        pending_invitations_by_person=pending_invitations_by_person,
+    )
 
     def enrich(person):
         data = person.to_tree_dict(generation=gen_map.get(person.id, 0))
@@ -407,15 +455,21 @@ def _tree_data_for_family(family, anchor, user=None):
                 "biography": person.biography or "",
                 "memory_count": person.memories.count(),
                 "story_count": person.stories.count(),
+                "social": social_by_person.get(person.id, {}),
                 "is_claimed": is_claimed,
                 "claimed_by_me": claimed_by_me,
                 "claimed_by": claimed_membership.user.get_full_name() or claimed_membership.user.username
                 if claimed_membership and claimed_membership.user
                 else None,
                 "can_edit": can_edit,
-                "can_invite": user_can_invite and not is_claimed,
+                "can_add_relative": user_can_invite,
+                "can_invite": (
+                    user_can_invite
+                    and not is_claimed
+                    and person.id not in pending_invitation_person_ids
+                ),
                 "can_set_anchor": bool(
-                    membership and not is_claimed and person.id != user_membership_person_id
+                    membership and not membership.person_id and not is_claimed
                 ),
                 "is_anchor": person.id == anchor.id,
                 "urls": {
@@ -430,7 +484,7 @@ def _tree_data_for_family(family, anchor, user=None):
                     },
                     "set_anchor": reverse("family_set_tree_anchor", args=[person.id]),
                     "descendants": reverse("person_descendants", args=[person.id]),
-                    "story_create": reverse("story_create"),
+                    "story_create": f"{reverse('story_create')}?person={person.id}",
                 },
             }
         )
@@ -440,6 +494,81 @@ def _tree_data_for_family(family, anchor, user=None):
         "people": [enrich(p) for p in people],
         "root_id": str(anchor.id),
     }
+
+
+def _tree_social_context(*, family, people, memberships_by_person, pending_invitations_by_person):
+    people_ids = [person.id for person in people]
+    social = {
+        person.id: {
+            "connected_label": "",
+            "pending_invite_label": "",
+            "story_count": 0,
+            "memory_count": 0,
+            "recent_activity": [],
+        }
+        for person in people
+    }
+
+    for person_id, membership in memberships_by_person.items():
+        if person_id in social and membership.user:
+            social[person_id]["connected_label"] = (
+                membership.user.get_full_name() or membership.user.username
+            )
+
+    for person_id, invitation in pending_invitations_by_person.items():
+        if person_id in social:
+            social[person_id]["pending_invite_label"] = invitation.invitee_label
+
+    for row in Story.objects.filter(family=family, people__in=people).values(
+        "id", "title", "people"
+    ):
+        person_id = row["people"]
+        social[person_id]["story_count"] += 1
+
+    for row in Memory.objects.filter(family=family, people__in=people).values(
+        "id", "title", "people"
+    ):
+        person_id = row["people"]
+        social[person_id]["memory_count"] += 1
+
+    activity_rows = []
+    direct_activities = Activity.objects.filter(
+        family=family,
+        person_id__in=people_ids,
+    ).values("person_id", "message", "created_at")
+    for activity in direct_activities:
+        activity_rows.append((activity["person_id"], activity["message"], activity["created_at"]))
+
+    story_activity_rows = Activity.objects.filter(
+        family=family,
+        story__people__in=people,
+    ).values("story__people", "message", "created_at")
+    for activity in story_activity_rows:
+        activity_rows.append((activity["story__people"], activity["message"], activity["created_at"]))
+
+    memory_activity_rows = Activity.objects.filter(
+        family=family,
+        memory__people__in=people,
+    ).values("memory__people", "message", "created_at")
+    for activity in memory_activity_rows:
+        activity_rows.append((activity["memory__people"], activity["message"], activity["created_at"]))
+
+    seen = {person_id: set() for person_id in people_ids}
+    for person_id, message, created_at in sorted(activity_rows, key=lambda row: row[2], reverse=True):
+        if person_id not in social or len(social[person_id]["recent_activity"]) >= 3:
+            continue
+        key = (message, created_at)
+        if key in seen[person_id]:
+            continue
+        seen[person_id].add(key)
+        social[person_id]["recent_activity"].append(
+            {
+                "message": message,
+                "date": created_at.strftime("%d %b %Y"),
+            }
+        )
+
+    return social
 
 
 @login_required

@@ -26,7 +26,7 @@
       </span>
       {% endif %}
     </div>
-    <p class="story-card-excerpt">{{ story.content|truncatewords:30 }}</p>
+    <p class="story-card-excerpt">{{ story.body|truncatewords:30 }}</p>
     <div class="story-card-meta">
       By {{ story.author.username }} • {{ story.created_at|timesince }} ago
     </div>

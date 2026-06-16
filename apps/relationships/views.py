@@ -104,11 +104,12 @@ def add_relative(request, person_id, relation_type):
                 person=relative,
             )
 
+            descendant_generation = get_descendant_generation(current_person)
             descendants_html = render_to_string(
                 "people/partials/descendant_generation.html",
                 {
                     "person": current_person,
-                    "generation": get_descendant_generation(current_person),
+                    "generation": [descendant_generation] if descendant_generation else [],
                 },
                 request=request,
             )

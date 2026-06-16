@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from apps.families.models import Family, FamilyMembership
 from apps.people.models import Person
+from apps.relationships.models import Relationship
 
 User = get_user_model()
 
@@ -40,6 +41,40 @@ class PersonViewTests(TestCase):
         response = self.client.get(f"/people/{other_person.id}/drawer/")
 
         self.assertEqual(response.status_code, 404)
+
+    def test_person_drawer_exposes_add_sibling_for_family_owner(self):
+        family = Family.objects.create(name="Owner Family", slug="owner-family")
+        anchor = Person.objects.create(
+            family=family,
+            first_name="Owner",
+            last_name="Person",
+            created_by=self.user,
+        )
+        father = Person.objects.create(
+            family=family,
+            first_name="Father",
+            last_name="Person",
+            created_by=self.user,
+        )
+        FamilyMembership.objects.create(
+            family=family,
+            user=self.user,
+            person=anchor,
+            role=FamilyMembership.Role.OWNER,
+        )
+        Relationship.objects.create(
+            family=family,
+            from_person=father,
+            to_person=anchor,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+
+        response = self.client.get(reverse("person_drawer", args=[father.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Sibling")
+        self.assertContains(response, f'/tree/people/{father.id}/invite-relative/sibling/')
+        self.assertContains(response, "Edit Name")
 
     def test_current_user_can_edit_their_tree_name(self):
         family = Family.objects.create(name="Test Family", slug="test-family")
@@ -122,3 +157,36 @@ class PersonViewTests(TestCase):
         editable_person.refresh_from_db()
         self.assertEqual(editable_person.first_name, "Right")
         self.assertContains(response, "Name updated")
+
+    def test_person_descendants_partial_renders_children(self):
+        family = Family.objects.create(name="Descendant Family", slug="descendant-family")
+        parent = Person.objects.create(
+            family=family,
+            first_name="Parent",
+            last_name="Person",
+            created_by=self.user,
+        )
+        child = Person.objects.create(
+            family=family,
+            first_name="Child",
+            last_name="Person",
+            created_by=self.user,
+        )
+        FamilyMembership.objects.create(
+            family=family,
+            user=self.user,
+            person=parent,
+            role=FamilyMembership.Role.OWNER,
+        )
+        Relationship.objects.create(
+            family=family,
+            from_person=parent,
+            to_person=child,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+
+        response = self.client.get(reverse("person_descendants", args=[parent.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Children")
+        self.assertContains(response, "Child")

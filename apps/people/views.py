@@ -62,6 +62,7 @@ def person_drawer(request, person_id):
         "person": person,
         "generation_label": get_generation_label(person),
         "can_edit_name": _can_edit_person(person, request.user),
+        "can_add_relative": can_invite(person.family, request.user),
     }
     if request.headers.get("HX-Request"):
         return render(request, "people/partials/person_drawer.html", context)
@@ -125,7 +126,7 @@ def person_descendants(request, person_id):
         "people/partials/descendant_generation.html",
         {
             "person": person,
-            "generation": generation,
+            "generation": [generation] if generation else [],
         },
     )
 

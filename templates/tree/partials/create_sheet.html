@@ -9,10 +9,10 @@
     </div>
     <div class="tree-create-actions">
         {% if tree_only %}
-            <button type="button" data-tree-scroll-anchor data-create-sheet-close>Choose a person in the tree</button>
-            <button type="button" data-tree-toast="Open a person card, then use Parents, Partners, Children, Siblings, or Details to invite the right relative.">Invite from person card</button>
-            <button type="button" data-tree-toast="Pending invites show on person cards until accepted, declined, or ignored.">Review invite status</button>
-            <button type="button" data-tree-toast="Accepted invitations connect users through their claimed family-tree person.">Connected users</button>
+            <button type="button" data-tree-choose-person data-create-sheet-close>Choose a person in the tree</button>
+            <button type="button" data-tree-open-root-detail data-create-sheet-close>Invite from person card</button>
+            <button type="button" data-tree-sheet-panel="invite-status">Review invite status</button>
+            <button type="button" data-tree-sheet-panel="connected-users">Connected users</button>
         {% else %}
             <button type="button" data-tree-toast="Add relative flow will open here.">Add relative</button>
             <button type="button" data-tree-toast="Photo memory flow will open here.">Add photo memory</button>
@@ -20,5 +20,56 @@
             <button type="button" data-tree-toast="Video memory flow will open here.">Add video</button>
         {% endif %}
     </div>
+    {% if tree_only %}
+        <div class="tree-sheet-panel" id="tree-sheet-panel-invite-status" data-tree-sheet-panel-content="invite-status" hidden>
+            <div class="tree-sheet-panel-head">
+                <div>
+                    <p class="tree-eyebrow">Invites</p>
+                    <h3>Pending invite status</h3>
+                </div>
+                <button type="button" data-tree-sheet-panel-close aria-label="Close invite status">&times;</button>
+            </div>
+            <div class="tree-sheet-list">
+                {% for invitation in tree_pending_invitations %}
+                    <a class="tree-sheet-list-item" href="{% url 'family_invitation_detail' invitation.token %}">
+                        <span>
+                            <strong>{{ invitation.person.full_name }}</strong>
+                            <small>{{ invitation.invitee_label }}{% if invitation.inviter %} · sent by {{ invitation.inviter.get_username }}{% endif %}</small>
+                        </span>
+                        <small>Open</small>
+                    </a>
+                {% empty %}
+                    <div class="tree-sheet-empty">
+                        <strong>No pending invites</strong>
+                        <small>Invites you send from person cards will appear here until accepted, declined, or ignored.</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="tree-sheet-panel" id="tree-sheet-panel-connected-users" data-tree-sheet-panel-content="connected-users" hidden>
+            <div class="tree-sheet-panel-head">
+                <div>
+                    <p class="tree-eyebrow">Connections</p>
+                    <h3>Connected users</h3>
+                </div>
+                <button type="button" data-tree-sheet-panel-close aria-label="Close connected users">&times;</button>
+            </div>
+            <div class="tree-sheet-list">
+                {% for membership in tree_connected_memberships %}
+                    <div class="tree-sheet-list-item">
+                        <span>
+                            <strong>{{ membership.person.full_name }}</strong>
+                            <small>{{ membership.user.get_username }} · {{ membership.get_role_display }}</small>
+                        </span>
+                    </div>
+                {% empty %}
+                    <div class="tree-sheet-empty">
+                        <strong>No connected users yet</strong>
+                        <small>Accepted invitations connect user accounts to their claimed family-tree person.</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 </section>
 <div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close></div>

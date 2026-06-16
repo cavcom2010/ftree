@@ -211,6 +211,21 @@ def set_tree_anchor(request, person_id):
         messages.error(request, f"{person.full_name} is already connected to another account.")
         return redirect(f"{reverse('tree')}?family={family.slug}")
 
+    if membership.person_id:
+        if membership.person_id == person.id:
+            request.session["current_family_slug"] = family.slug
+            messages.info(request, f"{person.full_name} is already your linked profile.")
+            return redirect(f"{reverse('tree')}?family={family.slug}")
+
+        messages.error(
+            request,
+            (
+                f"Your account is already linked to {membership.person.full_name}. "
+                "Ask an admin to change your linked profile."
+            ),
+        )
+        return redirect(f"{reverse('tree')}?family={family.slug}")
+
     membership.person = person
     membership.full_clean()
     membership.save(update_fields=["person"])

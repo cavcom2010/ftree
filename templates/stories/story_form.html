@@ -7,12 +7,15 @@
 <div class="section-head animate-in">
   <div>
     <h2>{% if form.instance.id %}Edit Story{% else %}Write a Story{% endif %}</h2>
-    <p>Preserve a memory for future generations.</p>
+    <p>{% if selected_person %}Preserve a memory about {{ selected_person.full_name }}.{% else %}Preserve a memory for future generations.{% endif %}</p>
   </div>
 </div>
 
 <form class="animate-in" method="post" enctype="multipart/form-data" style="background:#fff; border:1px solid var(--line); border-radius:24px; padding:20px; box-shadow:var(--shadow-sm);">
   {% csrf_token %}
+  {% if selected_person %}
+    <input type="hidden" name="person" value="{{ selected_person.id }}">
+  {% endif %}
   <div class="form-group" style="margin-bottom:14px;">
     <label class="form-label" for="id_title">Title</label>
     {{ form.title }}
@@ -21,17 +24,10 @@
     {% endif %}
   </div>
   <div class="form-group" style="margin-bottom:14px;">
-    <label class="form-label" for="id_content">Content</label>
-    {{ form.content }}
-    {% if form.content.errors %}
-      <span style="color:#ef4444;font-size:0.78rem;">{{ form.content.errors|join:", " }}</span>
-    {% endif %}
-  </div>
-  <div class="form-group" style="margin-bottom:14px;">
-    <label class="form-label" for="id_cover_image">Cover Image</label>
-    {{ form.cover_image }}
-    {% if form.cover_image.errors %}
-      <span style="color:#ef4444;font-size:0.78rem;">{{ form.cover_image.errors|join:", " }}</span>
+    <label class="form-label" for="id_body">Story</label>
+    {{ form.body }}
+    {% if form.body.errors %}
+      <span style="color:#ef4444;font-size:0.78rem;">{{ form.body.errors|join:", " }}</span>
     {% endif %}
   </div>
   <div class="form-group" style="margin-bottom:14px;">

@@ -1,5 +1,7 @@
 from datetime import date
 
+from django.urls import reverse
+
 from apps.families.services import current_family_for_user
 from apps.memories.models import Memory
 from apps.people.models import Person
@@ -73,7 +75,11 @@ def _build_family_context(family, *, is_demo_context, user=None):
 
     memories = Memory.objects.filter(family=family).prefetch_related("people").order_by("-created_at")
     stories = Story.objects.filter(family=family).prefetch_related("people").order_by("-created_at")
-    recent_activities = Activity.objects.filter(family=family).order_by("-created_at")[:6]
+    recent_activities = (
+        Activity.objects.filter(family=family)
+        .select_related("person", "memory", "story")
+        .order_by("-created_at")[:6]
+    )
     memory_rails = [
         _memory_rail(
             "Videos",
@@ -124,7 +130,7 @@ def _build_family_context(family, *, is_demo_context, user=None):
         "branch_panels": branch_panels,
         "memory_rails": memory_rails,
         "memories": list(memories[:6]),
-        "recent_activities": list(recent_activities),
+        "recent_activities": [_activity_card(activity) for activity in recent_activities],
         "top_achievers": [],
         "generation_count": generation_count,
         "people_count": len(context_people),
@@ -266,6 +272,12 @@ def _close_family_dashboard(
     siblings_by_person,
     partners_by_person,
 ):
+    relative_actions = {
+        "parents": _relative_action(anchor, "parent"),
+        "partners": _relative_action(anchor, "partner"),
+        "children": _relative_action(anchor, "child"),
+        "siblings": _relative_action(anchor, "sibling"),
+    }
     groups = [
         _close_family_group(
             "parents",
@@ -274,6 +286,7 @@ def _close_family_dashboard(
             _people_from_ids(parents_by_child.get(anchor.id, set()), people_by_id),
             "Add parent",
             "Record the people one generation above you.",
+            relative_actions["parents"],
         ),
         _close_family_group(
             "partners",
@@ -282,6 +295,7 @@ def _close_family_dashboard(
             _people_from_ids(partners_by_person.get(anchor.id, set()), people_by_id),
             "Add partner",
             "Connect spouses, partners, and co-parents when you are ready.",
+            relative_actions["partners"],
         ),
         _close_family_group(
             "children",
@@ -290,6 +304,7 @@ def _close_family_dashboard(
             _people_from_ids(children_by_parent.get(anchor.id, set()), people_by_id),
             "Add child",
             "Add your children below your Gen 0 profile.",
+            relative_actions["children"],
         ),
         _close_family_group(
             "siblings",
@@ -298,6 +313,7 @@ def _close_family_dashboard(
             _people_from_ids(siblings_by_person.get(anchor.id, set()), people_by_id),
             "Add sibling",
             "Keep your own generation together.",
+            relative_actions["siblings"],
         ),
     ]
     missing_fields = _profile_missing_fields(anchor)
@@ -308,24 +324,37 @@ def _close_family_dashboard(
         "profile_missing_count": len(missing_fields),
         "groups": groups,
         "quick_actions": [
-            {"label": "Add parent", "icon": "arrow-up", "href": "/tree/", "kind": "primary"},
-            {"label": "Add partner", "icon": "heart", "href": "/tree/", "kind": "soft"},
-            {"label": "Add child", "icon": "baby", "href": "/tree/", "kind": "soft"},
-            {"label": "Invite family", "icon": "send", "href": "/tree/", "kind": "soft"},
+            {"label": "Add parent", "icon": "arrow-up", "kind": "primary", **relative_actions["parents"]},
+            {"label": "Add partner", "icon": "heart", "kind": "soft", **relative_actions["partners"]},
+            {"label": "Add child", "icon": "baby", "kind": "soft", **relative_actions["children"]},
+            {"label": "Add sibling", "icon": "users", "kind": "soft", **relative_actions["siblings"]},
             {"label": "Add memory", "icon": "image", "href": "/memories/", "kind": "soft"},
-            {"label": "Write story", "icon": "file-text", "href": "/stories/create/", "kind": "soft"},
+            {"label": "Write story", "icon": "file-text", "href": f"/stories/create/?person={anchor.id}", "kind": "soft"},
         ],
     }
 
 
-def _close_family_group(key, title, icon, people, action_label, empty_text):
+def _relative_action(anchor, relation_type):
+    href = reverse("family_invite_relative", args=[anchor.id, relation_type])
+    return {
+        "href": href,
+        "hx_get": href,
+        "hx_target": "#global-sheet",
+        "hx_swap": "innerHTML",
+    }
+
+
+def _close_family_group(key, title, icon, people, action_label, empty_text, action):
     return {
         "key": key,
         "title": title,
         "icon": icon,
         "people": [_person_card_from_model(person, _close_family_role(key)) for person in people],
         "action_label": action_label,
-        "action_href": "/tree/",
+        "action_href": action["href"],
+        "action_hx_get": action.get("hx_get", ""),
+        "action_hx_target": action.get("hx_target", ""),
+        "action_hx_swap": action.get("hx_swap", ""),
         "empty_text": empty_text,
     }
 
@@ -694,9 +723,9 @@ def _today_cards_from_family(people):
 
 def _demo_today_cards():
     return [
-        {"icon": "cake", "title": "Family Birthday", "subtitle": "Example birthday reminder before sign in.", "href": "", "toast": "Birthday memory opened"},
-        {"icon": "heart", "title": "Anniversary", "subtitle": "Example anniversary card before sign in.", "href": "", "toast": "Anniversary memory opened"},
-        {"icon": "camera", "title": "Family Reunion", "subtitle": "Example reunion memory before sign in.", "href": "", "toast": "Reunion memory opened"},
+        {"icon": "cake", "title": "Family Birthday", "subtitle": "Example birthday reminder before sign in.", "href": "/accounts/signup/", "toast": ""},
+        {"icon": "heart", "title": "Anniversary", "subtitle": "Example anniversary card before sign in.", "href": "/accounts/signup/", "toast": ""},
+        {"icon": "camera", "title": "Family Reunion", "subtitle": "Example reunion memory before sign in.", "href": "/accounts/signup/", "toast": ""},
     ]
 
 
@@ -705,7 +734,16 @@ def _memory_rail(title, subtitle, items):
 
 
 def _memory_item(item_id, title, memory_type, linked_label, summary="Attached to the family tree."):
-    return {"id": item_id, "title": title, "memory_type": memory_type, "summary": summary, "linked_label": linked_label, "thumbnail_url": "", "linked_object_url": "#tree-canvas"}
+    linked_object_url = "/stories/" if memory_type == "story" else "/memories/"
+    return {
+        "id": item_id,
+        "title": title,
+        "memory_type": memory_type,
+        "summary": summary,
+        "linked_label": linked_label,
+        "thumbnail_url": "",
+        "linked_object_url": linked_object_url,
+    }
 
 
 def _memory_item_from_memory(memory):
@@ -719,6 +757,32 @@ def _memory_item_from_story(story):
     linked_label = ", ".join(person.full_name for person in linked_people) or "Family tree"
     summary = story.body[:110] + ("..." if len(story.body) > 110 else "")
     return _memory_item(story.id, story.title, "story", f"Linked to {linked_label}", summary)
+
+
+def _activity_card(activity):
+    if activity.person_id:
+        return {
+            "message": activity.message,
+            "created_at": activity.created_at,
+            "href": f"/people/{activity.person_id}/drawer/",
+            "hx_get": f"/people/{activity.person_id}/drawer/",
+            "hx_target": "#personDrawer",
+            "hx_swap": "innerHTML",
+        }
+    if activity.memory_id:
+        href = "/memories/"
+    elif activity.story_id:
+        href = "/stories/"
+    else:
+        href = "/tree/"
+    return {
+        "message": activity.message,
+        "created_at": activity.created_at,
+        "href": href,
+        "hx_get": "",
+        "hx_target": "",
+        "hx_swap": "",
+    }
 
 
 def _initials(first_name, last_name):

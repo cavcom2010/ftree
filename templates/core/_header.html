@@ -13,12 +13,12 @@
   </div>
 
   {% if request.user.is_authenticated %}
-    <button class="icon-btn" aria-label="Search" data-tree-search-trigger>
+    <a class="icon-btn" href="/tree/" aria-label="Search tree">
       <i data-lucide="search"></i>
-    </button>
-    <button class="icon-btn" aria-label="Create" data-create-sheet-trigger>
+    </a>
+    <a class="icon-btn" href="/tree/" aria-label="Create family entry">
       <i data-lucide="plus"></i>
-    </button>
+    </a>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
       <button class="icon-btn" type="submit" aria-label="Log out">

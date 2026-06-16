@@ -9,8 +9,7 @@
 </div>
 <div class="memory-strip animate-in delay-3">
   {% for memory in memories|slice:":3" %}
-  <article class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}"
-           onclick="showToast('{{ memory.title|escapejs }} opened')">
+  <a class="memory-card {% if memory.file and memory.memory_type == 'photo' %}has-image{% endif %}" href="/memories/">
     {% if memory.file and memory.memory_type == "photo" %}
       <img src="{{ memory.file.url }}" alt="{{ memory.title }}" loading="lazy">
     {% endif %}
@@ -27,10 +26,10 @@
       <span><i data-lucide="heart"></i> {{ memory.reactions.count|default:0 }}</span>
       <span><i data-lucide="message-circle"></i> {{ memory.comments.count|default:0 }}</span>
     </div>
-  </article>
+  </a>
   {% empty %}
     {% if is_demo_context %}
-    <article class="memory-card" onclick="showToast('Wedding portrait opened')">
+    <a class="memory-card" href="{% url 'signup' %}">
       <span class="label"><i data-lucide="image"></i>Photo Story</span>
       <h3>Wedding portrait</h3>
       <p>Example memory shown before sign in.</p>
@@ -38,16 +37,16 @@
         <span><i data-lucide="heart"></i> 32</span>
         <span><i data-lucide="message-circle"></i> 14</span>
       </div>
-    </article>
+    </a>
     {% else %}
-    <article class="memory-card">
+    <a class="memory-card" href="/memories/">
       <span class="label"><i data-lucide="image-plus"></i>No memories yet</span>
       <h3>Start preserving this family</h3>
       <p>Add your first photo, voice note, or written memory when the memory flow is ready.</p>
       <div class="memory-meta">
         <span><i data-lucide="lock"></i> Private family space</span>
       </div>
-    </article>
+    </a>
     {% endif %}
   {% endfor %}
 </div>

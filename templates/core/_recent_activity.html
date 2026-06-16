@@ -6,7 +6,14 @@
 </div>
 <div class="activity-list animate-in delay-4">
   {% for activity in recent_activities %}
-  <article class="activity" onclick="showToast('{{ activity.message|escapejs }}')">
+  {% if activity.hx_get %}
+  <button class="activity" type="button"
+    hx-get="{{ activity.hx_get }}"
+    hx-target="{{ activity.hx_target }}"
+    hx-swap="{{ activity.hx_swap }}">
+  {% else %}
+  <a class="activity" href="{{ activity.href }}">
+  {% endif %}
     <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
       {% if "branch" in activity.message|lower or "tree" in activity.message|lower %}
         <i data-lucide="git-branch"></i>
@@ -28,10 +35,14 @@
       <b>{{ activity.message }}</b>
       <p>{{ activity.created_at|timesince }} ago</p>
     </div>
-  </article>
+  {% if activity.hx_get %}
+  </button>
+  {% else %}
+  </a>
+  {% endif %}
   {% empty %}
     {% if is_demo_context %}
-    <article class="activity" onclick="showToast('Demo branch opened')">
+    <a class="activity" href="{% url 'signup' %}">
       <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
         <i data-lucide="git-branch"></i>
       </div>
@@ -39,9 +50,9 @@
         <b>Demo branch revealed</b>
         <p>Example activity shown before sign in.</p>
       </div>
-    </article>
+    </a>
     {% else %}
-    <article class="activity">
+    <a class="activity" href="/tree/">
       <div class="activity-icon" style="background:var(--green-soft);color:var(--green);">
         <i data-lucide="sparkles"></i>
       </div>
@@ -49,7 +60,7 @@
         <b>No activity yet</b>
         <p>Family changes will appear here after relatives, stories, or memories are added.</p>
       </div>
-    </article>
+    </a>
     {% endif %}
   {% endfor %}
 </div>

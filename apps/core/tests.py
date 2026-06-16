@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from unittest.mock import patch
 
 from decouple import UndefinedValueError
@@ -15,6 +16,8 @@ from apps.core.management.commands.seed_demo_media import (
 from apps.families.models import Family, FamilyMembership
 from apps.memories.models import Memory
 from apps.people.models import Person
+from apps.prompts.models import FamilyPrompt
+from apps.social.models import Activity
 from apps.stories.models import Story
 
 
@@ -69,6 +72,76 @@ class HomepageShellTests(TestCase):
         self.assertContains(response, 'href="/people/create/"')
         self.assertNotContains(response, "data-bottom-account-trigger")
         self.assertNotContains(response, 'id="accountSheet"')
+
+    def test_authenticated_homepage_uses_real_header_and_connect_links(self):
+        call_command("seed_demo_family", verbosity=0)
+        self.client.force_login(User.objects.get(username="demo"))
+
+        response = self.client.get("/")
+
+        self.assertContains(response, 'aria-label="Search tree"')
+        self.assertContains(response, 'aria-label="Create family entry"')
+        self.assertContains(response, 'class="add-main" href="/tree/" aria-label="Connect"')
+        self.assertNotContains(response, "data-tree-search-trigger")
+        self.assertNotContains(response, "data-create-sheet-trigger")
+        self.assertNotContains(response, "Create menu is available from the tree homepage")
+        self.assertNotContains(response, "Search is available from the tree homepage")
+
+    def test_authenticated_homepage_relative_actions_open_anchor_sheets(self):
+        call_command("seed_demo_family", verbosity=0)
+        user = User.objects.get(username="demo")
+        self.client.force_login(user)
+        anchor = FamilyMembership.objects.select_related("person").get(user=user).person
+
+        response = self.client.get("/")
+
+        for relation_type in ("parent", "partner", "child", "sibling"):
+            self.assertContains(
+                response,
+                f'hx-get="/tree/people/{anchor.id}/invite-relative/{relation_type}/"',
+            )
+        self.assertContains(response, 'hx-target="#global-sheet"')
+        self.assertContains(response, f'hx-get="/people/{anchor.id}/edit-name/"')
+
+    def test_authenticated_homepage_prompt_loads_prompt_endpoint(self):
+        call_command("seed_demo_family", verbosity=0)
+        user = User.objects.get(username="demo")
+        family = FamilyMembership.objects.get(user=user).family
+        FamilyPrompt.objects.update_or_create(
+            family=family,
+            active_date=date.today(),
+            defaults={"question": "What should we preserve today?"},
+        )
+        self.client.force_login(user)
+
+        response = self.client.get("/")
+        prompt_response = self.client.get("/prompts/current/")
+
+        self.assertContains(response, 'hx-get="/prompts/current/"')
+        self.assertContains(prompt_response, "What should we preserve today?")
+        self.assertContains(prompt_response, "/prompts/")
+        self.assertContains(prompt_response, "/answer/")
+
+    def test_authenticated_homepage_activity_and_memory_cards_are_real_actions(self):
+        call_command("seed_demo_family", verbosity=0)
+        user = User.objects.get(username="demo")
+        family = FamilyMembership.objects.get(user=user).family
+        person = Person.objects.filter(family=family).first()
+        Activity.objects.create(
+            family=family,
+            actor=user,
+            activity_type=Activity.Type.PERSON_ADDED,
+            message="Added a test relative",
+            person=person,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get("/")
+
+        self.assertContains(response, f'hx-get="/people/{person.id}/drawer/"')
+        self.assertContains(response, 'href="/memories/"')
+        self.assertNotContains(response, "Answer sheet opened")
+        self.assertNotContains(response, "Shared with family")
 
 
 @override_settings(ALLOWED_HOSTS=["testserver"])

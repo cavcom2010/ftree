@@ -232,14 +232,6 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  const treeSheet = document.getElementById("tree-create-sheet");
-  if (!treeSheet && event.target.closest("[data-create-sheet-trigger]")) {
-    showToast("Create menu is available from the tree homepage");
-  }
-
-  if (!treeSheet && event.target.closest("[data-tree-search-trigger]")) {
-    showToast("Search is available from the tree homepage");
-  }
 });
 
 document.addEventListener("keydown", (event) => {

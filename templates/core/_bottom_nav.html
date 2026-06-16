@@ -8,9 +8,9 @@
       <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="image"></i>Memory
       </a>
-      <button class="add-main" aria-label="Connect">
+      <a class="add-main" href="/tree/" aria-label="Connect">
         <i data-lucide="plus"></i>Connect
-      </button>
+      </a>
       <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="users"></i>People
       </a>

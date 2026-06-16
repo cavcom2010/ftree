@@ -4,15 +4,28 @@
     <p>Turns quiet relatives into contributors.</p>
   </div>
 </div>
-<div class="prompt-card animate-in delay-3">
-  <div class="mini">TODAY'S QUESTION</div>
-  <h3>What is the best piece of advice your grandmother ever gave you?</h3>
-  <div class="prompt-actions">
-    <button class="btn primary" onclick="showToast('Answer sheet opened')">
-      <i data-lucide="message-square"></i>Answer
-    </button>
-    <button class="btn soft" onclick="showToast('Shared with family')">
-      <i data-lucide="share-2"></i>Share
-    </button>
+{% if request.user.is_authenticated %}
+  <div class="animate-in delay-3"
+    id="home-current-prompt"
+    hx-get="{% url 'current_prompt' %}"
+    hx-trigger="load"
+    hx-swap="innerHTML">
+    <div class="prompt-card">
+      <div class="mini">TODAY'S QUESTION</div>
+      <h3>Loading today's family prompt...</h3>
+    </div>
   </div>
-</div>
+{% else %}
+  <div class="prompt-card animate-in delay-3">
+    <div class="mini">TODAY'S QUESTION</div>
+    <h3>What family memory should we preserve today?</h3>
+    <div class="prompt-actions">
+      <a class="btn primary" href="{% url 'signup' %}">
+        <i data-lucide="message-square"></i>Start answering
+      </a>
+      <a class="btn soft" href="{% url 'login' %}">
+        <i data-lucide="log-in"></i>Sign in
+      </a>
+    </div>
+  </div>
+{% endif %}

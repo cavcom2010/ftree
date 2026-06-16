@@ -210,6 +210,8 @@
   color: var(--green);
   background: var(--green-soft);
   border: 1px solid #a7f3d0;
+  cursor: pointer;
+  font: inherit;
 }
 
 .close-family-add i,
@@ -238,6 +240,8 @@
   gap: 8px;
   font-weight: 900;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .dashboard-action.is-primary {

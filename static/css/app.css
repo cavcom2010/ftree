@@ -1016,6 +1016,7 @@ button {
   box-shadow: var(--shadow);
   scroll-snap-align: start;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.15s ease;
   position: relative;
   overflow: hidden;
@@ -1105,6 +1106,10 @@ button {
   box-shadow: var(--shadow-sm);
   transition: all 0.15s ease;
   cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
 }
 
 .activity:active { transform: scale(0.98); }

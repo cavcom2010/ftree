@@ -58,6 +58,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  position: relative;
 }
 
 button, input, textarea, select {
@@ -1288,30 +1289,53 @@ button {
   transform: translateY(0);
 }
 
+.person-drawer.is-popup {
+  position: absolute;
+  right: auto;
+  bottom: auto;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(15, 41, 30, 0.28);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  padding: 20px;
+}
+
+.person-drawer.is-popup.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .drawer-handle {
   width: 50px;
   height: 5px;
   border-radius: 999px;
   background: #d5ded8;
-  margin: 0 auto 12px;
+  margin: 0 auto 16px;
+}
+
+.person-drawer.is-popup .drawer-handle {
+  display: none;
 }
 
 .drawer-main {
   display: grid;
-  grid-template-columns: 54px 1fr auto;
-  gap: 12px;
+  grid-template-columns: 60px 1fr auto;
+  gap: 16px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .drawer-avatar {
-  width: 54px;
-  height: 54px;
+  width: 60px;
+  height: 60px;
   border-radius: 20px;
   display: grid;
   place-items: center;
   background: var(--green-soft);
-  font-size: 1.55rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: var(--green);
   overflow: hidden;
@@ -1326,28 +1350,30 @@ button {
 
 .drawer-main b {
   display: block;
-  font-size: 1.02rem;
+  font-size: 1.1rem;
   letter-spacing: -0.03em;
   color: var(--ink);
   font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 4px;
 }
 
 .drawer-main span {
   display: block;
   color: var(--muted);
-  font-size: 0.81rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .drawer-main .drawer-life-status {
   width: fit-content;
-  margin-top: 5px;
-  padding: 3px 9px;
+  margin-top: 8px;
+  padding: 4px 10px;
   border: 1px solid rgba(123, 45, 59, 0.14);
   border-radius: 999px;
   color: #7b2d3b;
   background: rgba(123, 45, 59, 0.07);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
@@ -1355,8 +1381,8 @@ button {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 14px;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   font-weight: 900;
   color: var(--ink);
   display: grid;
@@ -1365,27 +1391,34 @@ button {
 }
 
 .drawer-close i {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .drawer-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.drawer-actions .btn {
+  min-height: 44px;
+  padding-inline: 12px;
 }
 
 .drawer-relative-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  padding: 0 20px 20px;
+  padding: 0;
 }
 
 .drawer-relative-actions .btn {
   min-height: 42px;
   justify-content: center;
-  padding-inline: 10px;
+  padding-inline: 8px;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 520px) {
@@ -2405,7 +2438,7 @@ body.account-sheet-open {
     max-width: 460px;
   }
 
-  .person-drawer {
+  .person-drawer:not(.is-popup) {
     left: auto;
     right: 20px;
     width: 380px;
@@ -2549,7 +2582,7 @@ body.account-sheet-open {
     font-size: 0.9rem;
   }
 
-  .person-drawer {
+  .person-drawer:not(.is-popup) {
     left: auto;
     right: 40px;
     width: 380px;

@@ -15,6 +15,7 @@ const accountSheet = document.getElementById("accountSheet");
 const accountSheetBackdrop = document.getElementById("accountSheetBackdrop");
 let activeAccountTrigger = null;
 let accountSheetTimer = null;
+let activeDrawerTrigger = null;
 
 function scrollToSection(id) {
   const el = document.getElementById(id);
@@ -64,7 +65,38 @@ function selectPerson(event, name, meta, avatar) {
 }
 
 function closeDrawer() {
-  if (drawer) drawer.classList.remove("show");
+  if (drawer) {
+    drawer.classList.remove("show");
+    setTimeout(() => {
+      drawer.classList.remove("is-popup");
+      drawer.style.top = "";
+      drawer.style.left = "";
+      drawer.style.transform = "";
+    }, 240);
+  }
+}
+
+function positionDrawerAsPopup(drawerEl, triggerEl) {
+  const triggerRect = triggerEl.getBoundingClientRect();
+  const drawerRect = drawerEl.getBoundingClientRect();
+  const popupWidth = Math.max(320, drawerRect.width || 320);
+  const popupHeight = drawerRect.height || 260;
+
+  let left = triggerRect.left + triggerRect.width / 2 - popupWidth / 2 + window.scrollX;
+  let top = triggerRect.top + triggerRect.height / 2 - popupHeight / 2 + window.scrollY;
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const padding = 16;
+
+  left = Math.max(padding, Math.min(left, viewportWidth - popupWidth - padding + window.scrollX));
+  top = Math.max(padding + window.scrollY, Math.min(top, viewportHeight - popupHeight - padding + window.scrollY));
+
+  drawerEl.classList.add("is-popup");
+  drawerEl.style.width = `${popupWidth}px`;
+  drawerEl.style.left = `${left}px`;
+  drawerEl.style.top = `${top}px`;
+  drawerEl.style.transform = "translateY(0)";
 }
 
 function closeSheet() {
@@ -191,9 +223,29 @@ document.body.addEventListener("htmx:beforeSwap", (event) => {
   target.classList.toggle("relationship-modal-host", isRelationshipModal);
 });
 
+document.body.addEventListener("htmx:beforeRequest", (event) => {
+  if (event.detail.target.id === "personDrawer") {
+    activeDrawerTrigger = event.detail.elt;
+  }
+});
+
 document.body.addEventListener("htmx:afterSwap", (event) => {
   if (event.detail.target.id === "personDrawer") {
-    event.detail.target.classList.add("show");
+    const drawerEl = event.detail.target;
+    drawerEl.classList.add("show");
+
+    if (activeDrawerTrigger && window.innerWidth > 768) {
+      positionDrawerAsPopup(drawerEl, activeDrawerTrigger);
+    } else {
+      drawerEl.classList.remove("is-popup");
+      drawerEl.style.top = "";
+      drawerEl.style.left = "";
+      drawerEl.style.transform = "";
+    }
+
+    if (typeof lucide !== "undefined") {
+      lucide.createIcons();
+    }
   }
   if (event.detail.target.id === "global-sheet") {
     const isRelationshipModal =

@@ -1,120 +1,153 @@
-<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+<section class="tree-create-sheet relationship-modal relationship-modal__panel is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false" data-relation-type="{{ relation_type }}">
   <div class="tree-create-handle"></div>
-  <div class="tree-create-head">
+  <div class="tree-create-head relationship-modal__header">
     <div>
       <p class="tree-eyebrow">Add {{ relation_label }}</p>
       <h2 id="tree-create-title">Add {{ relation_label|lower }} for {{ anchor_person.first_name }}</h2>
     </div>
-    <button type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+    <button class="relationship-modal__close" type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
   </div>
-  <form class="tree-invite-form" method="post" hx-post="{% url 'family_invite_relative' anchor_person.id relation_type %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+  <form class="tree-invite-form relationship-form" method="post" hx-post="{% url 'family_invite_relative' anchor_person.id relation_type %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
     {% csrf_token %}
     {% if form.non_field_errors %}
       <div class="tree-form-errors">{{ form.non_field_errors }}</div>
     {% endif %}
+
     {% if relation_type == "partner" or relation_type == "spouse" %}
       {% if form.existing_person.field.queryset %}
-        <label>
-          <span>{{ form.existing_person.label }}</span>
-          {{ form.existing_person }}
-          {% if form.existing_person.help_text %}<small>{{ form.existing_person.help_text }}</small>{% endif %}
-          {{ form.existing_person.errors }}
+        <fieldset class="relationship-form__group relationship-form__group--connect">
+          <legend>Connect existing person</legend>
+          <label class="relationship-form__field">
+            <span>{{ form.existing_person.label }}</span>
+            {{ form.existing_person }}
+            {% if form.existing_person.help_text %}<small>{{ form.existing_person.help_text }}</small>{% endif %}
+            {{ form.existing_person.errors }}
+          </label>
+        </fieldset>
+      {% endif %}
+    {% endif %}
+
+    <fieldset class="relationship-form__group relationship-form__group--details">
+      <legend>Basic details</legend>
+      <div class="tree-form-grid relationship-form__grid">
+        <label class="relationship-form__field">
+          <span>{{ form.first_name.label }}</span>
+          {{ form.first_name }}
+          {{ form.first_name.errors }}
         </label>
-      {% endif %}
-    {% endif %}
-    <div class="tree-form-grid">
-      <label>
-        <span>{{ form.first_name.label }}</span>
-        {{ form.first_name }}
-        {{ form.first_name.errors }}
+        <label class="relationship-form__field">
+          <span>{{ form.last_name.label }}</span>
+          {{ form.last_name }}
+          {{ form.last_name.errors }}
+        </label>
+      </div>
+      <label class="relationship-form__field">
+        <span>{{ form.maiden_name.label }}</span>
+        {{ form.maiden_name }}
+        {% if form.maiden_name.help_text %}<small>{{ form.maiden_name.help_text }}</small>{% endif %}
+        {{ form.maiden_name.errors }}
       </label>
-      <label>
-        <span>{{ form.last_name.label }}</span>
-        {{ form.last_name }}
-        {{ form.last_name.errors }}
-      </label>
-    </div>
-    <label>
-      <span>{{ form.maiden_name.label }}</span>
-      {{ form.maiden_name }}
-      {% if form.maiden_name.help_text %}<small>{{ form.maiden_name.help_text }}</small>{% endif %}
-      {{ form.maiden_name.errors }}
-    </label>
-    <div class="tree-form-grid">
-      <label>
-        <span>{{ form.gender.label }}</span>
-        {{ form.gender }}
-        {{ form.gender.errors }}
-      </label>
-      <label>
-        <span>{{ form.birth_date.label }}</span>
-        {{ form.birth_date }}
-        {{ form.birth_date.errors }}
-      </label>
-    </div>
+      <div class="tree-form-grid relationship-form__grid">
+        <label class="relationship-form__field">
+          <span>{{ form.gender.label }}</span>
+          {{ form.gender }}
+          {{ form.gender.errors }}
+        </label>
+        <label class="relationship-form__field">
+          <span>{{ form.birth_date.label }}</span>
+          {{ form.birth_date }}
+          {{ form.birth_date.errors }}
+        </label>
+      </div>
+    </fieldset>
+
     {% if relation_type == "parent" %}
-      <label>
-        <span>{{ form.parent_relationship_type.label }}</span>
-        {{ form.parent_relationship_type }}
-        {{ form.parent_relationship_type.errors }}
-      </label>
-      {% if form.parent_shared_children.field.queryset %}
-        <fieldset class="tree-check-list">
-          <legend>{{ form.parent_shared_children.label }}</legend>
-          <small>{{ form.parent_shared_children.help_text }}</small>
-          {{ form.parent_shared_children }}
-          {{ form.parent_shared_children.errors }}
-        </fieldset>
-      {% endif %}
-    {% endif %}
-    {% if relation_type == "partner" or relation_type == "spouse" %}
-      <label>
-        <span>{{ form.partner_relationship_type.label }}</span>
-        {{ form.partner_relationship_type }}
-        {{ form.partner_relationship_type.errors }}
-      </label>
-      {% if form.partner_shared_children.field.queryset %}
-        <fieldset class="tree-check-list">
-          <legend>{{ form.partner_shared_children.label }}</legend>
-          <small>{{ form.partner_shared_children.help_text }}</small>
-          {{ form.partner_shared_children }}
-          {{ form.partner_shared_children.errors }}
-        </fieldset>
-      {% endif %}
-    {% endif %}
-    {% if relation_type == "child" %}
-      <label>
-        <span>{{ form.other_parent.label }}</span>
-        {{ form.other_parent }}
-        <small>Optional. Choose another known partner only if this child shares both parents.</small>
-        {{ form.other_parent.errors }}
-      </label>
-    {% endif %}
-    {% if relation_type == "sibling" %}
-      <fieldset class="tree-check-list">
-        <legend>{{ form.shared_parents.label }}</legend>
-        <small>Select only the parents this sibling shares.</small>
-        {{ form.shared_parents }}
-        {{ form.shared_parents.errors }}
+      <fieldset class="relationship-form__group relationship-form__group--relationship">
+        <legend>Relationship</legend>
+        <label class="relationship-form__field">
+          <span>{{ form.parent_relationship_type.label }}</span>
+          {{ form.parent_relationship_type }}
+          {{ form.parent_relationship_type.errors }}
+        </label>
+        {% if form.parent_shared_children.field.queryset %}
+          <fieldset class="tree-check-list relationship-form__checks">
+            <legend>{{ form.parent_shared_children.label }}</legend>
+            <small>{{ form.parent_shared_children.help_text }}</small>
+            {{ form.parent_shared_children }}
+            {{ form.parent_shared_children.errors }}
+          </fieldset>
+        {% endif %}
       </fieldset>
     {% endif %}
-    <label>
-      <span>{{ form.invitee.label }}</span>
-      {{ form.invitee }}
-      {% if form.invitee.help_text %}<small>{{ form.invitee.help_text }}</small>{% endif %}
-      {{ form.invitee.errors }}
-    </label>
-    <label>
-      <span>{{ form.role.label }}</span>
-      {{ form.role }}
-      {{ form.role.errors }}
-    </label>
-    <label>
-      <span>{{ form.message.label }}</span>
-      {{ form.message }}
-      {{ form.message.errors }}
-    </label>
-    <div class="tree-create-actions">
+
+    {% if relation_type == "partner" or relation_type == "spouse" %}
+      <fieldset class="relationship-form__group relationship-form__group--relationship">
+        <legend>Relationship</legend>
+        <label class="relationship-form__field">
+          <span>{{ form.partner_relationship_type.label }}</span>
+          {{ form.partner_relationship_type }}
+          {{ form.partner_relationship_type.errors }}
+        </label>
+        {% if form.partner_shared_children.field.queryset %}
+          <fieldset class="tree-check-list relationship-form__checks">
+            <legend>{{ form.partner_shared_children.label }}</legend>
+            <small>{{ form.partner_shared_children.help_text }}</small>
+            {{ form.partner_shared_children }}
+            {{ form.partner_shared_children.errors }}
+          </fieldset>
+        {% endif %}
+      </fieldset>
+    {% endif %}
+
+    {% if relation_type == "child" %}
+      <fieldset class="relationship-form__group relationship-form__group--relationship">
+        <legend>Relationship</legend>
+        <label class="relationship-form__field">
+          <span>{{ form.other_parent.label }}</span>
+          {{ form.other_parent }}
+          <small>Optional. Choose another known partner only if this child shares both parents.</small>
+          {{ form.other_parent.errors }}
+        </label>
+      </fieldset>
+    {% endif %}
+
+    {% if relation_type == "sibling" %}
+      <fieldset class="relationship-form__group relationship-form__group--relationship">
+        <legend>Relationship</legend>
+        <fieldset class="tree-check-list relationship-form__checks">
+          <legend>{{ form.shared_parents.label }}</legend>
+          <small>Select only the parents this sibling shares.</small>
+          {{ form.shared_parents }}
+          {{ form.shared_parents.errors }}
+        </fieldset>
+      </fieldset>
+    {% endif %}
+
+    <fieldset class="relationship-form__group relationship-form__group--invite">
+      <legend>Invite account</legend>
+      <label class="relationship-form__field">
+        <span>{{ form.invitee.label }}</span>
+        {{ form.invitee }}
+        {% if form.invitee.help_text %}<small>{{ form.invitee.help_text }}</small>{% endif %}
+        {{ form.invitee.errors }}
+      </label>
+      <label class="relationship-form__field">
+        <span>{{ form.role.label }}</span>
+        {{ form.role }}
+        {{ form.role.errors }}
+      </label>
+    </fieldset>
+
+    <fieldset class="relationship-form__group relationship-form__group--message">
+      <legend>Message</legend>
+      <label class="relationship-form__field">
+        <span>{{ form.message.label }}</span>
+        {{ form.message }}
+        {{ form.message.errors }}
+      </label>
+    </fieldset>
+
+    <div class="tree-create-actions relationship-form__actions">
       <button type="submit">{{ submit_label }}</button>
       <button type="button" data-create-sheet-close>Cancel</button>
     </div>

@@ -70,11 +70,14 @@ function closeDrawer() {
 function closeSheet() {
   if (sheet) {
     sheet.classList.remove("show");
+    sheet.classList.remove("relationship-modal-host");
     sheet.innerHTML = "";
   }
   if (sheetOverlay) sheetOverlay.classList.remove("show");
   if (detailSheet) detailSheet.classList.remove("show");
   if (detailSheetOverlay) detailSheetOverlay.classList.remove("show");
+  const treeSheetBackdrop = document.getElementById("tree-sheet-backdrop");
+  if (treeSheetBackdrop) treeSheetBackdrop.remove();
 }
 
 function setAccountTriggersExpanded(isExpanded) {
@@ -183,6 +186,10 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
   }
   if (event.detail.target.id === "global-sheet") {
     event.detail.target.classList.add("show");
+    event.detail.target.classList.toggle(
+      "relationship-modal-host",
+      Boolean(event.detail.target.querySelector(".relationship-modal"))
+    );
     if (sheetOverlay) sheetOverlay.classList.add("show");
   }
 });
@@ -232,10 +239,23 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (
+    event.target.closest("[data-create-sheet-close]") &&
+    (event.target.closest("#global-sheet") || (sheet && sheet.classList.contains("relationship-modal-host")))
+  ) {
+    event.preventDefault();
+    closeSheet();
+    return;
+  }
+
 });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (sheet && sheet.classList.contains("show")) {
+      closeSheet();
+      return;
+    }
     closeAccountSheet();
   }
 });

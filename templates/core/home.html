@@ -8,10 +8,11 @@
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260617-premium-home">
+<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260617-relationship-modal">
 {% endblock %}
 
 {% block content %}
+<div class="home-premium-shell">
 {% if empty_state %}
 
 <div class="empty-state">
@@ -36,32 +37,53 @@
 {% else %}
 
 {% if is_demo_context %}
-  {% include "core/_hero.html" %}
-  {% include "core/_guest_conversion.html" %}
-  {% include "core/_today_in_history.html" %}
-  <div class="section-head demo-tree-head animate-in delay-2" id="demo-tree-preview">
-    <div>
-      <h2>See how a family can look</h2>
-      <p>This is only an example. Your real tree starts privately after you create an account.</p>
+  <section class="home-section home-hero-section">
+    {% include "core/_hero.html" %}
+  </section>
+  <section class="home-section home-guest-section">
+    {% include "core/_guest_conversion.html" %}
+  </section>
+  <section class="home-section home-today-section">
+    {% include "core/_today_in_history.html" %}
+  </section>
+  <section class="home-section home-demo-tree-section">
+    <div class="section-head demo-tree-head animate-in delay-2" id="demo-tree-preview">
+      <div>
+        <h2>See how a family can look</h2>
+        <p>This is only an example. Your real tree starts privately after you create an account.</p>
+      </div>
+      <a href="/accounts/signup/" class="link-btn">
+        Create yours <i data-lucide="chevron-right"></i>
+      </a>
     </div>
-    <a href="/accounts/signup/" class="link-btn">
-      Create yours <i data-lucide="chevron-right"></i>
-    </a>
-  </div>
-  {% include "people/partials/tree_preview.html" %}
+    {% include "people/partials/tree_preview.html" %}
+  </section>
 {% else %}
-  {% include "core/_close_family_dashboard.html" %}
-  {% include "core/_today_in_history.html" %}
+  <section class="home-section home-dashboard-section">
+    {% include "core/_close_family_dashboard.html" %}
+  </section>
+  <section class="home-section home-today-section">
+    {% include "core/_today_in_history.html" %}
+  </section>
 {% endif %}
 
-{% include "core/_family_prompt.html" %}
+<section class="home-section home-prompt-section">
+  {% include "core/_family_prompt.html" %}
+</section>
 
-{% include "core/_memories_carousel.html" %}
+<section class="home-section home-memories-section">
+  {% include "core/_memories_carousel.html" %}
+</section>
 
 <div class="feed-columns">
-  {% include "core/_recent_activity.html" %}
-  {% include "core/_family_champions.html" %}
+  <section class="home-feed-panel home-activity-panel">
+    {% include "core/_recent_activity.html" %}
+  </section>
+  <section class="home-feed-panel home-champions-panel">
+    {% include "core/_family_champions.html" %}
+  </section>
 </div>
 
 {% endif %}
+</div>
 {% endblock %}

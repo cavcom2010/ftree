@@ -114,6 +114,7 @@ def person_edit_name(request, person_id):
         {
             "person": person,
             "form": form,
+            "tree_only": True,
         },
     )
 
@@ -121,12 +122,18 @@ def person_edit_name(request, person_id):
 def person_descendants(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
     generation = get_descendant_generation(person)
+    template = (
+        "people/partials/descendant_generation.html"
+        if request.headers.get("HX-Request")
+        else "people/descendants.html"
+    )
     return render(
         request,
-        "people/partials/descendant_generation.html",
+        template,
         {
             "person": person,
             "generation": [generation] if generation else [],
+            "tree_only": True,
         },
     )
 

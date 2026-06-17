@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Descendants of {{ person.full_name }} · {{ family.name|default:"HeritageTree" }}{% endblock %}
+{% block body_class %}tree-only-body{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260617-descendants">
+{% endblock %}
+
+{% block content %}
+<main class="tree-home" id="tree">
+  <header class="radial-header" id="tree-header">
+    <div class="radial-header-left">
+      <a class="radial-back" href="{% url 'tree' %}" aria-label="Back to tree">
+        <i data-lucide="chevron-left"></i>
+      </a>
+      <div>
+        <h1 class="radial-title">Descendants</h1>
+        <p class="radial-subtitle">{{ person.full_name }}</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="tree-form-page">
+    <section class="tree-create-sheet is-open descendants-sheet" aria-labelledby="descendants-title" aria-hidden="false">
+      <div class="tree-form-hero">
+        <div class="tree-form-avatar" aria-hidden="true">
+          {% if person.profile_photo %}
+            <img src="{{ person.profile_photo.url }}" alt="">
+          {% else %}
+            {{ person.initials }}
+          {% endif %}
+        </div>
+        <div>
+          <p class="tree-eyebrow">Descendants of</p>
+          <h2 id="descendants-title">{{ person.full_name }}</h2>
+        </div>
+      </div>
+
+      <div class="descendants-actions">
+        <a class="tree-btn-primary" href="{% url 'person_drawer' person.id %}">
+          <i data-lucide="user"></i>View Profile
+        </a>
+        <a class="tree-btn-secondary" href="{% url 'person_create' %}?parent={{ person.id }}">
+          <i data-lucide="user-plus"></i>Add Relative
+        </a>
+      </div>
+
+      <div class="descendants-list">
+        {% for gen_people in generation %}
+          <div class="descendants-generation">
+            <h3 class="descendants-gen-title">
+              {% if gen_people.number %}Generation {{ gen_people.number }}{% else %}{{ gen_people.label|default:"Descendants" }}{% endif %}
+            </h3>
+            <div class="descendants-people">
+              {% for p in gen_people.people %}
+                <button class="descendants-person-card"
+                        type="button"
+                        hx-get="/people/{{ p.id }}/drawer/"
+                        hx-target="#personDrawer"
+                        hx-swap="innerHTML">
+                  <span class="descendants-person-avatar" style="background: linear-gradient(135deg, {{ p.color1|default:'#059669' }}, {{ p.color2|default:'#10b981' }});">
+                    {% if p.profile_photo %}
+                      <img src="{{ p.profile_photo.url }}" alt="{{ p.full_name }}">
+                    {% else %}
+                      {{ p.initials }}
+                    {% endif %}
+                  </span>
+                  <span class="descendants-person-name">{{ p.first_name }}</span>
+                  <span class="descendants-person-role">{{ p.role|default:gen_people.label }}</span>
+                </button>
+              {% endfor %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="descendants-empty">
+            <i data-lucide="users"></i>
+            <p>No descendants recorded for {{ person.first_name }} yet.</p>
+            <a class="tree-btn-primary" href="{% url 'person_create' %}?parent={{ person.id }}">Add a child</a>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+</script>
+{% endblock %}

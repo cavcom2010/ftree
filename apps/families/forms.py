@@ -118,6 +118,7 @@ class InviteRelativeForm(InvitePersonForm):
         queryset=Person.objects.none(),
         required=False,
         widget=forms.CheckboxSelectMultiple,
+        help_text="Select the parents this sibling shares. This places them on the tree.",
     )
     partner_shared_children = forms.ModelMultipleChoiceField(
         label="Children you share with this partner",
@@ -175,6 +176,15 @@ class InviteRelativeForm(InvitePersonForm):
                 self.add_error("first_name", "Enter a first name or choose an existing person.")
             if not last_name:
                 self.add_error("last_name", "Enter a surname or choose an existing person.")
+
+        if self.relation_type == "sibling" and not existing_person:
+            shared_parents = cleaned_data.get("shared_parents")
+            candidate_parents = self.fields["shared_parents"].queryset
+            if candidate_parents.exists() and not shared_parents:
+                self.add_error(
+                    "shared_parents",
+                    "Select at least one shared parent so the sibling appears on the tree.",
+                )
 
         return cleaned_data
 
@@ -301,11 +311,24 @@ def _direct_relative_ids(family, person):
 
 
 def _parents_for_person(family, person):
-    parent_ids = Relationship.objects.filter(
-        family=family,
-        to_person=person,
-        relationship_type__in=_parent_types(),
-    ).values_list("from_person_id", flat=True)
+    parent_ids = set(
+        Relationship.objects.filter(
+            family=family,
+            to_person=person,
+            relationship_type__in=_parent_types(),
+        ).values_list("from_person_id", flat=True)
+    )
+    # Also include parents attached to the person's existing siblings,
+    # because those parents are already on the tree and may be shared.
+    sibling_ids = _siblings_for_person(family, person).values_list("id", flat=True)
+    if sibling_ids:
+        parent_ids.update(
+            Relationship.objects.filter(
+                family=family,
+                to_person_id__in=sibling_ids,
+                relationship_type__in=_parent_types(),
+            ).values_list("from_person_id", flat=True)
+        )
     return Person.objects.filter(family=family, id__in=parent_ids).order_by("first_name", "last_name")
 
 

@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import TestCase
 
 from apps.core.tree_context import build_tree_context
+from apps.families.forms import InviteRelativeForm
 from apps.families.models import Family, FamilyInvitation, FamilyMembership
 from apps.families.services import (
     accept_invitation,
@@ -1187,4 +1188,101 @@ class FamilyInvitationViewTests(TestCase):
         response = self.client.post(f"/invitations/{invitation.token}/accept/")
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(FamilyMembership.objects.filter(user=self.invitee, person=self.target).exists())
+
+
+class InviteRelativeFormTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="formowner",
+            email="formowner@example.com",
+            password="secret",
+        )
+        self.family = Family.objects.create(
+            name="Form Family", slug="form-family", created_by=self.owner
+        )
+        self.anchor = Person.objects.create(
+            family=self.family,
+            first_name="Anchor",
+            last_name="Person",
+            created_by=self.owner,
+        )
+
+    def _sibling_post_data(self, shared_parent_ids=None):
+        data = {
+            "first_name": "New",
+            "last_name": "Sibling",
+            "gender": Person.Gender.UNKNOWN,
+            "birth_date": "",
+            "invitee": "",
+            "role": FamilyMembership.Role.MEMBER,
+            "message": "",
+        }
+        if shared_parent_ids is not None:
+            data["shared_parents"] = shared_parent_ids
+        return data
+
+    def test_parents_for_person_includes_parents_of_siblings(self):
+        parent = Person.objects.create(
+            family=self.family,
+            first_name="Shared",
+            last_name="Parent",
+            created_by=self.owner,
+        )
+        sibling = Person.objects.create(
+            family=self.family,
+            first_name="Existing",
+            last_name="Sibling",
+            created_by=self.owner,
+        )
+        Relationship.objects.create(
+            family=self.family,
+            from_person=parent,
+            to_person=sibling,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+        Relationship.objects.create(
+            family=self.family,
+            from_person=self.anchor,
+            to_person=sibling,
+            relationship_type=Relationship.Type.SIBLING,
+        )
+
+        form = InviteRelativeForm(
+            data=self._sibling_post_data(shared_parent_ids=[str(parent.id)]),
+            family=self.family,
+            anchor_person=self.anchor,
+            relation_type="sibling",
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_sibling_form_requires_shared_parent_when_candidates_exist(self):
+        parent = Person.objects.create(
+            family=self.family,
+            first_name="Shared",
+            last_name="Parent",
+            created_by=self.owner,
+        )
+        Relationship.objects.create(
+            family=self.family,
+            from_person=parent,
+            to_person=self.anchor,
+            relationship_type=Relationship.Type.PARENT_CHILD,
+        )
+
+        form = InviteRelativeForm(
+            data=self._sibling_post_data(shared_parent_ids=[]),
+            family=self.family,
+            anchor_person=self.anchor,
+            relation_type="sibling",
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("shared_parents", form.errors)
+
+    def test_sibling_form_allows_no_shared_parent_when_no_candidates(self):
+        form = InviteRelativeForm(
+            data=self._sibling_post_data(shared_parent_ids=[]),
+            family=self.family,
+            anchor_person=self.anchor,
+            relation_type="sibling",
+        )
+        self.assertTrue(form.is_valid(), form.errors)

@@ -23,4 +23,9 @@ urlpatterns = [
         views.person_create,
         name="person_create",
     ),
+    path(
+        "people/<int:person_id>/delete/",
+        views.person_delete,
+        name="person_delete",
+    ),
 ]

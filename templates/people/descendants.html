@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260617-descendants">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260618-descendants-close-v2">
 {% endblock %}
 
 {% block content %}
@@ -28,17 +28,22 @@
   <div class="tree-form-page">
     <section class="tree-create-sheet is-open descendants-sheet" aria-labelledby="descendants-title" aria-hidden="false">
       <div class="tree-form-hero">
-        <div class="tree-form-avatar" aria-hidden="true">
-          {% if person.profile_photo %}
-            <img src="{{ person.profile_photo.url }}" alt="">
-          {% else %}
-            {{ person.initials }}
-          {% endif %}
+        <div class="tree-form-hero-main">
+          <div class="tree-form-avatar" aria-hidden="true">
+            {% if person.profile_photo %}
+              <img src="{{ person.profile_photo.url }}" alt="">
+            {% else %}
+              {{ person.initials }}
+            {% endif %}
+          </div>
+          <div class="tree-form-hero-text">
+            <p class="tree-eyebrow">Descendants of</p>
+            <h2 id="descendants-title">{{ person.full_name }}</h2>
+          </div>
         </div>
-        <div>
-          <p class="tree-eyebrow">Descendants of</p>
-          <h2 id="descendants-title">{{ person.full_name }}</h2>
-        </div>
+        <a class="descendants-sheet-close" href="{% url 'tree' %}" aria-label="Close and return to tree">
+          <span aria-hidden="true">&times;</span>
+        </a>
       </div>
 
       <div class="descendants-actions">

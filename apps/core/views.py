@@ -439,13 +439,15 @@ def _tree_data_for_family(family, anchor, user=None):
         )
 
         can_edit = False
+        can_delete = False
         if user and getattr(user, "is_authenticated", False):
-            if membership and membership.person_id == person.id:
-                can_edit = True
-            elif membership and membership.role in {
+            if membership and membership.role in {
                 FamilyMembership.Role.OWNER,
                 FamilyMembership.Role.ADMIN,
             }:
+                can_edit = True
+                can_delete = True
+            elif membership and membership.person_id == person.id:
                 can_edit = True
             elif user_can_invite and not is_claimed:
                 can_edit = True
@@ -462,6 +464,7 @@ def _tree_data_for_family(family, anchor, user=None):
                 if claimed_membership and claimed_membership.user
                 else None,
                 "can_edit": can_edit,
+                "can_delete": can_delete,
                 "can_add_relative": user_can_invite,
                 "can_invite": (
                     user_can_invite
@@ -485,6 +488,7 @@ def _tree_data_for_family(family, anchor, user=None):
                     },
                     "set_anchor": reverse("family_set_tree_anchor", args=[person.id]),
                     "descendants": reverse("person_descendants", args=[person.id]),
+                    "delete": reverse("person_delete", args=[person.id]),
                     "story_create": f"{reverse('story_create')}?person={person.id}",
                 },
             }

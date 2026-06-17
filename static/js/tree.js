@@ -48,61 +48,53 @@
       person.child_ids.forEach((cid) => visible.add(cid));
     });
 
-    // Reveal extended relatives: siblings' children, parents' siblings,
-    // and aunts'/uncles' children so the tree feels fuller.
-    const firstPass = Array.from(visible);
-    firstPass.forEach((id) => {
-      const person = peopleMap.get(id);
-      if (!person) return;
-
-      person.sibling_ids.forEach((sid) => {
-        const sibling = peopleMap.get(sid);
-        if (sibling) {
-          sibling.child_ids.forEach((cid) => visible.add(cid));
-        }
-      });
-
-      [person.father_id, person.mother_id].forEach((pid) => {
-        if (!pid) return;
-        const parent = peopleMap.get(pid);
-        if (parent) {
-          parent.sibling_ids.forEach((aid) => visible.add(aid));
-        }
-      });
-    });
-
-    const secondPass = Array.from(visible);
-    secondPass.forEach((id) => {
-      const person = peopleMap.get(id);
-      if (!person) return;
-      [person.father_id, person.mother_id].forEach((pid) => {
-        if (!pid) return;
-        const parent = peopleMap.get(pid);
-        if (parent) {
-          parent.sibling_ids.forEach((aid) => {
-            const auntUncle = peopleMap.get(aid);
-            if (auntUncle) {
-              auntUncle.child_ids.forEach((cid) => visible.add(cid));
-            }
-          });
-        }
-      });
-    });
-
     return visible;
   }
 
-  function getHiddenCount(personId, visibleIds) {
+  function collectHiddenRelatives(personId, visibleIds) {
     const person = peopleMap.get(personId);
-    if (!person) return 0;
-    const allRelatives = [
-      person.father_id,
-      person.mother_id,
-      person.partner_id,
-      ...person.sibling_ids,
-      ...person.child_ids,
-    ].filter(Boolean);
-    return allRelatives.filter((rid) => !visibleIds.has(rid)).length;
+    if (!person) return new Set();
+    const hidden = new Set();
+
+    const addIfHidden = (id) => {
+      if (id && !visibleIds.has(id)) hidden.add(id);
+    };
+
+    // Direct relatives
+    [person.father_id, person.mother_id, person.partner_id]
+      .filter(Boolean)
+      .forEach(addIfHidden);
+    person.sibling_ids.forEach(addIfHidden);
+    person.child_ids.forEach(addIfHidden);
+
+    // Siblings' children (nieces/nephews)
+    person.sibling_ids.forEach((sid) => {
+      const sibling = peopleMap.get(sid);
+      if (sibling) sibling.child_ids.forEach(addIfHidden);
+    });
+
+    // Parents' siblings (aunts/uncles)
+    [person.father_id, person.mother_id].forEach((pid) => {
+      const parent = peopleMap.get(pid);
+      if (parent) parent.sibling_ids.forEach(addIfHidden);
+    });
+
+    // Aunts/uncles' children (cousins)
+    [person.father_id, person.mother_id].forEach((pid) => {
+      const parent = peopleMap.get(pid);
+      if (parent) {
+        parent.sibling_ids.forEach((aid) => {
+          const auntUncle = peopleMap.get(aid);
+          if (auntUncle) auntUncle.child_ids.forEach(addIfHidden);
+        });
+      }
+    });
+
+    return hidden;
+  }
+
+  function getHiddenCount(personId, visibleIds) {
+    return collectHiddenRelatives(personId, visibleIds).size;
   }
 
   const nodeSpacing = 160;
@@ -124,7 +116,8 @@
 
     const minWidth = window.innerWidth;
     const minHeight = window.innerHeight - 100;
-    const contentWidth = maxRowCount * nodeSpacing + canvasPaddingX * 2;
+    // Add extra room for group gaps between sub-groups
+    const contentWidth = (maxRowCount + 2) * nodeSpacing + canvasPaddingX * 2;
     const contentHeight = rowCount * genSpacing + canvasPaddingY * 2;
 
     return {
@@ -135,8 +128,10 @@
   }
 
   function calculatePositions(visibleIds, canvasWidth, canvasHeight) {
+    const root = peopleMap.get(root_id);
     const positions = {};
     const genGroups = {};
+    const genSubGroups = {};
 
     visibleIds.forEach((id) => {
       const person = peopleMap.get(id);
@@ -152,18 +147,137 @@
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
 
+    // Build direct ancestor/descendant sets from root
+    const directAncestors = new Set();
+    const ancestorSiblings = new Set();
+    const directChildren = new Set();
+    const siblingChildren = new Set();
+
+    if (root) {
+      [root.father_id, root.mother_id].filter(Boolean).forEach((pid) => directAncestors.add(pid));
+      root.child_ids.forEach((cid) => directChildren.add(cid));
+      root.sibling_ids.forEach((sid) => {
+        const sibling = peopleMap.get(sid);
+        if (sibling) sibling.child_ids.forEach((cid) => siblingChildren.add(cid));
+      });
+
+      // Walk up and mark direct ancestors and their siblings
+      const walkUp = (person) => {
+        if (!person) return;
+        [person.father_id, person.mother_id].filter(Boolean).forEach((pid) => {
+          directAncestors.add(pid);
+          const parent = peopleMap.get(pid);
+          if (parent) {
+            parent.sibling_ids.forEach((aid) => ancestorSiblings.add(aid));
+            walkUp(parent);
+          }
+        });
+      };
+      walkUp(root);
+    }
+
     gens.forEach((gen) => {
       const ids = genGroups[gen];
       const y = centerY - gen * genSpacing;
-      const totalWidth = ids.length * nodeSpacing;
-      const startX = centerX - totalWidth / 2 + nodeSpacing / 2;
 
-      ids.forEach((id, i) => {
-        positions[id] = { x: startX + i * nodeSpacing, y: y };
+      const groups = {
+        parentSiblings: [],
+        parents: [],
+        siblings: [],
+        partners: [],
+        root: [],
+        children: [],
+        siblingChildren: [],
+        other: [],
+      };
+
+      ids.forEach((id) => {
+        const person = peopleMap.get(id);
+        if (!person) return;
+
+        if (id === root_id) {
+          groups.root.push(id);
+        } else if (gen === 0) {
+          if (root && id === root.partner_id) groups.partners.push(id);
+          else if (root && root.sibling_ids.includes(id)) groups.siblings.push(id);
+          else groups.other.push(id);
+        } else if (gen > 0) {
+          if (directAncestors.has(id)) groups.parents.push(id);
+          else if (ancestorSiblings.has(id)) groups.parentSiblings.push(id);
+          else groups.other.push(id);
+        } else {
+          if (directChildren.has(id)) groups.children.push(id);
+          else if (siblingChildren.has(id)) groups.siblingChildren.push(id);
+          else groups.other.push(id);
+        }
       });
+
+      // Order within row depends on generation
+      let rowOrder = [];
+      const groupGap = 40;
+
+      if (gen > 0) {
+        rowOrder = [
+          ...groups.parentSiblings,
+          ...groups.parents,
+          ...groups.other,
+        ];
+      } else if (gen === 0) {
+        rowOrder = [
+          ...groups.siblings,
+          ...groups.root,
+          ...groups.partners,
+          ...groups.other,
+        ];
+      } else {
+        rowOrder = [
+          ...groups.siblingChildren,
+          ...groups.children,
+          ...groups.other,
+        ];
+      }
+
+      // Build ordered list with group gaps
+      const ordered = [];
+      let lastGroup = null;
+      rowOrder.forEach((id) => {
+        let group = 'other';
+        if (gen > 0) {
+          if (groups.parentSiblings.includes(id)) group = 'parentSiblings';
+          else if (groups.parents.includes(id)) group = 'parents';
+        } else if (gen === 0) {
+          if (groups.siblings.includes(id)) group = 'siblings';
+          else if (groups.root.includes(id)) group = 'root';
+          else if (groups.partners.includes(id)) group = 'partners';
+        } else {
+          if (groups.siblingChildren.includes(id)) group = 'siblingChildren';
+          else if (groups.children.includes(id)) group = 'children';
+        }
+        if (lastGroup && lastGroup !== group) {
+          ordered.push({ type: 'gap', width: groupGap });
+        }
+        ordered.push({ type: 'node', id, group });
+        lastGroup = group;
+      });
+
+      const totalWidth = ordered.reduce((sum, item) => {
+        return sum + (item.type === 'gap' ? item.width : nodeSpacing);
+      }, 0);
+      let currentX = centerX - totalWidth / 2 + nodeSpacing / 2;
+
+      ordered.forEach((item) => {
+        if (item.type === 'gap') {
+          currentX += item.width;
+        } else {
+          positions[item.id] = { x: currentX, y };
+          currentX += nodeSpacing;
+        }
+      });
+
+      genSubGroups[gen] = groups;
     });
 
-    return { positions, genGroups };
+    return { positions, genGroups, genSubGroups };
   }
 
   function fitTreeToScreen(canvasWidth, canvasHeight) {
@@ -214,7 +328,7 @@
 
     const visibleIds = getVisibleNodes();
     const { width, height } = computeCanvasSize(visibleIds);
-    const { positions, genGroups } = calculatePositions(visibleIds, width, height);
+    const { positions, genGroups, genSubGroups } = calculatePositions(visibleIds, width, height);
 
     fitTreeToScreen(width, height);
     setCanvasSize(width, height);
@@ -310,18 +424,39 @@
       });
     });
 
-    // Generation labels
-    const genNames = {
-      4: 'Great-great-grandparents',
-      3: 'Great-grandparents',
-      2: 'Grandparents',
-      1: 'Parents',
-      0: 'You',
-      '-1': 'Children',
-      '-2': 'Grandchildren',
-      '-3': 'Great-grandchildren',
-      '-4': 'Great-great-grandchildren',
-    };
+    // Generation labels based on the groups present in each row
+    function labelForRow(gen, groups) {
+      if (gen === 0) {
+        const hasSiblings = groups.siblings.length > 0;
+        const hasPartners = groups.partners.length > 0;
+        if (hasSiblings && hasPartners) return 'You & Family';
+        if (hasSiblings) return 'You & Siblings';
+        if (hasPartners) return 'You & Partner';
+        return 'You';
+      }
+      if (gen > 0) {
+        const hasParents = groups.parents.length > 0;
+        const hasAunts = groups.parentSiblings.length > 0;
+        if (hasParents && hasAunts) return gen === 1 ? 'Parents & Aunts/Uncles' : `Gen ${gen} & Aunts/Uncles`;
+        if (hasAunts) return gen === 1 ? 'Aunts & Uncles' : `Gen ${gen} Aunts/Uncles`;
+        if (hasParents) {
+          if (gen === 1) return 'Parents';
+          if (gen === 2) return 'Grandparents';
+          if (gen === 3) return 'Great-grandparents';
+          return `Generation ${gen}`;
+        }
+        return `Generation ${gen}`;
+      }
+      // gen < 0
+      const hasChildren = groups.children.length > 0;
+      const hasSibChildren = groups.siblingChildren.length > 0;
+      if (hasChildren && hasSibChildren) return 'Children & Nieces/Nephews';
+      if (hasSibChildren) return 'Nieces & Nephews';
+      if (gen === -1) return 'Children';
+      if (gen === -2) return 'Grandchildren';
+      if (gen === -3) return 'Great-grandchildren';
+      return `Generation ${Math.abs(gen)}`;
+    }
 
     Object.keys(genGroups)
       .map(Number)
@@ -335,9 +470,10 @@
         const midX = (firstPos.x + lastPos.x) / 2;
         const y = firstPos.y - 70;
 
+        const groups = genSubGroups[gen] || {};
         const label = document.createElement('div');
         label.className = 'gen-label';
-        label.textContent = genNames[gen] || `Generation ${gen}`;
+        label.textContent = labelForRow(gen, groups);
         label.style.left = `${midX}px`;
         label.style.top = `${y}px`;
         labelsContainer.appendChild(label);
@@ -405,9 +541,29 @@
       node.appendChild(nameLabel);
 
       // Role label
+      const groups = genSubGroups[person.generation] || {};
+      let roleText = person.role;
+      if (id === root_id) {
+        roleText = 'You';
+      } else if (groups.siblings && groups.siblings.includes(id)) {
+        roleText = 'Sibling';
+      } else if (groups.partners && groups.partners.includes(id)) {
+        roleText = 'Partner';
+      } else if (groups.parentSiblings && groups.parentSiblings.includes(id)) {
+        roleText = person.generation === 1 ? 'Aunt/Uncle' : 'Aunt/Uncle';
+      } else if (groups.parents && groups.parents.includes(id)) {
+        roleText = person.generation === 1 ? 'Parent' : 'Grandparent';
+      } else if (groups.children && groups.children.includes(id)) {
+        roleText = person.generation === -1 ? 'Child' : 'Grandchild';
+      } else if (groups.siblingChildren && groups.siblingChildren.includes(id)) {
+        roleText = 'Niece/Nephew';
+      } else if (genNames[person.generation]) {
+        roleText = genNames[person.generation];
+      }
+
       const roleLabel = document.createElement('div');
       roleLabel.className = 'role-label';
-      roleLabel.textContent = genNames[person.generation] || person.role;
+      roleLabel.textContent = roleText;
       node.appendChild(roleLabel);
 
       if (person.life_status) {
@@ -863,6 +1019,7 @@
     const descendantsBtn = document.getElementById('detail-action-descendants');
     const storyLink = document.getElementById('detail-action-story');
     const addRelativeWrap = document.getElementById('detail-action-add-relative');
+    const deleteBtn = document.getElementById('detail-action-delete');
 
     setVisible(editBtn, person.can_edit);
     setVisible(inviteBtn, person.can_invite);
@@ -870,6 +1027,7 @@
     setVisible(descendantsBtn, true);
     setVisible(storyLink, true);
     setVisible(addRelativeWrap, person.can_add_relative);
+    setVisible(deleteBtn, person.can_delete);
     closeDetailRelationPicker();
 
     if (editBtn) editBtn.dataset.url = person.urls.edit_name;
@@ -877,6 +1035,7 @@
     if (anchorBtn) anchorBtn.dataset.url = person.urls.set_anchor;
     if (descendantsBtn) descendantsBtn.dataset.url = person.urls.descendants;
     if (storyLink) storyLink.href = person.urls.story_create;
+    if (deleteBtn) deleteBtn.dataset.url = person.urls.delete;
 
     ['parent', 'child', 'partner', 'sibling'].forEach((rel) => {
       const btn = document.querySelector(`[data-detail-action="add_${rel}"]`);
@@ -1128,6 +1287,19 @@
             }
           })
           .catch(() => showToast('Could not update anchor'));
+      } else if (action === 'delete' && url) {
+        if (confirm('Are you sure you want to delete this person? This cannot be undone.')) {
+          fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() } })
+            .then((res) => {
+              if (res.ok) {
+                showToast('Person deleted');
+                window.location.reload();
+              } else {
+                showToast('Could not delete person');
+              }
+            })
+            .catch(() => showToast('Could not delete person'));
+        }
       } else if (url) {
         if (actionLoadsTreeSheet(action)) {
           closeDetailRelationPicker();

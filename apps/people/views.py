@@ -186,3 +186,27 @@ def person_create(request):
             "title": "Add Person",
         },
     )
+
+
+@login_required
+def person_delete(request, person_id):
+    person = get_object_or_404(Person, id=person_id, family=_family(request))
+    user = _user(request)
+
+    membership = FamilyMembership.objects.filter(family=person.family, user=user).first()
+    can_delete = bool(
+        membership
+        and membership.role in {FamilyMembership.Role.OWNER, FamilyMembership.Role.ADMIN}
+    )
+    if not can_delete:
+        raise PermissionDenied("You do not have permission to delete this person.")
+
+    if request.method == "POST":
+        person.delete()
+        if request.headers.get("HX-Request"):
+            response = HttpResponse("")
+            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} deleted"})
+            return response
+        return redirect("tree")
+
+    return render(request, "people/partials/person_delete_confirm.html", {"person": person})

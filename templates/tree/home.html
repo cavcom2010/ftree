@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260617-descendants">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260618-tree-fix">
 {% endblock %}
 
 {% block content %}
@@ -143,6 +143,10 @@
           </div>
         </div>
         <div class="radial-header-actions">
+          <a class="header-pill" href="/" aria-label="Go home">
+            <i data-lucide="home"></i>
+            <span>Home</span>
+          </a>
           <button class="header-pill" type="button" data-tree-expand-all>Expand All</button>
           <button class="header-pill" type="button" data-tree-collapse>Collapse</button>
           <button class="header-pill" type="button" data-tree-reset>Reset View</button>
@@ -231,6 +235,10 @@
               <i data-lucide="book-open"></i>
               <span>Write story</span>
             </a>
+            <button class="detail-tool detail-tool-danger" type="button" data-detail-action="delete" id="detail-action-delete">
+              <i data-lucide="trash-2"></i>
+              <span>Delete</span>
+            </button>
           </div>
           <div class="detail-relation-picker" id="detail-relation-picker" hidden>
             <button type="button" data-detail-action="add_parent">Parent</button>
@@ -289,11 +297,13 @@
   {% include "tree/partials/create_sheet.html" %}
 </main>
 
+{% include "core/_bottom_nav.html" %}
+
 <script>
   window.TREE_DATA = {{ tree_json|safe }};
 </script>
 {% endblock %}
 
 {% block extra_scripts %}
-<script defer src="{% static 'js/tree.js' %}?v=20260617-life-status"></script>
+<script defer src="{% static 'js/tree.js' %}?v=20260618-tree-fix"></script>
 {% endblock %}

@@ -208,6 +208,13 @@ class Person(models.Model):
             "generation": generation,
             "role": "Member",
             "born": self.birth_date.strftime("%d %b %Y") if self.birth_date else None,
+            "death_date": self.death_date.strftime("%d %b %Y") if self.death_date else None,
+            "is_living": self.is_living,
+            "life_status": (
+                f"Died {self.death_date.strftime('%d %b %Y')}"
+                if self.death_date
+                else "Deceased" if not self.is_living else ""
+            ),
             "location": self.current_place or self.birth_place or "",
             "occupation": "",
             "avatar_url": self.profile_photo.url if self.profile_photo else None,

@@ -465,6 +465,7 @@ def _tree_data_for_family(family, anchor, user=None):
                 "can_add_relative": user_can_invite,
                 "can_invite": (
                     user_can_invite
+                    and person.is_living
                     and not is_claimed
                     and person.id not in pending_invitation_person_ids
                 ),

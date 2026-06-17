@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -668,6 +669,20 @@ class FamilyInvitationViewTests(TestCase):
         self.assertTrue(target_data["can_add_relative"])
         self.assertFalse(target_data["can_invite"])
 
+    def test_tree_json_marks_deceased_person_and_hides_invite(self):
+        self.target.is_living = False
+        self.target.death_date = date(2009, 3, 12)
+        self.target.save(update_fields=["is_living", "death_date"])
+        self.client.force_login(self.owner)
+
+        response = self.client.get("/tree/")
+        target_data = self._tree_person_data(response, self.target)
+
+        self.assertFalse(target_data["is_living"])
+        self.assertEqual(target_data["death_date"], "12 Mar 2009")
+        self.assertEqual(target_data["life_status"], "Died 12 Mar 2009")
+        self.assertFalse(target_data["can_invite"])
+
     def test_tree_json_allows_add_relative_for_inviting_member(self):
         self.client.force_login(self.owner)
 
@@ -786,6 +801,123 @@ class FamilyInvitationViewTests(TestCase):
                 relationship_type=Relationship.Type.PARENT_CHILD,
             ).exists()
         )
+
+    def test_tree_invite_relative_endpoint_creates_living_parent(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/parent/",
+            {
+                "first_name": "Living",
+                "last_name": "Parent",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "is_living": "True",
+                "death_date": "",
+                "invitee": "",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relative added")
+        parent = Person.objects.get(first_name="Living", last_name="Parent")
+        self.assertTrue(parent.is_living)
+        self.assertIsNone(parent.death_date)
+
+    def test_tree_invite_relative_endpoint_creates_deceased_parent_with_death_date(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/parent/",
+            {
+                "first_name": "Late",
+                "last_name": "Parent",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "is_living": "False",
+                "death_date": "2009-03-12",
+                "invitee": "",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relative added")
+        parent = Person.objects.get(first_name="Late", last_name="Parent")
+        self.assertFalse(parent.is_living)
+        self.assertEqual(parent.death_date, date(2009, 3, 12))
+
+    def test_tree_invite_relative_endpoint_creates_deceased_sibling_without_death_date(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/sibling/",
+            {
+                "first_name": "Late",
+                "last_name": "Sibling",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "is_living": "False",
+                "death_date": "",
+                "invitee": "",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relative added")
+        sibling = Person.objects.get(first_name="Late", last_name="Sibling")
+        self.assertFalse(sibling.is_living)
+        self.assertIsNone(sibling.death_date)
+
+    def test_tree_invite_relative_endpoint_rejects_living_person_with_death_date(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/child/",
+            {
+                "first_name": "Invalid",
+                "last_name": "Dates",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "is_living": "True",
+                "death_date": "2009-03-12",
+                "invitee": "",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mark this relative as deceased")
+        self.assertFalse(Person.objects.filter(first_name="Invalid", last_name="Dates").exists())
+
+    def test_tree_invite_relative_endpoint_rejects_invite_for_deceased_relative(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"/tree/people/{self.anchor.id}/invite-relative/child/",
+            {
+                "first_name": "No",
+                "last_name": "Invite",
+                "gender": Person.Gender.UNKNOWN,
+                "birth_date": "",
+                "is_living": "False",
+                "death_date": "",
+                "invitee": "late@example.com",
+                "role": FamilyMembership.Role.MEMBER,
+                "message": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Deceased relatives cannot be invited")
+        self.assertFalse(Person.objects.filter(first_name="No", last_name="Invite").exists())
+        self.assertFalse(FamilyInvitation.objects.filter(invitee_email="late@example.com").exists())
 
     def test_tree_invite_relative_endpoint_can_add_without_invitation(self):
         self.client.force_login(self.owner)

@@ -111,6 +111,8 @@ def create_invitation(
     require_invite_permission(family, inviter)
     if person.family_id != family.id:
         raise ValidationError("Invited person must belong to this family.")
+    if not person.is_living:
+        raise ValidationError("Deceased relatives cannot be invited to claim an account.")
     if anchor_person and anchor_person.family_id != family.id:
         raise ValidationError("Anchor person must belong to this family.")
 
@@ -271,6 +273,8 @@ def create_relative_with_optional_invite(
         )
         invitation = None
         if invitee_identifier:
+            if not person.is_living:
+                raise ValidationError("Deceased relatives cannot be invited to claim an account.")
             invitation = create_invitation(
                 family=family,
                 inviter=inviter,
@@ -348,6 +352,10 @@ def create_relative(
     if person:
         _validate_existing_person_connection(family, anchor_person, person, relation_type)
     else:
+        is_living = _coerce_is_living(person_data.get("is_living"))
+        death_date = person_data.get("death_date")
+        if is_living and death_date:
+            raise ValidationError("Mark this relative as deceased before adding a death date.")
         person = Person(
             family=family,
             created_by=inviter,
@@ -356,6 +364,8 @@ def create_relative(
             maiden_name=person_data.get("maiden_name", "").strip(),
             gender=person_data.get("gender") or Person.Gender.UNKNOWN,
             birth_date=person_data.get("birth_date"),
+            is_living=is_living,
+            death_date=death_date,
         )
         person.full_clean()
         person.save()
@@ -399,6 +409,12 @@ def create_relative(
         ),
     )
     return person, relationship_type
+
+
+def _coerce_is_living(value):
+    if value is None:
+        return True
+    return value in {True, "True", "true", "1", 1}
 
 
 def _relationship_type_for_relation(relation_type, parent_relationship_type=None, partner_relationship_type=None):

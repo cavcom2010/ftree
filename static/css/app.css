@@ -1339,6 +1339,18 @@ button {
   font-weight: 600;
 }
 
+.drawer-main .drawer-life-status {
+  width: fit-content;
+  margin-top: 5px;
+  padding: 3px 9px;
+  border: 1px solid rgba(123, 45, 59, 0.14);
+  border-radius: 999px;
+  color: #7b2d3b;
+  background: rgba(123, 45, 59, 0.07);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .drawer-close {
   border: 1px solid var(--line);
   background: #fff;

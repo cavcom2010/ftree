@@ -354,7 +354,7 @@
       const isRoot = id === root_id;
 
       const node = document.createElement('div');
-      node.className = `person-node${isRoot ? ' is-root' : ''}`;
+      node.className = `person-node${isRoot ? ' is-root' : ''}${person.is_living === false ? ' is-deceased' : ''}`;
       node.dataset.personId = id;
       node.style.left = `${pos.x - 34}px`;
       node.style.top = `${pos.y - 34}px`;
@@ -409,6 +409,13 @@
       roleLabel.className = 'role-label';
       roleLabel.textContent = genNames[person.generation] || person.role;
       node.appendChild(roleLabel);
+
+      if (person.life_status) {
+        const lifeLabel = document.createElement('div');
+        lifeLabel.className = 'life-label';
+        lifeLabel.textContent = person.life_status;
+        node.appendChild(lifeLabel);
+      }
 
       node.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -999,6 +1006,8 @@
     const nameEl = document.getElementById('detail-name');
     const roleEl = document.getElementById('detail-role');
     const bornEl = document.getElementById('detail-born');
+    const lifeStatusRow = document.getElementById('detail-life-status-row');
+    const lifeStatusEl = document.getElementById('detail-life-status');
     const locationEl = document.getElementById('detail-location');
     const genderEl = document.getElementById('detail-gender');
     const avatarEl = document.getElementById('detail-avatar');
@@ -1007,6 +1016,10 @@
     if (nameEl) nameEl.textContent = person.name;
     if (roleEl) roleEl.textContent = person.role;
     if (bornEl) bornEl.textContent = person.born || 'Not recorded';
+    if (lifeStatusRow && lifeStatusEl) {
+      lifeStatusEl.textContent = person.life_status || '';
+      lifeStatusRow.style.display = person.life_status ? '' : 'none';
+    }
     if (locationEl) locationEl.textContent = person.location || 'Not recorded';
     if (genderEl)
       genderEl.textContent =

@@ -61,6 +61,21 @@
       </div>
     </fieldset>
 
+    <fieldset class="relationship-form__group relationship-form__group--life">
+      <legend>Life status</legend>
+      <fieldset class="relationship-form__status">
+        <legend>{{ form.is_living.label }}</legend>
+        {{ form.is_living }}
+        {{ form.is_living.errors }}
+      </fieldset>
+      <label class="relationship-form__field">
+        <span>{{ form.death_date.label }}</span>
+        {{ form.death_date }}
+        {% if form.death_date.help_text %}<small>{{ form.death_date.help_text }}</small>{% endif %}
+        {{ form.death_date.errors }}
+      </label>
+    </fieldset>
+
     {% if relation_type == "parent" %}
       <fieldset class="relationship-form__group relationship-form__group--relationship">
         <legend>Relationship</legend>

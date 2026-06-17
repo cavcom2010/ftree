@@ -43,6 +43,11 @@ class InvitePersonForm(forms.Form):
 
 
 class InviteRelativeForm(InvitePersonForm):
+    LIVING_CHOICES = [
+        (True, "Living"),
+        (False, "Deceased"),
+    ]
+
     invitee = forms.CharField(
         label="Invite username or email",
         max_length=254,
@@ -74,6 +79,21 @@ class InviteRelativeForm(InvitePersonForm):
     birth_date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    is_living = forms.TypedChoiceField(
+        label="Life status",
+        choices=LIVING_CHOICES,
+        coerce=lambda value: value in {True, "True", "true", "1", 1},
+        initial=True,
+        required=False,
+        empty_value=True,
+        widget=forms.RadioSelect,
+    )
+    death_date = forms.DateField(
+        label="Death date",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional. Leave blank if the exact date is unknown.",
     )
     parent_relationship_type = forms.ChoiceField(
         label="Parent type",
@@ -136,9 +156,19 @@ class InviteRelativeForm(InvitePersonForm):
         existing_person = cleaned_data.get("existing_person")
         first_name = (cleaned_data.get("first_name") or "").strip()
         last_name = (cleaned_data.get("last_name") or "").strip()
+        is_living = cleaned_data.get("is_living")
+        death_date = cleaned_data.get("death_date")
+        invitee = (cleaned_data.get("invitee") or "").strip()
 
         if existing_person and self.relation_type not in {"partner", "spouse"}:
             self.add_error("existing_person", "Existing-person connection is available for partners and co-parents.")
+
+        if not existing_person and is_living and death_date:
+            self.add_error("death_date", "Mark this relative as deceased before adding a death date.")
+
+        effective_is_living = existing_person.is_living if existing_person else is_living
+        if invitee and effective_is_living is False:
+            self.add_error("invitee", "Deceased relatives cannot be invited to claim an account.")
 
         if not existing_person:
             if not first_name:

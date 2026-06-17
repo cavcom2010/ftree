@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260616-radial-v16">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260617-life-status">
 {% endblock %}
 
 {% block content %}
@@ -188,6 +188,10 @@
               <span>Born</span>
               <span id="detail-born"></span>
             </div>
+            <div class="detail-info-row" id="detail-life-status-row">
+              <span>Status</span>
+              <span id="detail-life-status"></span>
+            </div>
             <div class="detail-info-row">
               <span>Location</span>
               <span id="detail-location"></span>
@@ -291,5 +295,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script defer src="{% static 'js/tree.js' %}?v=20260616-radial-v15"></script>
+<script defer src="{% static 'js/tree.js' %}?v=20260617-life-status"></script>
 {% endblock %}

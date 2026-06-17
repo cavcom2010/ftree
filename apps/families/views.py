@@ -90,6 +90,8 @@ def invite_relative(request, person_id, relation_type):
                         "maiden_name": form.cleaned_data["maiden_name"],
                         "gender": form.cleaned_data["gender"],
                         "birth_date": form.cleaned_data["birth_date"],
+                        "is_living": form.cleaned_data["is_living"],
+                        "death_date": form.cleaned_data["death_date"],
                     },
                     invitee_identifier=form.cleaned_data["invitee"],
                     role=form.cleaned_data["role"],

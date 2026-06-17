@@ -304,6 +304,9 @@ def _person_card(
         "relationship_label": relationship_label,
         "generation_label": _generation_label(generation_number),
         "life_years": _life_years(person),
+        "is_living": person.is_living,
+        "death_date": person.death_date,
+        "life_status": _life_status(person),
         "location": person.current_place or person.birth_place or "Location unknown",
         "avatar_url": _profile_photo_url(person),
         "is_anchor": relationship_label == "Me",
@@ -313,7 +316,7 @@ def _person_card(
         "connection_label": _connection_label(membership, invitation, is_current_user),
         "has_pending_invite": bool(invitation),
         "pending_invite_label": invitation.invitee_label if invitation else "",
-        "can_invite": can_invite_relatives and not membership and not invitation,
+        "can_invite": can_invite_relatives and person.is_living and not membership and not invitation,
         "can_edit_name": is_current_user or can_invite_relatives,
         "parents": [_mini_person(graph["people_by_id"][person_id]) for person_id in parent_ids if person_id in graph["people_by_id"]],
         "partners": [
@@ -350,6 +353,7 @@ def _mini_person(person, relationship_label="", shared_child_names=None):
         "full_name": person.full_name,
         "initials": _initials(person.first_name, person.last_name),
         "relationship_label": relationship_label,
+        "life_status": _life_status(person),
         "shared_child_names": shared_child_names or [],
     }
 
@@ -463,6 +467,14 @@ def _life_years(person):
         return f"{person.birth_date.year}–{person.death_date.year}"
     if person.birth_date:
         return f"Born {person.birth_date.year}"
+    return ""
+
+
+def _life_status(person):
+    if person.death_date:
+        return f"Died {person.death_date.strftime('%d %b %Y')}"
+    if not person.is_living:
+        return "Deceased"
     return ""
 
 

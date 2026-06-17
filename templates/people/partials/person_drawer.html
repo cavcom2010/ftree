@@ -11,6 +11,11 @@
   <div>
     <b id="drawerName">{{ person.full_name }}</b>
     <span id="drawerMeta">{{ generation_label|default:"Family Member" }}</span>
+    {% if person.death_date %}
+      <span class="drawer-life-status">Died {{ person.death_date|date:"j M Y" }}</span>
+    {% elif not person.is_living %}
+      <span class="drawer-life-status">Deceased</span>
+    {% endif %}
   </div>
   <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
     <i data-lucide="x"></i>

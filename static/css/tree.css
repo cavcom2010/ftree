@@ -294,6 +294,11 @@
   box-shadow: var(--shadow-strong), 0 0 0 8px rgba(123, 45, 59, 0.22);
 }
 
+.person-node.is-deceased .person-avatar {
+  border-color: rgba(123, 45, 59, 0.62);
+  box-shadow: var(--shadow-soft), 0 0 0 4px rgba(123, 45, 59, 0.08);
+}
+
 .person-node.is-root .person-avatar {
   width: 84px;
   height: 84px;
@@ -440,6 +445,22 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-top: 2px;
+}
+
+.life-label {
+  max-width: 128px;
+  margin-top: 4px;
+  padding: 2px 9px;
+  border: 1px solid rgba(123, 45, 59, 0.14);
+  border-radius: 999px;
+  color: var(--accent-burgundy);
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== Expand hint ring ===== */

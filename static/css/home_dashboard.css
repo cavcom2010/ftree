@@ -1436,10 +1436,15 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-.home-premium-body .global-sheet.relationship-modal-host {
+.home-premium-body .global-sheet.relationship-modal-host,
+.home-premium-body .global-sheet.relationship-modal-host.show {
   position: fixed;
   inset: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
   z-index: 1310;
+  width: auto;
   max-width: none;
   max-height: none;
   margin: 0;
@@ -1450,11 +1455,8 @@
   box-shadow: none;
   overflow: visible;
   pointer-events: none;
-  transform: none;
-}
-
-.home-premium-body .global-sheet.relationship-modal-host.show {
-  transform: none;
+  transform: none !important;
+  transition: none !important;
 }
 
 .home-premium-body .tree-sheet-backdrop {

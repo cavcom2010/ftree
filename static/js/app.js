@@ -180,17 +180,32 @@ document.body.addEventListener("showToast", (event) => {
   showToast(event.detail.value);
 });
 
+document.body.addEventListener("htmx:beforeSwap", (event) => {
+  const target = event.detail.target;
+  if (!target || target.id !== "global-sheet") return;
+
+  const responseText = event.detail.xhr ? event.detail.xhr.responseText : "";
+  const isRelationshipModal = responseText.includes("relationship-modal");
+
+  target.classList.remove("show");
+  target.classList.toggle("relationship-modal-host", isRelationshipModal);
+});
+
 document.body.addEventListener("htmx:afterSwap", (event) => {
   if (event.detail.target.id === "personDrawer") {
     event.detail.target.classList.add("show");
   }
   if (event.detail.target.id === "global-sheet") {
-    event.detail.target.classList.add("show");
-    event.detail.target.classList.toggle(
-      "relationship-modal-host",
-      Boolean(event.detail.target.querySelector(".relationship-modal"))
-    );
-    if (sheetOverlay) sheetOverlay.classList.add("show");
+    const isRelationshipModal =
+      event.detail.target.classList.contains("relationship-modal-host") ||
+      Boolean(event.detail.target.querySelector(".relationship-modal"));
+
+    event.detail.target.classList.toggle("relationship-modal-host", isRelationshipModal);
+
+    requestAnimationFrame(() => {
+      event.detail.target.classList.add("show");
+      if (sheetOverlay) sheetOverlay.classList.add("show");
+    });
   }
 });
 

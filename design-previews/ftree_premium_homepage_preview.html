@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HeritageTree · Premium Homepage Preview</title>
+  <style>
+    :root {
+      --bg-primary: #fdf8f3;
+      --bg-secondary: #f5ede4;
+      --bg-card: rgba(255, 255, 255, 0.78);
+      --bg-card-strong: rgba(255, 255, 255, 0.94);
+      --bg-dark: #2c1810;
+      --text-primary: #1a0f0a;
+      --text-secondary: #6b5b50;
+      --text-muted: #9a8b7e;
+      --accent-gold: #c9a96e;
+      --accent-gold-light: #ead9ac;
+      --accent-burgundy: #7b2d3b;
+      --accent-burgundy-dark: #5e2230;
+      --accent-green: #4a5d4e;
+      --accent-green-soft: #e6eee6;
+      --accent-rose: #d48494;
+      --accent-blue: #637993;
+      --line: rgba(44, 24, 16, 0.1);
+      --line-strong: rgba(44, 24, 16, 0.16);
+      --glass-border: rgba(255, 255, 255, 0.52);
+      --shadow-soft: 0 4px 24px rgba(44, 24, 16, 0.08);
+      --shadow-medium: 0 12px 40px rgba(44, 24, 16, 0.12);
+      --shadow-strong: 0 24px 70px rgba(44, 24, 16, 0.18);
+      --radius-sm: 14px;
+      --radius-md: 22px;
+      --radius-lg: 30px;
+      --radius-xl: 38px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-height: 100%;
+      background: var(--bg-primary);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--text-primary);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 8% 2%, rgba(201, 169, 110, 0.24), transparent 27rem),
+        radial-gradient(circle at 95% 4%, rgba(123, 45, 59, 0.14), transparent 26rem),
+        radial-gradient(circle at 78% 62%, rgba(74, 93, 78, 0.13), transparent 30rem),
+        linear-gradient(140deg, #fffaf3 0%, #fdf8f3 43%, #f5ede4 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(44, 24, 16, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(44, 24, 16, 0.045) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at 50% 22%, black 0%, transparent 72%);
+      opacity: 0.55;
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto -12rem -24rem -12rem;
+      height: 36rem;
+      background: radial-gradient(ellipse at center, rgba(44, 24, 16, 0.13), transparent 65%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(44, 24, 16, 0.07);
+      background: rgba(253, 248, 243, 0.82);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 36% 30%, #fff8e6 0 18%, transparent 19%),
+        linear-gradient(145deg, var(--accent-gold), var(--accent-burgundy));
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(123, 45, 59, 0.22);
+      border: 3px solid rgba(255,255,255,0.9);
+      flex: 0 0 auto;
+      font-size: 1.15rem;
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: inherit;
+      border: 1px solid rgba(201, 169, 110, 0.5);
+      opacity: 0.8;
+    }
+
+    .brand-text {
+      display: grid;
+      line-height: 1.08;
+      min-width: 0;
+    }
+
+    .brand-text strong {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.2rem;
+      letter-spacing: -0.045em;
+      white-space: nowrap;
+    }
+
+    .brand-text small {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-pill,
+    .btn,
+    .mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(44, 24, 16, 0.1);
+      background: rgba(255,255,255,0.78);
+      color: var(--text-primary);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 0.82rem;
+      min-height: 40px;
+      padding: 0 14px;
+      box-shadow: 0 8px 22px rgba(44, 24, 16, 0.06);
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .nav-pill:hover,
+    .btn:hover,
+    .mini-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(44, 24, 16, 0.1);
+      background: #fff;
+    }
+
+    .nav-pill.is-primary,
+    .btn.is-primary {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent-green), #354739);
+      box-shadow: 0 16px 34px rgba(74, 93, 78, 0.22);
+    }
+
+    .btn.is-gold {
+      color: #2c1810;
+      border-color: rgba(201,169,110,0.4);
+      background: linear-gradient(135deg, #f3dfad, var(--accent-gold));
+      box-shadow: 0 16px 34px rgba(201, 169, 110, 0.24);
+    }
+
+    .btn.is-burgundy {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent-burgundy), var(--accent-burgundy-dark));
+      box-shadow: 0 16px 34px rgba(123, 45, 59, 0.22);
+    }
+
+    .preview-toggle {
+      margin: 18px auto 0;
+      width: min(var(--max), calc(100% - 28px));
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid rgba(44, 24, 16, 0.08);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.64);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .preview-toggle button {
+      border: 0;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-secondary);
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .preview-toggle button.is-active {
+      background: var(--bg-dark);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(44,24,16,0.18);
+    }
+
+    main {
+      padding: 24px 0 64px;
+    }
+
+    .view { display: none; }
+    .view.is-active { display: block; }
+
+    .hero-grid {
+      display: grid;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .hero-card,
+    .panel,
+    .profile-card,
+    .memory-card,
+    .activity-card,
+    .prompt-card,
+    .tree-preview-card {
+      position: relative;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,255,255,0.58)),
+        radial-gradient(circle at 10% 0%, rgba(201,169,110,0.15), transparent 35%);
+      box-shadow: var(--shadow-medium);
+      overflow: hidden;
+    }
+
+    .hero-card::before,
+    .profile-card::before,
+    .panel::before,
+    .tree-preview-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(123,45,59,0.11), transparent 36%),
+        linear-gradient(90deg, rgba(255,255,255,0.22), transparent 46%);
+      pointer-events: none;
+    }
+
+    .hero-card {
+      padding: clamp(24px, 5vw, 44px);
+      min-height: 460px;
+      display: grid;
+      align-content: space-between;
+      isolation: isolate;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      border: 1px solid rgba(201,169,110,0.34);
+      background: rgba(255, 248, 231, 0.74);
+      color: #6f5427;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 26px rgba(201,169,110,0.12);
+    }
+
+    .eyebrow span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      box-shadow: 0 0 0 5px rgba(201,169,110,0.2);
+    }
+
+    .hero-card h1,
+    .guest-title,
+    .section-title {
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text-primary);
+      letter-spacing: -0.075em;
+      line-height: 0.93;
+    }
+
+    .hero-card h1 {
+      margin: 26px 0 16px;
+      max-width: 780px;
+      font-size: clamp(3.1rem, 11vw, 7.6rem);
+    }
+
+    .hero-copy {
+      max-width: 620px;
+      margin: 0;
+      color: var(--text-secondary);
+      font-weight: 650;
+      line-height: 1.65;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+    }
+
+    .hero-actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hero-bottom {
+      display: grid;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 92px;
+      border: 1px solid rgba(44,24,16,0.08);
+      border-radius: 24px;
+      padding: 14px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.85rem;
+      line-height: 1;
+      letter-spacing: -0.06em;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .tree-preview-card {
+      padding: 18px;
+      min-height: 460px;
+      display: grid;
+      align-content: center;
+    }
+
+    .tree-map {
+      position: relative;
+      min-height: 370px;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at center, rgba(201,169,110,0.13), transparent 54%),
+        linear-gradient(145deg, rgba(255,255,255,0.78), rgba(245,237,228,0.58));
+      border: 1px solid rgba(44,24,16,0.07);
+      overflow: hidden;
+    }
+
+    .tree-map svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.78;
+    }
+
+    .tree-line {
+      fill: none;
+      stroke: var(--accent-gold);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 10 8;
+      opacity: 0.58;
+    }
+
+    .node {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #fff;
+      border: 4px solid var(--accent-gold);
+      box-shadow: 0 14px 34px rgba(44,24,16,0.15);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 900;
+      color: var(--text-primary);
+      transform: translate(-50%, -50%);
+    }
+
+    .node::after {
+      position: absolute;
+      left: 50%;
+      bottom: -30px;
+      transform: translateX(-50%);
+      min-width: 88px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .node.root {
+      width: 90px;
+      height: 90px;
+      border-color: var(--accent-burgundy);
+      box-shadow: 0 16px 42px rgba(123,45,59,0.24);
+      background: linear-gradient(145deg, #fff, #fff5ed);
+      font-size: 1.2rem;
+    }
+
+    .node.root::before {
+      content: "You";
+      position: absolute;
+      top: -13px;
+      right: -10px;
+      background: var(--accent-burgundy);
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.62rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .node.parent { border-color: var(--accent-rose); }
+    .node.child { border-color: var(--accent-green); }
+    .node.partner { border-color: var(--accent-blue); }
+    .node.small { width: 56px; height: 56px; font-size: 0.82rem; }
+    .node.n1 { left: 31%; top: 25%; }
+    .node.n2 { left: 69%; top: 25%; }
+    .node.n3 { left: 50%; top: 52%; }
+    .node.n4 { left: 70%; top: 52%; }
+    .node.n5 { left: 34%; top: 78%; }
+    .node.n6 { left: 54%; top: 80%; }
+    .node.n7 { left: 75%; top: 78%; }
+    .node.n1::after { content: "Mother"; }
+    .node.n2::after { content: "Father"; }
+    .node.n3::after { content: "Gen 0"; }
+    .node.n4::after { content: "Partner"; }
+    .node.n5::after { content: "Child"; }
+    .node.n6::after { content: "Child"; }
+    .node.n7::after { content: "+4 hidden"; }
+
+    .reveal-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      justify-content: center;
+    }
+
+    .reveal-pills span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(44,24,16,0.08);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 850;
+      box-shadow: 0 9px 22px rgba(44,24,16,0.06);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+    }
+    .dot.rose { background: var(--accent-rose); }
+    .dot.green { background: var(--accent-green); }
+    .dot.burgundy { background: var(--accent-burgundy); }
+
+    .grid-2,
+    .feed-grid,
+    .section-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section {
+      margin-top: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 0 0 12px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: clamp(1.6rem, 5vw, 2.65rem);
+    }
+
+    .section-head p {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .profile-card {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .profile-main {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar-xl,
+    .avatar,
+    .avatar-sm {
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #fff, #fff5ed);
+      border: 4px solid var(--accent-burgundy);
+      color: var(--text-primary);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 900;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .avatar-xl { width: 92px; height: 92px; font-size: 1.55rem; }
+    .avatar { width: 52px; height: 52px; border-width: 3px; font-size: 0.9rem; }
+    .avatar-sm { width: 38px; height: 38px; border-width: 2px; font-size: 0.72rem; }
+
+    .avatar.gen-parent { border-color: var(--accent-rose); }
+    .avatar.gen-child { border-color: var(--accent-green); }
+    .avatar.gen-partner { border-color: var(--accent-blue); }
+    .avatar.gen-gold { border-color: var(--accent-gold); }
+
+    .profile-copy .kicker,
+    .kicker {
+      margin: 0 0 6px;
+      color: var(--accent-burgundy);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .profile-copy h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 7vw, 3.7rem);
+      line-height: 0.92;
+      letter-spacing: -0.075em;
+    }
+
+    .profile-copy p {
+      margin: 9px 0 0;
+      color: var(--text-secondary);
+      font-weight: 750;
+      line-height: 1.48;
+    }
+
+    .completion {
+      display: grid;
+      gap: 8px;
+    }
+
+    .completion-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text-secondary);
+      font-size: 0.76rem;
+      font-weight: 900;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(44,24,16,0.07);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 68%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent-burgundy), var(--accent-gold));
+      box-shadow: 0 0 18px rgba(201,169,110,0.5);
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quick-action {
+      min-height: 108px;
+      padding: 14px;
+      border-radius: 28px;
+      border: 1px solid rgba(44,24,16,0.08);
+      background: rgba(255,255,255,0.76);
+      text-decoration: none;
+      display: grid;
+      align-content: space-between;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .quick-action .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(201,169,110,0.18);
+      color: var(--accent-burgundy);
+      font-size: 1.15rem;
+    }
+
+    .quick-action strong {
+      display: block;
+      margin-top: 16px;
+      font-size: 0.96rem;
+      letter-spacing: -0.035em;
+    }
+
+    .quick-action small {
+      display: block;
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-weight: 750;
+      line-height: 1.3;
+    }
+
+    .panel {
+      padding: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.45rem;
+      letter-spacing: -0.05em;
+    }
+
+    .panel-header small {
+      color: var(--text-muted);
+      font-weight: 850;
+    }
+
+    .family-list,
+    .activity-list,
+    .champion-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .person-row,
+    .activity-row,
+    .champion-row,
+    .history-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 24px;
+      border: 1px solid rgba(44,24,16,0.07);
+      background: rgba(255,255,255,0.72);
+      box-shadow: 0 8px 20px rgba(44,24,16,0.045);
+    }
+
+    .person-row strong,
+    .activity-row strong,
+    .champion-row strong,
+    .history-row strong {
+      display: block;
+      font-size: 0.94rem;
+      letter-spacing: -0.03em;
+    }
+
+    .person-row small,
+    .activity-row small,
+    .champion-row small,
+    .history-row small {
+      display: block;
+      margin-top: 2px;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      font-weight: 780;
+    }
+
+    .tag {
+      display: inline-flex;
+      min-height: 28px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(74, 93, 78, 0.1);
+      color: var(--accent-green);
+      font-size: 0.68rem;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .tag.gold {
+      color: #765827;
+      background: rgba(201,169,110,0.18);
+    }
+
+    .tag.rose {
+      color: var(--accent-burgundy);
+      background: rgba(123,45,59,0.1);
+    }
+
+    .history-panel {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(201,169,110,0.2), transparent 34%),
+        linear-gradient(145deg, rgba(255,255,255,0.92), rgba(253,248,243,0.68));
+    }
+
+    .history-date {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: var(--bg-dark);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(44,24,16,0.18);
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .history-date span {
+      display: block;
+      font-size: 1.22rem;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .history-date small {
+      display: block;
+      margin: 0;
+      color: rgba(255,255,255,0.72);
+      font-size: 0.58rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .prompt-card {
+      padding: clamp(18px, 4vw, 28px);
+      display: grid;
+      gap: 18px;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(123,45,59,0.16), transparent 30%),
+        linear-gradient(135deg, rgba(255,255,255,0.94), rgba(245,237,228,0.76));
+    }
+
+    .prompt-card blockquote {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.65rem, 5vw, 3.2rem);
+      line-height: 1.03;
+      letter-spacing: -0.055em;
+      max-width: 860px;
+    }
+
+    .prompt-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .memory-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .memory-card {
+      min-height: 250px;
+      padding: 14px;
+      display: grid;
+      align-content: end;
+      background:
+        linear-gradient(180deg, transparent, rgba(44,24,16,0.72)),
+        radial-gradient(circle at 30% 10%, rgba(201,169,110,0.42), transparent 34%),
+        linear-gradient(145deg, #8b5f49, #2c1810);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+
+    .memory-card:nth-child(2) {
+      background:
+        linear-gradient(180deg, transparent, rgba(44,24,16,0.72)),
+        radial-gradient(circle at 70% 8%, rgba(212,132,148,0.38), transparent 34%),
+        linear-gradient(145deg, #4a5d4e, #2c1810);
+    }
+
+    .memory-card:nth-child(3) {
+      background:
+        linear-gradient(180deg, transparent, rgba(44,24,16,0.72)),
+        radial-gradient(circle at 22% 8%, rgba(99,121,147,0.38), transparent 34%),
+        linear-gradient(145deg, #7b2d3b, #2c1810);
+    }
+
+    .memory-card .memory-icon {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.24);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .memory-card h3 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.45rem;
+      letter-spacing: -0.05em;
+    }
+
+    .memory-card p {
+      margin: 7px 0 0;
+      color: rgba(255,255,255,0.76);
+      font-weight: 720;
+      line-height: 1.45;
+    }
+
+    .empty-note {
+      padding: 18px;
+      border: 1px dashed rgba(44,24,16,0.16);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.45);
+      color: var(--text-secondary);
+      font-weight: 760;
+      line-height: 1.5;
+    }
+
+    .guest-landing {
+      display: grid;
+      gap: 16px;
+    }
+
+    .guest-title {
+      margin: 0;
+      font-size: clamp(3.2rem, 13vw, 8rem);
+    }
+
+    .guest-subtitle {
+      margin: 18px 0 0;
+      max-width: 720px;
+      color: var(--text-secondary);
+      font-size: clamp(1.03rem, 2vw, 1.2rem);
+      line-height: 1.68;
+      font-weight: 680;
+    }
+
+    .guest-steps {
+      display: grid;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .guest-step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 13px;
+      align-items: start;
+      padding: 14px;
+      border-radius: 26px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(44,24,16,0.08);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .guest-step span {
+      width: 48px;
+      height: 48px;
+      border-radius: 17px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--accent-green);
+      font-weight: 950;
+      box-shadow: 0 12px 28px rgba(74,93,78,0.2);
+    }
+
+    .guest-step h3 {
+      margin: 0;
+      letter-spacing: -0.035em;
+    }
+
+    .guest-step p {
+      margin: 5px 0 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 760;
+      line-height: 1.45;
+    }
+
+    .privacy-strip {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .privacy-item {
+      padding: 15px;
+      border-radius: 24px;
+      border: 1px solid rgba(44,24,16,0.08);
+      background: rgba(255,255,255,0.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .privacy-item strong {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.03em;
+    }
+
+    .privacy-item p {
+      margin: 7px 0 0;
+      color: var(--text-muted);
+      font-weight: 730;
+      line-height: 1.45;
+    }
+
+    .mobile-bottom-nav {
+      position: sticky;
+      bottom: 12px;
+      z-index: 45;
+      margin: 26px auto 0;
+      width: min(430px, calc(100% - 28px));
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.58);
+      background: rgba(253,248,243,0.82);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: var(--shadow-strong);
+    }
+
+    .mobile-bottom-nav a {
+      min-height: 48px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .mobile-bottom-nav a.is-active {
+      background: var(--bg-dark);
+      color: #fff;
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 22px, var(--max)); }
+      .nav { min-height: 66px; }
+      .brand-text small { display: none; }
+      .nav-actions .nav-pill:not(.is-primary) { display: none; }
+      .preview-toggle { width: min(100% - 22px, var(--max)); }
+      main { padding-top: 16px; }
+      .hero-card { min-height: auto; border-radius: 32px; }
+      .tree-preview-card { min-height: auto; border-radius: 32px; }
+      .tree-map { min-height: 330px; }
+      .stats-strip { grid-template-columns: 1fr; }
+      .stat { min-height: 76px; }
+      .action-row { grid-template-columns: 1fr; }
+      .profile-main { grid-template-columns: 78px 1fr; }
+      .avatar-xl { width: 78px; height: 78px; }
+      .person-row, .activity-row, .champion-row, .history-row { grid-template-columns: auto 1fr; }
+      .person-row .tag, .activity-row .tag, .champion-row .tag, .history-row .tag { grid-column: 2; width: fit-content; }
+      .section-head { align-items: start; flex-direction: column; }
+      .node { width: 58px; height: 58px; border-width: 3px; }
+      .node.root { width: 74px; height: 74px; }
+      .node::after { font-size: 0.66rem; bottom: -25px; }
+      .hero-card h1, .guest-title { letter-spacing: -0.085em; }
+    }
+
+    @media (min-width: 760px) {
+      main { padding-top: 34px; }
+      .hero-grid { grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); }
+      .hero-card { grid-column: span 1; }
+      .grid-2 { grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr); }
+      .feed-grid { grid-template-columns: minmax(0, 1fr) minmax(320px, 0.75fr); }
+      .section-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .profile-card { padding: 22px; }
+      .profile-main { grid-template-columns: 108px 1fr; }
+      .avatar-xl { width: 108px; height: 108px; }
+      .quick-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .memory-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .privacy-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .guest-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .mobile-bottom-nav { display: none; }
+    }
+
+    @media (min-width: 1040px) {
+      .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(430px, 0.85fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="shell nav">
+      <a class="brand" href="#">
+        <span class="brand-mark">♣</span>
+        <span class="brand-text">
+          <strong>HeritageTree</strong>
+          <small>Private family archive</small>
+        </span>
+      </a>
+      <nav class="nav-actions" aria-label="Main navigation">
+        <a class="nav-pill" href="#tree-section">Tree</a>
+        <a class="nav-pill" href="#memories">Memories</a>
+        <a class="nav-pill is-primary" href="#">Open tree</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="preview-toggle" aria-label="Preview mode">
+    <button class="is-active" type="button" data-view-button="dashboard">Signed-in homepage</button>
+    <button type="button" data-view-button="guest">Guest homepage</button>
+  </div>
+
+  <main>
+    <section class="view is-active" data-view="dashboard">
+      <div class="shell hero-grid">
+        <article class="hero-card">
+          <div>
+            <div class="hero-top">
+              <span class="eyebrow"><span></span>Today in your family</span>
+              <a class="mini-btn" href="#">Private mode on</a>
+            </div>
+            <h1>Your family story, beautifully organised.</h1>
+            <p class="hero-copy">A calmer homepage for the current backend flow: your Gen 0 profile, close relatives, family prompts, memories, recent activity, and a clear route back into the tree.</p>
+            <div class="hero-actions">
+              <a class="btn is-burgundy" href="#tree-section">Open family tree</a>
+              <a class="btn is-gold" href="#memories">Add memory</a>
+              <a class="btn" href="#">Invite relative</a>
+            </div>
+          </div>
+
+          <div class="hero-bottom">
+            <div class="stats-strip">
+              <div class="stat"><strong>42</strong><span>People connected</span></div>
+              <div class="stat"><strong>18</strong><span>Memories saved</span></div>
+              <div class="stat"><strong>68%</strong><span>Profile completed</span></div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="tree-preview-card" id="tree-section" aria-label="Tree preview">
+          <div class="tree-map">
+            <svg viewBox="0 0 420 370" aria-hidden="true">
+              <path class="tree-line" d="M130 92 C150 150, 190 160, 210 190" />
+              <path class="tree-line" d="M290 92 C270 150, 230 160, 210 190" />
+              <path class="tree-line" d="M210 220 C190 260, 160 275, 142 292" />
+              <path class="tree-line" d="M210 220 C215 260, 215 275, 214 298" />
+              <path class="tree-line" d="M250 198 C295 210, 302 250, 314 292" />
+            </svg>
+            <div class="node parent n1">AM</div>
+            <div class="node parent n2">TM</div>
+            <div class="node root n3">CM</div>
+            <div class="node partner n4 small">BM</div>
+            <div class="node child n5 small">MM</div>
+            <div class="node child n6 small">TM</div>
+            <div class="node child n7 small">+4</div>
+          </div>
+          <div class="reveal-pills">
+            <span><i class="dot rose"></i>Parents</span>
+            <span><i class="dot burgundy"></i>Gen 0</span>
+            <span><i class="dot green"></i>Children</span>
+            <span><i class="dot"></i>Reveal hidden relatives</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="shell section grid-2">
+        <article class="profile-card">
+          <div class="profile-main">
+            <div class="avatar-xl">CM</div>
+            <div class="profile-copy">
+              <p class="kicker">Gen 0 anchor profile</p>
+              <h2>Calvin Mazhindu</h2>
+              <p>Your account is connected to this person. The tree uses this as the centre point for parents, grandparents, partner, children, and future generations.</p>
+            </div>
+          </div>
+
+          <div class="completion">
+            <div class="completion-label"><span>Profile strength</span><span>68% complete</span></div>
+            <div class="bar"><span></span></div>
+          </div>
+
+          <div class="action-row">
+            <a class="btn is-primary" href="#">Edit profile</a>
+            <a class="btn" href="#">Add photo</a>
+          </div>
+        </article>
+
+        <aside class="panel history-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Today in history</h3>
+              <small>Family moments surfaced gently</small>
+            </div>
+            <span class="tag gold">16 Jun</span>
+          </div>
+          <div class="family-list">
+            <div class="history-row">
+              <div class="history-date"><span>16</span><small>Jun</small></div>
+              <div>
+                <strong>Birthday reminder</strong>
+                <small>Add a note, picture, or short story so this date has meaning next year.</small>
+              </div>
+              <span class="tag rose">Memory</span>
+            </div>
+            <div class="history-row">
+              <div class="history-date"><span>04</span><small>Jul</small></div>
+              <div>
+                <strong>Upcoming anniversary</strong>
+                <small>Prepare a small family prompt before the day arrives.</small>
+              </div>
+              <span class="tag">Soon</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="shell section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Close family</h2>
+            <p>Fast access to the people most likely to be edited, updated, or invited.</p>
+          </div>
+          <a class="mini-btn" href="#">Manage people</a>
+        </div>
+        <div class="section-grid">
+          <article class="panel">
+            <div class="panel-header"><h3>Parents</h3><span class="tag rose">Gen -1</span></div>
+            <div class="family-list">
+              <div class="person-row"><div class="avatar gen-parent">AM</div><div><strong>Anna Mazhindu</strong><small>Mother · born 1958</small></div><span class="tag rose">View</span></div>
+              <div class="person-row"><div class="avatar gen-parent">TM</div><div><strong>Tawanda Mazhindu</strong><small>Father · born 1954</small></div><span class="tag rose">View</span></div>
+            </div>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><h3>Partner</h3><span class="tag">Linked</span></div>
+            <div class="family-list">
+              <div class="person-row"><div class="avatar gen-partner">BM</div><div><strong>Barbara Mazhindu</strong><small>Partner · household branch</small></div><span class="tag">View</span></div>
+              <div class="empty-note">Partner-side relatives can be revealed without confusing the Gen 0 family line.</div>
+            </div>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><h3>Children</h3><span class="tag">Gen 1</span></div>
+            <div class="family-list">
+              <div class="person-row"><div class="avatar gen-child">MM</div><div><strong>Muno Mazhindu</strong><small>Daughter · Gen 1</small></div><span class="tag">View</span></div>
+              <div class="person-row"><div class="avatar gen-child">TM</div><div><strong>Tino Mazhindu</strong><small>Son · Gen 1</small></div><span class="tag">View</span></div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="shell section">
+        <div class="quick-actions">
+          <a class="quick-action" href="#"><span class="icon">＋</span><span><strong>Add person</strong><small>Create a relative from admin or approved flow.</small></span></a>
+          <a class="quick-action" href="#"><span class="icon">✉</span><span><strong>Invite family</strong><small>Bring trusted relatives into the private tree.</small></span></a>
+          <a class="quick-action" href="#"><span class="icon">▣</span><span><strong>Upload photo</strong><small>Give profile cards life and context.</small></span></a>
+          <a class="quick-action" href="#"><span class="icon">⌁</span><span><strong>Review branch</strong><small>Check missing dates and relationships.</small></span></a>
+        </div>
+      </div>
+
+      <div class="shell section">
+        <article class="prompt-card">
+          <p class="kicker">Family prompt</p>
+          <blockquote>“What is one story about your childhood that your children should never lose?”</blockquote>
+          <div class="prompt-meta">
+            <p class="hero-copy">A homepage prompt should invite action without disturbing the tree logic.</p>
+            <a class="btn is-burgundy" href="#">Answer prompt</a>
+          </div>
+        </article>
+      </div>
+
+      <div class="shell section" id="memories">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Recent memories</h2>
+            <p>Polished cards for photos, videos, short notes, and family stories.</p>
+          </div>
+          <a class="mini-btn" href="#">View all</a>
+        </div>
+        <div class="memory-grid">
+          <article class="memory-card"><span class="memory-icon">▣</span><h3>First school photo</h3><p>A small memory attached to a person profile, visible only to the family.</p></article>
+          <article class="memory-card"><span class="memory-icon">▶</span><h3>Grandad’s story</h3><p>Video and audio memories can feel premium when handled as treasured artefacts.</p></article>
+          <article class="memory-card"><span class="memory-icon">✎</span><h3>Family saying</h3><p>Short notes keep the app useful even before there are many photos.</p></article>
+        </div>
+      </div>
+
+      <div class="shell section feed-grid">
+        <article class="panel">
+          <div class="panel-header"><h3>Recent activity</h3><small>Quiet audit trail</small></div>
+          <div class="activity-list">
+            <div class="activity-row"><div class="avatar-sm gen-gold">CM</div><div><strong>Updated profile photo</strong><small>Calvin · 8 minutes ago</small></div><span class="tag gold">Photo</span></div>
+            <div class="activity-row"><div class="avatar-sm gen-child">MM</div><div><strong>Added school memory</strong><small>Muno · yesterday</small></div><span class="tag">Memory</span></div>
+            <div class="activity-row"><div class="avatar-sm gen-parent">AM</div><div><strong>Birthplace completed</strong><small>Anna · last week</small></div><span class="tag rose">Profile</span></div>
+          </div>
+        </article>
+        <aside class="panel">
+          <div class="panel-header"><h3>Family champions</h3><small>People helping most</small></div>
+          <div class="champion-list">
+            <div class="champion-row"><div class="avatar-sm gen-gold">CM</div><div><strong>Calvin</strong><small>12 updates this month</small></div><span class="tag gold">Top</span></div>
+            <div class="champion-row"><div class="avatar-sm gen-partner">BM</div><div><strong>Barbara</strong><small>6 memories added</small></div><span class="tag">Helper</span></div>
+            <div class="champion-row"><div class="avatar-sm gen-child">MM</div><div><strong>Muno</strong><small>3 prompts answered</small></div><span class="tag">New</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" data-view="guest">
+      <div class="shell guest-landing hero-grid">
+        <article class="hero-card">
+          <div>
+            <span class="eyebrow"><span></span>Private family tree</span>
+            <h1 class="guest-title">Start with yourself as Gen 0.</h1>
+            <p class="guest-subtitle">A premium public homepage should explain the product simply: create a private tree, connect relatives, preserve photos and stories, and slowly build a family archive that feels valuable.</p>
+            <div class="hero-actions">
+              <a class="btn is-burgundy" href="#">Create my tree</a>
+              <a class="btn" href="#tree-demo">Preview demo tree</a>
+            </div>
+          </div>
+          <div class="guest-steps">
+            <div class="guest-step"><span>1</span><div><h3>Create your profile</h3><p>Your profile becomes Gen 0, the anchor point for your private tree.</p></div></div>
+            <div class="guest-step"><span>2</span><div><h3>Add relatives</h3><p>Parents go above you, children below you, partner beside you.</p></div></div>
+            <div class="guest-step"><span>3</span><div><h3>Save memories</h3><p>Attach photos, video, dates, places, and stories to people.</p></div></div>
+          </div>
+        </article>
+
+        <aside class="tree-preview-card" id="tree-demo">
+          <div class="tree-map">
+            <svg viewBox="0 0 420 370" aria-hidden="true">
+              <path class="tree-line" d="M130 92 C150 150, 190 160, 210 190" />
+              <path class="tree-line" d="M290 92 C270 150, 230 160, 210 190" />
+              <path class="tree-line" d="M210 220 C190 260, 160 275, 142 292" />
+              <path class="tree-line" d="M210 220 C215 260, 215 275, 214 298" />
+              <path class="tree-line" d="M250 198 C295 210, 302 250, 314 292" />
+            </svg>
+            <div class="node parent n1">GM</div>
+            <div class="node parent n2">GF</div>
+            <div class="node root n3">YOU</div>
+            <div class="node partner n4 small">P</div>
+            <div class="node child n5 small">C1</div>
+            <div class="node child n6 small">C2</div>
+            <div class="node child n7 small">+8</div>
+          </div>
+          <div class="reveal-pills">
+            <span><i class="dot rose"></i>Grandparents</span>
+            <span><i class="dot burgundy"></i>You</span>
+            <span><i class="dot green"></i>Children</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="shell section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Built for trust</h2>
+            <p>The design should feel private, warm, and serious — not like a toy family-tree generator.</p>
+          </div>
+        </div>
+        <div class="privacy-strip">
+          <article class="privacy-item"><strong>🔒 Private by default</strong><p>Family data should feel locked down and intentionally shared.</p></article>
+          <article class="privacy-item"><strong>🌳 Gen-based structure</strong><p>Clear generations make the app easier to understand immediately.</p></article>
+          <article class="privacy-item"><strong>🖼️ Memories with meaning</strong><p>Photos, videos, and stories sit naturally around the people they belong to.</p></article>
+        </div>
+      </div>
+
+      <div class="shell section">
+        <article class="prompt-card">
+          <p class="kicker">Homepage message</p>
+          <blockquote>“Build the family archive your children will thank you for.”</blockquote>
+          <div class="prompt-meta">
+            <p class="hero-copy">This gives the guest homepage emotional value while still keeping the product simple.</p>
+            <a class="btn is-gold" href="#">Create account</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-bottom-nav" aria-label="Mobile preview navigation">
+    <a class="is-active" href="#">Home</a>
+    <a href="#tree-section">Tree</a>
+    <a href="#memories">Memory</a>
+    <a href="#">Invite</a>
+  </nav>
+
+  <script>
+    const buttons = document.querySelectorAll('[data-view-button]');
+    const views = document.querySelectorAll('[data-view]');
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.viewButton;
+        buttons.forEach((item) => item.classList.toggle('is-active', item === button));
+        views.forEach((view) => view.classList.toggle('is-active', view.dataset.view === target));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  </script>
+</body>
+</html>

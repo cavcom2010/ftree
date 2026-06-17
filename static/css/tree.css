@@ -1294,6 +1294,161 @@
   }
 }
 
+/* ===== Polished standalone form ===== */
+.tree-form-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(44, 24, 16, 0.08);
+}
+
+.tree-form-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  background: var(--accent-burgundy);
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.tree-form-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tree-form-hero h2 {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.tree-polished-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tree-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tree-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.tree-field input[type="text"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(44, 24, 16, 0.15);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.tree-field input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent-burgundy);
+  box-shadow: 0 0 0 3px rgba(123, 45, 59, 0.12);
+}
+
+.tree-field input[type="text"]::placeholder {
+  color: rgba(44, 24, 16, 0.35);
+}
+
+.tree-field .errorlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.tree-field input[type="text"].error {
+  border-color: rgba(185, 28, 28, 0.5);
+  background: rgba(185, 28, 28, 0.03);
+}
+
+.tree-form-errors {
+  padding: 12px 14px;
+  background: rgba(185, 28, 28, 0.08);
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  border-radius: 12px;
+  color: #7f1d1d;
+  font-size: 0.85rem;
+}
+
+.tree-form-help {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.tree-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.tree-btn-primary,
+.tree-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 100px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.tree-btn-primary {
+  background: var(--accent-burgundy);
+  color: white;
+}
+
+.tree-btn-primary:hover {
+  background: #5E2230;
+}
+
+.tree-btn-secondary {
+  background: transparent;
+  color: var(--accent-burgundy);
+  border: 1px solid rgba(123, 45, 59, 0.25);
+}
+
+.tree-btn-secondary:hover {
+  background: rgba(123, 45, 59, 0.06);
+}
+
 /* ===== Responsive adjustments ===== */
 @media (max-width: 640px) {
   .radial-header {

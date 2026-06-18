@@ -238,6 +238,18 @@ def invitation_counts_for_people(family, people=None):
     return counts
 
 
+def pending_invitations_by_person(family, people):
+    person_ids = [p.id for p in people]
+    return {
+        inv.person_id: inv
+        for inv in FamilyInvitation.objects.filter(
+            family=family,
+            status=FamilyInvitation.Status.PENDING,
+            person_id__in=person_ids,
+        ).select_related("invitee_user")
+    }
+
+
 def create_relative_with_optional_invite(
     *,
     family,

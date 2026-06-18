@@ -10,6 +10,7 @@ from apps.families.services import (
     current_family_for_user,
     invitation_counts_for_people,
     memberships_by_person,
+    pending_invitations_by_person,
     pending_invitations_for_user,
 )
 from apps.people.models import Person
@@ -61,7 +62,7 @@ def build_tree_context(user, family_slug=None, anchor_id=None, global_admin_view
         }
 
     graph = _relationship_graph(family, people)
-    invite_map = invitation_counts_for_people(family, people)
+    invite_map = pending_invitations_by_person(family, people)
     membership_map = memberships_by_person(family, people)
     rows = _relative_generation_rows(
         anchor,

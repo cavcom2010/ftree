@@ -19,6 +19,7 @@
   let scale = 1;
   let panX = 0;
   let panY = 0;
+  let initialFitDone = false;
   const minScale = 0.3;
   const maxScale = 2.5;
 
@@ -36,7 +37,7 @@
 
   function getVisibleNodes() {
     const visible = new Set();
-    if (root_id) visible.add(root_id);
+    if (root_id && peopleMap.has(root_id)) visible.add(root_id);
 
     expandedNodes.forEach((id) => {
       const person = peopleMap.get(id);
@@ -62,7 +63,7 @@
 
     // Direct relatives
     [person.father_id, person.mother_id, person.partner_id]
-      .filter(Boolean)
+      .filter((id) => id && id !== 'null')
       .forEach(addIfHidden);
     person.sibling_ids.forEach(addIfHidden);
     person.child_ids.forEach(addIfHidden);
@@ -136,7 +137,7 @@
     visibleIds.forEach((id) => {
       const person = peopleMap.get(id);
       if (!person) return;
-      const gen = person.generation;
+      const gen = person.generation != null ? person.generation : 0;
       if (!genGroups[gen]) genGroups[gen] = [];
       genGroups[gen].push(id);
     });
@@ -154,7 +155,7 @@
     const siblingChildren = new Set();
 
     if (root) {
-      [root.father_id, root.mother_id].filter(Boolean).forEach((pid) => directAncestors.add(pid));
+      [root.father_id, root.mother_id].filter((id) => id && id !== 'null').forEach((pid) => directAncestors.add(pid));
       root.child_ids.forEach((cid) => directChildren.add(cid));
       root.sibling_ids.forEach((sid) => {
         const sibling = peopleMap.get(sid);
@@ -164,7 +165,7 @@
       // Walk up and mark direct ancestors and their siblings
       const walkUp = (person) => {
         if (!person) return;
-        [person.father_id, person.mother_id].filter(Boolean).forEach((pid) => {
+        [person.father_id, person.mother_id].filter((id) => id && id !== 'null').forEach((pid) => {
           directAncestors.add(pid);
           const parent = peopleMap.get(pid);
           if (parent) {
@@ -288,7 +289,10 @@
     const fitScaleH = (availableHeight - 48) / canvasHeight;
     const fitScaleW = (availableWidth - 48) / canvasWidth;
     const fitScale = Math.min(fitScaleH, fitScaleW);
-    scale = Math.max(minScale, Math.min(1, fitScale));
+    if (!initialFitDone) {
+      scale = Math.max(minScale, Math.min(1, fitScale));
+      initialFitDone = true;
+    }
   }
 
   function setCanvasSize(width, height) {
@@ -303,8 +307,6 @@
     labelsContainer.style.width = `${width}px`;
     labelsContainer.style.height = `${height}px`;
 
-    panX = 0;
-    panY = 0;
     updateTransform();
   }
 
@@ -426,6 +428,7 @@
 
     // Generation labels based on the groups present in each row
     function labelForRow(gen, groups) {
+      if (gen >= 99) return 'Unconnected';
       if (gen === 0) {
         const hasSiblings = groups.siblings.length > 0;
         const hasPartners = groups.partners.length > 0;
@@ -490,7 +493,7 @@
       const isRoot = id === root_id;
 
       const node = document.createElement('div');
-      node.className = `person-node${isRoot ? ' is-root' : ''}${person.is_living === false ? ' is-deceased' : ''}`;
+      node.className = `person-node${isRoot ? ' is-root' : ''}${!person.is_living ? ' is-deceased' : ''}`;
       node.dataset.personId = id;
       node.style.left = `${pos.x - 34}px`;
       node.style.top = `${pos.y - 34}px`;
@@ -518,9 +521,11 @@
       node.appendChild(avatar);
 
       // Expand hint ring
-      const hint = document.createElement('div');
-      hint.className = 'expand-hint';
-      node.appendChild(hint);
+      if (hiddenCount > 0) {
+        const hint = document.createElement('div');
+        hint.className = 'expand-hint';
+        node.appendChild(hint);
+      }
 
       // Badge
       if (hiddenCount > 0 || isExpanded) {
@@ -544,19 +549,29 @@
       const groups = genSubGroups[person.generation] || {};
       let roleText = person.role;
       if (id === root_id) {
-        roleText = 'You';
+        roleText = '';
       } else if (groups.siblings && groups.siblings.includes(id)) {
         roleText = 'Sibling';
       } else if (groups.partners && groups.partners.includes(id)) {
         roleText = 'Partner';
       } else if (groups.parentSiblings && groups.parentSiblings.includes(id)) {
-        roleText = person.generation === 1 ? 'Aunt/Uncle' : 'Aunt/Uncle';
+        if (person.generation === 1) roleText = 'Aunt/Uncle';
+        else if (person.generation === 2) roleText = 'Great-aunt/Great-uncle';
+        else roleText = (person.generation - 1) + 'x Great-aunt/Uncle';
       } else if (groups.parents && groups.parents.includes(id)) {
-        roleText = person.generation === 1 ? 'Parent' : 'Grandparent';
+        if (person.generation === 1) roleText = 'Parent';
+        else if (person.generation === 2) roleText = 'Grandparent';
+        else if (person.generation === 3) roleText = 'Great-grandparent';
+        else roleText = (person.generation - 2) + 'x Great-grandparent';
       } else if (groups.children && groups.children.includes(id)) {
-        roleText = person.generation === -1 ? 'Child' : 'Grandchild';
+        if (person.generation === -1) roleText = 'Child';
+        else if (person.generation === -2) roleText = 'Grandchild';
+        else if (person.generation === -3) roleText = 'Great-grandchild';
+        else roleText = (Math.abs(person.generation) - 2) + 'x Great-grandchild';
       } else if (groups.siblingChildren && groups.siblingChildren.includes(id)) {
         roleText = 'Niece/Nephew';
+      } else if (person.generation >= 99) {
+        roleText = 'Unconnected';
       }
 
       const roleLabel = document.createElement('div');
@@ -765,7 +780,9 @@
   function expandToGen(targetGen) {
     expandedNodes = new Set(root_id ? [root_id] : []);
     people.forEach((p) => {
-      if (p.generation >= targetGen && p.generation <= 0) {
+      if (targetGen >= 0 && p.generation >= 0 && p.generation <= targetGen) {
+        expandedNodes.add(p.id);
+      } else if (targetGen < 0 && p.generation <= 0 && p.generation >= targetGen) {
         expandedNodes.add(p.id);
       }
     });
@@ -1022,7 +1039,7 @@
     setVisible(editBtn, person.can_edit);
     setVisible(inviteBtn, person.can_invite);
     setVisible(anchorBtn, person.can_set_anchor);
-    setVisible(descendantsBtn, true);
+    setVisible(descendantsBtn, person.child_ids && person.child_ids.length > 0);
     setVisible(storyLink, true);
     setVisible(addRelativeWrap, person.can_add_relative);
     setVisible(deleteBtn, person.can_delete);
@@ -1209,7 +1226,7 @@
 
     populateRelatives(
       'detail-parents',
-      [person.father_id, person.mother_id].filter(Boolean)
+      [person.father_id, person.mother_id].filter((id) => id && id !== 'null')
     );
     populateRelatives(
       'detail-partner',

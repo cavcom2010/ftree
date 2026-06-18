@@ -1,4 +1,5 @@
 import json
+from collections import deque
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -241,9 +242,9 @@ def _person_name_for_user(user):
 
     parts = [part for part in display_name.split() if part]
     if not parts:
-        return "Me", "Family"
+        return "You", ""
     if len(parts) == 1:
-        return parts[0], "Family"
+        return parts[0], ""
     return parts[0], " ".join(parts[1:])
 
 
@@ -320,11 +321,11 @@ def _resolve_tree_anchor(request, family, context=None):
 def _compute_generation_map(anchor, people, parents_by_child, children_by_parent, partners, siblings):
     """Compute generation numbers relative to the anchor (anchor=0, parents>0, children<0)."""
     gen_map = {anchor.id: 0}
-    queue = [anchor.id]
+    queue = deque([anchor.id])
     visited = {anchor.id}
 
     while queue:
-        person_id = queue.pop(0)
+        person_id = queue.popleft()
         gen = gen_map[person_id]
 
         for parent_id in parents_by_child.get(person_id, set()):
@@ -431,7 +432,10 @@ def _tree_data_for_family(family, anchor, user=None):
     )
 
     def enrich(person):
-        data = person.to_tree_dict(generation=gen_map.get(person.id, 0))
+        gen = gen_map.get(person.id)
+        if gen is None:
+            gen = 99
+        data = person.to_tree_dict(generation=gen)
         claimed_membership = memberships_by_person.get(person.id)
         is_claimed = claimed_membership is not None
         claimed_by_me = bool(
@@ -524,17 +528,15 @@ def _tree_social_context(*, family, people, memberships_by_person, pending_invit
         if person_id in social:
             social[person_id]["pending_invite_label"] = invitation.invitee_label
 
-    for row in Story.objects.filter(family=family, people__in=people).values(
-        "id", "title", "people"
-    ):
-        person_id = row["people"]
-        social[person_id]["story_count"] += 1
+    for story in Story.objects.filter(family=family, people__in=people).prefetch_related("people"):
+        for person in story.people.all():
+            if person.id in social:
+                social[person.id]["story_count"] += 1
 
-    for row in Memory.objects.filter(family=family, people__in=people).values(
-        "id", "title", "people"
-    ):
-        person_id = row["people"]
-        social[person_id]["memory_count"] += 1
+    for memory in Memory.objects.filter(family=family, people__in=people).prefetch_related("people"):
+        for person in memory.people.all():
+            if person.id in social:
+                social[person.id]["memory_count"] += 1
 
     activity_rows = []
     direct_activities = Activity.objects.filter(

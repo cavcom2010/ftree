@@ -786,4 +786,4 @@ def _activity_card(activity):
 
 
 def _initials(first_name, last_name):
-    return f"{first_name[:1]}{last_name[:1]}".upper() or "FM"
+    return f"{(first_name or 'F')[:1]}{(last_name or '')[:1]}".upper() or "FM"

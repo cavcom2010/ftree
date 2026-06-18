@@ -169,8 +169,14 @@ class Person(models.Model):
 
         # Map to a single father / mother / partner to match the simple radial tree model.
         # Avoid assigning the same single parent as both father and mother.
-        father = next((p for p in parents if p.gender == Person.Gender.MALE), None)
-        mother = next((p for p in parents if p.gender == Person.Gender.FEMALE), None)
+        father = next(
+            (p for p in sorted(parents, key=lambda p: (p.created_at, p.id))
+             if p.gender == Person.Gender.MALE), None
+        )
+        mother = next(
+            (p for p in sorted(parents, key=lambda p: (p.created_at, p.id))
+             if p.gender == Person.Gender.FEMALE), None
+        )
         if not father and not mother and parents:
             # Only one parent is known and gender is unclear/unknown/other.
             father = parents[0]

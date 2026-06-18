@@ -354,7 +354,8 @@
 
 .person-avatar.gen-minus1,
 .person-avatar.gen-minus2,
-.person-avatar.gen-minus3 {
+.person-avatar.gen-minus3,
+.person-avatar[class*="gen-minus"] {
   border-color: #D48494;
 }
 
@@ -364,8 +365,14 @@
 
 .person-avatar.gen-2,
 .person-avatar.gen-3,
-.person-avatar.gen-4 {
+.person-avatar.gen-4,
+.person-avatar[class*="gen-"]:not(.gen-0):not(.gen-1):not([class*="gen-minus"]) {
   border-color: var(--accent-burgundy);
+}
+
+.person-avatar.gen-99,
+.person-avatar.gen-99 {
+  border-color: #999;
 }
 
 /* Fallback for any direct gender classes still present. */

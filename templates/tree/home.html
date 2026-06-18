@@ -139,7 +139,7 @@
           </a>
           <div>
             <h1 class="radial-title">{{ family.name|default:"Family Tree" }}</h1>
-            <p class="radial-subtitle">{{ tree_anchor.full_name }} · Gen 0</p>
+            <p class="radial-subtitle">{% if tree_anchor %}{{ tree_anchor.full_name }} · Gen 0{% else %}Select a person{% endif %}</p>
           </div>
         </div>
         <div class="radial-header-actions">

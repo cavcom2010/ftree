@@ -23,6 +23,10 @@
   let focusedId = null;
   let previewHoverId = null;
   let previewHideTimeout = null;
+  let longPressTimer = null;
+  let longPressStart = null;
+  const LONG_PRESS_MS = 500;
+  const LONG_PRESS_MOVE_THRESHOLD = 10;
   const minScale = 0.3;
   const maxScale = 2.5;
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
@@ -125,6 +129,14 @@
     return result;
   }
 
+  function cancelLongPress() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+    longPressStart = null;
+  }
+
   function getHoverNetwork(personId) {
     const network = new Set([personId]);
     const person = peopleMap.get(personId);
@@ -166,8 +178,8 @@
     }, 250);
   }
 
-  function showPreview(personId) {
-    if (isTouch || !previewContainer) return;
+  function showPreview(personId, force = false) {
+    if ((!force && isTouch) || !previewContainer) return;
     if (previewHoverId === personId) return;
     previewHoverId = personId;
     if (previewHideTimeout) clearTimeout(previewHideTimeout);
@@ -867,6 +879,53 @@
         }
       });
 
+      // Long-press on touch devices shows the same preview + highlight as desktop hover
+      node.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) {
+          cancelLongPress();
+          return;
+        }
+        cancelLongPress();
+        const t = e.touches[0];
+        longPressStart = { x: t.clientX, y: t.clientY, id: t.identifier };
+        longPressTimer = setTimeout(() => {
+          longPressTimer = null;
+          longPressStart = null;
+          suppressClick = true;
+          showPreview(id, true);
+          highlightNetwork(id);
+          node.classList.add('is-long-pressed');
+        }, LONG_PRESS_MS);
+      }, { passive: true });
+
+      node.addEventListener('touchmove', (e) => {
+        if (!longPressTimer || !longPressStart) return;
+        const t = Array.from(e.touches).find((touch) => touch.identifier === longPressStart.id);
+        if (!t) {
+          cancelLongPress();
+          return;
+        }
+        const dx = t.clientX - longPressStart.x;
+        const dy = t.clientY - longPressStart.y;
+        if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_THRESHOLD) {
+          cancelLongPress();
+        }
+      }, { passive: true });
+
+      function endNodeTouch() {
+        const wasLongPressed = node.classList.contains('is-long-pressed');
+        if (longPressTimer) cancelLongPress();
+        if (wasLongPressed) {
+          node.classList.remove('is-long-pressed');
+          hidePreview();
+          clearNetworkHighlight();
+          suppressClick = true;
+          setTimeout(() => { suppressClick = false; }, 400);
+        }
+      }
+      node.addEventListener('touchend', endNodeTouch, { passive: true });
+      node.addEventListener('touchcancel', endNodeTouch, { passive: true });
+
       nodesContainer.appendChild(node);
     });
 
@@ -1014,12 +1073,16 @@
       const t = e.touches[0];
       const dx = t.clientX - dragStart.x;
       const dy = t.clientY - dragStart.y;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged = true;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDragged = true;
+        cancelLongPress();
+      }
       panX = lastPan.x + dx;
       panY = lastPan.y + dy;
       updateTransform();
     } else if (e.touches.length === 2) {
       e.preventDefault();
+      cancelLongPress();
       const [t1, t2] = [e.touches[0], e.touches[1]];
       const d = touchDistance(t1, t2);
       const mid = touchMidpoint(t1, t2);

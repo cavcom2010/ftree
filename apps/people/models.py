@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class Person(models.Model):
@@ -43,6 +44,17 @@ class Person(models.Model):
     class Meta:
         verbose_name_plural = "people"
         ordering = ["last_name", "first_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["family", "first_name", "last_name", "birth_date"],
+                name="unique_person_identity",
+            ),
+            models.UniqueConstraint(
+                fields=["family", "first_name", "last_name"],
+                condition=Q(birth_date__isnull=True),
+                name="unique_person_identity_no_birth_date",
+            ),
+        ]
 
     def __str__(self):
         return self.full_name

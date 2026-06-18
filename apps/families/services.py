@@ -361,6 +361,24 @@ def create_relative(
 
     person_data = person_data or {}
     person = existing_person
+    if not person:
+        match, match_type = _find_existing_person(
+            family,
+            person_data.get("first_name", ""),
+            person_data.get("last_name", ""),
+            person_data.get("birth_date"),
+        )
+        if match:
+            if match_type == "exact":
+                _validate_existing_person_connection(family, anchor_person, match, relation_type)
+                person = match
+            else:
+                raise ValidationError(
+                    f"A person named '{match.full_name}' already exists in this family "
+                    f"but with a different birth date. To link to the existing person, "
+                    f"use the 'Existing Person' picker instead."
+                )
+
     if person:
         _validate_existing_person_connection(family, anchor_person, person, relation_type)
     else:
@@ -421,6 +439,23 @@ def create_relative(
         ),
     )
     return person, relationship_type
+
+
+def _find_existing_person(family, first_name, last_name, birth_date=None):
+    if not first_name or not last_name:
+        return None, None
+    candidates = Person.objects.filter(
+        family=family,
+        first_name__iexact=first_name.strip(),
+        last_name__iexact=last_name.strip(),
+    )
+    if not candidates.exists():
+        return None, None
+    if birth_date:
+        exact = candidates.filter(birth_date=birth_date).first()
+        if exact:
+            return exact, "exact"
+    return candidates.first(), "name_only"
 
 
 def _coerce_is_living(value):
@@ -516,7 +551,15 @@ def _relationships_for_new_relative(
                 relationship_type=relationship_type,
             )
         )
-        for parent in shared_parents or []:
+        parents_to_link = list(shared_parents or [])
+        if not parents_to_link:
+            parent_ids = Relationship.objects.filter(
+                family=family,
+                to_person=anchor_person,
+                relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+            ).values_list("from_person_id", flat=True)
+            parents_to_link = list(Person.objects.filter(family=family, id__in=parent_ids))
+        for parent in parents_to_link:
             _validate_shared_parent(family, anchor_person, parent)
             relationships.append(
                 Relationship(

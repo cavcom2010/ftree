@@ -1023,6 +1023,8 @@
   position: fixed;
   bottom: 24px;
   left: 50%;
+  right: auto;
+  top: auto;
   transform: translateX(-50%) translateY(100px);
   z-index: 200;
   background: var(--bg-dark);

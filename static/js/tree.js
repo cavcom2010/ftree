@@ -1412,4 +1412,5 @@
 
   centerCanvas();
   renderTree();
+  if (canvas) canvas.classList.add('is-ready');
 })();

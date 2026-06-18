@@ -344,15 +344,7 @@
     svg.querySelectorAll('.conn-line').forEach((line) => {
       const from = line.getAttribute('data-from');
       const to = line.getAttribute('data-to');
-      const family = line.getAttribute('data-family');
-      let isPath = false;
-      if (family) {
-        const ids = family.split(',');
-        isPath = ids.some((fid) => networkIds.has(fid));
-      } else if (from && to) {
-        isPath = networkIds.has(from) && networkIds.has(to);
-      }
-      if (isPath) {
+      if (from && to && networkIds.has(from) && networkIds.has(to)) {
         line.classList.add('is-path');
       } else {
         line.classList.add('is-dimmed');
@@ -611,15 +603,15 @@
     labelsContainer.innerHTML = '';
     svg.innerHTML = '';
 
-    const drawnFamilies = new Set();
+    const drawn = new Set();
     let lineIndex = 0;
 
-    // Partner links (horizontal lines between couples)
     visibleIds.forEach((id) => {
       const person = peopleMap.get(id);
       const pos = positions[id];
       if (!person || !pos) return;
 
+      // Partner connection
       if (
         person.partner_id &&
         visibleIds.has(person.partner_id) &&
@@ -627,105 +619,80 @@
       ) {
         const pPos = positions[person.partner_id];
         if (pPos) {
-          const path = document.createElementNS(
-            'http://www.w3.org/2000/svg',
-            'path'
-          );
-          path.setAttribute('d', `M ${pos.x} ${pos.y} L ${pPos.x} ${pPos.y}`);
-          path.setAttribute('class', 'conn-line partner');
-          path.setAttribute('data-from', id);
-          path.setAttribute('data-to', person.partner_id);
-          path.style.animationDelay = `${lineIndex++ * 0.08}s`;
-          svg.appendChild(path);
-        }
-      }
-    });
-
-    // Family connections: one shared orthogonal shelf per couple/single parent
-    function drawFamilyPath(parentPos, partnerPos, childPositions, familyIds) {
-      if (!childPositions || childPositions.length === 0) return;
-
-      const parentMidX = partnerPos
-        ? (parentPos.x + partnerPos.x) / 2
-        : parentPos.x;
-      const parentY = parentPos.y;
-      const childY = childPositions[0].y;
-      const shelfY = (parentY + childY) / 2;
-
-      const sorted = childPositions.slice().sort((a, b) => a.x - b.x);
-      const minX = sorted[0].x;
-      const maxX = sorted[sorted.length - 1].x;
-
-      let d = `M ${parentMidX} ${parentY} L ${parentMidX} ${shelfY} L ${minX} ${shelfY} L ${maxX} ${shelfY}`;
-      sorted.forEach((cPos) => {
-        d += ` M ${cPos.x} ${shelfY} L ${cPos.x} ${childY}`;
-      });
-
-      const path = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'path'
-      );
-      path.setAttribute('d', d);
-      path.setAttribute('class', 'conn-line family');
-      path.setAttribute('data-family', familyIds.join(','));
-      path.style.animationDelay = `${lineIndex++ * 0.08}s`;
-      svg.appendChild(path);
-    }
-
-    visibleIds.forEach((id) => {
-      const person = peopleMap.get(id);
-      const pos = positions[id];
-      if (!person || !pos) return;
-
-      const partnerId = person.partner_id;
-      const hasPartner = partnerId && visibleIds.has(partnerId);
-
-      // Couple family: children shared by both parents
-      if (hasPartner && id < partnerId) {
-        const partner = peopleMap.get(partnerId);
-        const partnerPos = positions[partnerId];
-        if (partner && partnerPos) {
-          const sharedChildren = person.child_ids.filter(
-            (cid) =>
-              cid &&
-              visibleIds.has(cid) &&
-              partner.child_ids.includes(cid)
-          );
-          if (sharedChildren.length > 0) {
-            const key = `couple:${id}-${partnerId}`;
-            if (!drawnFamilies.has(key)) {
-              drawnFamilies.add(key);
-              drawFamilyPath(
-                pos,
-                partnerPos,
-                sharedChildren.map((cid) => positions[cid]).filter(Boolean),
-                [id, partnerId, ...sharedChildren]
-              );
-            }
+          const key = `${pos.x},${pos.y}-${pPos.x},${pPos.y}`;
+          if (!drawn.has(key)) {
+            drawn.add(key);
+            const path = document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'path'
+            );
+            const midY = (pos.y + pPos.y) / 2;
+            path.setAttribute(
+              'd',
+              `M ${pos.x} ${pos.y} C ${pos.x} ${midY}, ${pPos.x} ${midY}, ${pPos.x} ${pPos.y}`
+            );
+            path.setAttribute('class', 'conn-line partner');
+            path.setAttribute('data-from', id);
+            path.setAttribute('data-to', person.partner_id);
+            path.style.animationDelay = `${lineIndex++ * 0.08}s`;
+            svg.appendChild(path);
           }
         }
       }
 
-      // Single-parent family: children not shared with the visible partner
-      const singleChildren = person.child_ids.filter((cid) => {
-        if (!cid || !visibleIds.has(cid)) return false;
-        if (!hasPartner) return true;
-        const partner = peopleMap.get(partnerId);
-        return partner && !partner.child_ids.includes(cid);
+      // Parent connections
+      [person.father_id, person.mother_id].forEach((pid) => {
+        if (pid && visibleIds.has(pid)) {
+          const pPos = positions[pid];
+          if (pPos) {
+            const key = `${pPos.x},${pPos.y}-${pos.x},${pos.y}`;
+            if (!drawn.has(key)) {
+              drawn.add(key);
+              const path = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'path'
+              );
+              const midY = (pPos.y + pos.y) / 2;
+              path.setAttribute(
+                'd',
+                `M ${pPos.x} ${pPos.y} C ${pPos.x} ${midY}, ${pos.x} ${midY}, ${pos.x} ${pos.y}`
+              );
+              path.setAttribute('class', 'conn-line parent');
+              path.setAttribute('data-from', pid);
+              path.setAttribute('data-to', id);
+              path.style.animationDelay = `${lineIndex++ * 0.08}s`;
+              svg.appendChild(path);
+            }
+          }
+        }
       });
 
-      if (singleChildren.length > 0) {
-        const key = `single:${id}`;
-        if (!drawnFamilies.has(key)) {
-          drawnFamilies.add(key);
-          drawFamilyPath(
-            pos,
-            null,
-            singleChildren.map((cid) => positions[cid]).filter(Boolean),
-            [id, ...singleChildren]
-          );
+      // Child connections
+      person.child_ids.forEach((cid) => {
+        if (cid && visibleIds.has(cid)) {
+          const cPos = positions[cid];
+          if (cPos) {
+            const key = `${pos.x},${pos.y}-${cPos.x},${cPos.y}`;
+            if (!drawn.has(key)) {
+              drawn.add(key);
+              const path = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'path'
+              );
+              const midY = (pos.y + cPos.y) / 2;
+              path.setAttribute(
+                'd',
+                `M ${pos.x} ${pos.y} C ${pos.x} ${midY}, ${cPos.x} ${midY}, ${cPos.x} ${cPos.y}`
+              );
+              path.setAttribute('class', 'conn-line child');
+              path.setAttribute('data-from', id);
+              path.setAttribute('data-to', cid);
+              path.style.animationDelay = `${lineIndex++ * 0.08}s`;
+              svg.appendChild(path);
+            }
+          }
         }
-      }
+      });
     });
 
     // Generation labels based on the groups present in each row

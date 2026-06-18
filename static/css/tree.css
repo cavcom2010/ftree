@@ -276,11 +276,6 @@
   opacity: 0.4;
 }
 
-.conn-line.family {
-  stroke: var(--accent-burgundy);
-  opacity: 0.35;
-}
-
 /* ===== Person nodes ===== */
 .person-node {
   position: absolute;

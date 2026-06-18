@@ -27,3 +27,6 @@ media/
 
 # Home server runtime
 .home_nginx/
+
+# Internal docs
+docs/mailpit-setup.md

@@ -402,10 +402,19 @@
   box-shadow: var(--shadow-strong), 0 0 0 4px rgba(201, 169, 110, 0.2);
 }
 
-.person-avatar img {
+.person-avatar .avatar-photo {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.person-avatar .avatar-photo.is-loaded {
+  opacity: 1;
 }
 
 .person-avatar .avatar-initials {

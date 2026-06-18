@@ -283,7 +283,28 @@
 
           const avatar = document.createElement('div');
           avatar.className = 'person-avatar';
-          avatar.textContent = person.initials;
+
+          const initials = document.createElement('span');
+          initials.className = 'avatar-initials';
+          initials.textContent = person.initials;
+          avatar.appendChild(initials);
+
+          if (person.avatar_url) {
+            const img = document.createElement('img');
+            img.src = person.avatar_url;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.className = 'avatar-photo';
+            img.onerror = function () {
+              this.remove();
+            };
+            img.onload = function () {
+              this.classList.add('is-loaded');
+            };
+            if (img.complete) img.classList.add('is-loaded');
+            avatar.appendChild(img);
+          }
           node.appendChild(avatar);
 
           const nameLabel = document.createElement('div');
@@ -804,20 +825,28 @@
         ? 'root-avatar'
         : `gen-${String(person.generation).replace('-', 'minus')}`;
       avatar.className = `person-avatar ${genClass}`;
+
+      const initials = document.createElement('span');
+      initials.className = 'avatar-initials';
+      initials.textContent = person.initials;
+      avatar.appendChild(initials);
+
       if (person.avatar_url) {
         const img = document.createElement('img');
         img.src = person.avatar_url;
         img.alt = '';
         img.loading = 'lazy';
+        img.decoding = 'async';
+        img.className = 'avatar-photo';
         img.onerror = function () {
-          this.style.display = 'none';
+          this.remove();
         };
+        img.onload = function () {
+          this.classList.add('is-loaded');
+        };
+        if (img.complete) img.classList.add('is-loaded');
         avatar.appendChild(img);
       }
-      const initials = document.createElement('span');
-      initials.className = 'avatar-initials';
-      initials.textContent = person.initials;
-      avatar.appendChild(initials);
       node.appendChild(avatar);
 
       // Expand hint ring

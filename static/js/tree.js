@@ -557,8 +557,6 @@
         roleText = person.generation === -1 ? 'Child' : 'Grandchild';
       } else if (groups.siblingChildren && groups.siblingChildren.includes(id)) {
         roleText = 'Niece/Nephew';
-      } else if (genNames[person.generation]) {
-        roleText = genNames[person.generation];
       }
 
       const roleLabel = document.createElement('div');

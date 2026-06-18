@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
-from django.core.management import call_command
+from django.core.management import call_command, CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -148,6 +148,48 @@ class AccountFlowTests(TestCase):
         self.assertEqual(parsed_url.netloc, "ftree.example")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_new_password1"')
+
+    def test_print_password_reset_link_command_rejects_inactive_user(self):
+        User.objects.create_user(
+            username="inactive-user",
+            email="inactive@example.com",
+            password="OldPass123!",
+            is_active=False,
+        )
+
+        with self.assertRaisesMessage(CommandError, "Verify the email address first"):
+            call_command("print_password_reset_link", "inactive-user")
+
+    def test_print_email_verification_link_command_outputs_valid_activation_url(self):
+        user = User.objects.create_user(
+            username="inactive-user",
+            email="inactive@example.com",
+            password="OldPass123!",
+            is_active=False,
+        )
+        EmailVerification.objects.create(
+            user=user,
+            email=user.email,
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        output = StringIO()
+
+        call_command(
+            "print_email_verification_link",
+            "inactive-user",
+            base_url="https://ftree.example",
+            stdout=output,
+        )
+
+        verification_url = output.getvalue().strip()
+        parsed_url = urlparse(verification_url)
+        response = self.client.get(parsed_url.path)
+        user.refresh_from_db()
+
+        self.assertEqual(parsed_url.scheme, "https")
+        self.assertEqual(parsed_url.netloc, "ftree.example")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(user.is_active)
 
     def test_signup_creates_inactive_user_and_verification_record(self):
         with self.assertLogs("apps.families.auth_views", level="WARNING") as captured:

@@ -53,6 +53,20 @@ class Command(BaseCommand):
         )
         email_matches = [user for user in email_matches if user.has_usable_password()]
         if not email_matches:
+            inactive_match_exists = (
+                User._default_manager.filter(
+                    **{username_field: identifier},
+                    is_active=False,
+                ).exists()
+                or User._default_manager.filter(
+                    email__iexact=identifier,
+                    is_active=False,
+                ).exists()
+            )
+            if inactive_match_exists:
+                raise CommandError(
+                    "The matched user is inactive. Verify the email address first with print_email_verification_link."
+                )
             raise CommandError("No active user with a usable password matched that identifier.")
         if len(email_matches) > 1:
             raise CommandError(

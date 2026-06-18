@@ -1193,6 +1193,254 @@
   background: #5E2230;
 }
 
+/* ===== Create-sheet forms ===== */
+.tree-only-body .tree-invite-form,
+.tree-only-body .relationship-form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin-top: 4px;
+}
+
+.tree-only-body .tree-invite-form label,
+.tree-only-body .relationship-form__field,
+.tree-only-body .tree-invite-success label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tree-only-body .tree-invite-form label > span,
+.tree-only-body .relationship-form__field > span,
+.tree-only-body .tree-invite-success label > span {
+  color: var(--text-primary);
+}
+
+.tree-only-body .tree-invite-form input,
+.tree-only-body .tree-invite-form select,
+.tree-only-body .tree-invite-form textarea,
+.tree-only-body .relationship-form input,
+.tree-only-body .relationship-form select,
+.tree-only-body .relationship-form textarea,
+.tree-only-body .tree-invite-success input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(44, 24, 16, 0.15);
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  background: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.tree-only-body .tree-invite-form select,
+.tree-only-body .relationship-form select {
+  appearance: none;
+  padding-right: 36px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--accent-burgundy) 50%),
+    linear-gradient(135deg, var(--accent-burgundy) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.tree-only-body .tree-invite-form textarea,
+.tree-only-body .relationship-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.tree-only-body .tree-invite-form input:focus,
+.tree-only-body .tree-invite-form select:focus,
+.tree-only-body .tree-invite-form textarea:focus,
+.tree-only-body .relationship-form input:focus,
+.tree-only-body .relationship-form select:focus,
+.tree-only-body .relationship-form textarea:focus,
+.tree-only-body .tree-invite-success input:focus {
+  outline: none;
+  border-color: var(--accent-burgundy);
+  box-shadow: 0 0 0 3px rgba(123, 45, 59, 0.12);
+}
+
+.tree-only-body .tree-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tree-only-body .relationship-form__group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tree-only-body .relationship-form__group > legend,
+.tree-only-body .relationship-form__checks > legend {
+  padding: 0 4px;
+  color: var(--accent-burgundy);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tree-only-body .relationship-form small,
+.tree-only-body .tree-invite-form small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.tree-only-body .relationship-form__status {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tree-only-body .relationship-form__status > legend {
+  padding: 0 4px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tree-only-body .relationship-form__status > ul,
+.tree-only-body .relationship-form__status > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-only-body .relationship-form__status li,
+.tree-only-body .relationship-form__status > div > div {
+  margin: 0;
+}
+
+.tree-only-body .relationship-form__status label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 14px;
+  color: var(--text-primary);
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tree-only-body .relationship-form__checks {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tree-only-body .relationship-form__checks ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-only-body .relationship-form__checks li {
+  margin: 0;
+}
+
+.tree-only-body .relationship-form__checks label {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 14px;
+  color: var(--text-primary);
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tree-only-body .relationship-form__checks input[type="checkbox"],
+.tree-only-body .relationship-form__status input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent-burgundy);
+}
+
+.tree-only-body .relationship-form .tree-form-errors,
+.tree-only-body .tree-invite-form .tree-form-errors,
+.tree-only-body .relationship-form .errorlist,
+.tree-only-body .tree-invite-form .errorlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tree-only-body .tree-invite-success {
+  display: grid;
+  gap: 14px;
+}
+
+.tree-only-body .tree-invite-success p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.tree-only-body .tree-invite-success input[readonly] {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: text;
+}
+
+@media (max-width: 520px) {
+  .tree-only-body .tree-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tree-only-body .relationship-form__status > ul,
+  .tree-only-body .relationship-form__status > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .tree-sheet-panel {
   margin-top: 14px;
   border-top: 1px solid rgba(44, 24, 16, 0.08);

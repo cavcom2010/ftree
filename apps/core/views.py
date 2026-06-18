@@ -23,12 +23,15 @@ def home(request):
     family_slug = request.session.get("current_family_slug")
     if request.user.is_authenticated:
         if not (_is_global_tree_admin(request.user) and not _has_family_membership(request.user)):
-            family, _created_or_repaired = _ensure_starter_tree_for_user(
-                request.user,
-                family_slug=family_slug,
-            )
-            request.session["current_family_slug"] = family.slug
-            family_slug = family.slug
+            try:
+                family, _created_or_repaired = _ensure_starter_tree_for_user(
+                    request.user,
+                    family_slug=family_slug,
+                )
+                request.session["current_family_slug"] = family.slug
+                family_slug = family.slug
+            except Exception:
+                pass
 
     return render(request, "core/home.html", build_homepage_context(request.user, family_slug=family_slug))
 
@@ -68,10 +71,20 @@ def tree(request):
     if request.GET.get("family"):
         request.session["current_family_slug"] = request.GET["family"]
 
-    family, created_or_repaired = _ensure_starter_tree_for_user(
-        request.user,
-        family_slug=family_slug,
-    )
+    try:
+        family, created_or_repaired = _ensure_starter_tree_for_user(
+            request.user,
+            family_slug=family_slug,
+        )
+    except Exception:
+        return render(request, "tree/home.html", {
+            "tree_json": json.dumps({"people": [], "root_id": None}),
+            "family": None,
+            "tree_anchor": None,
+            "relative_generation_rows": [],
+            "needs_family_choice": True,
+            "empty_state": True,
+        })
     request.session["current_family_slug"] = family.slug
 
     context = build_tree_context(request.user, family_slug=family.slug)

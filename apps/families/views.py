@@ -236,20 +236,6 @@ def set_tree_anchor(request, person_id):
     return redirect(f"{reverse('tree')}?family={family.slug}")
 
 
-def signup(request):
-    if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            user.email = form.cleaned_data["email"]
-            user.save(update_fields=["email"])
-            login(request, user)
-            return redirect("tree")
-    else:
-        form = SignupForm()
-    return render(request, "registration/signup.html", {"form": form})
-
-
 def _current_family(request):
     family_slug = (
         request.POST.get("family")

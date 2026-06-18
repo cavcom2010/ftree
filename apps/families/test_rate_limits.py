@@ -1,10 +1,10 @@
 from django.core.cache import cache
-from django.test import SimpleTestCase
+from django.test import TestCase
 
 from apps.families.auth_views import _rate_limited
 
 
-class RateLimitHelperTests(SimpleTestCase):
+class RateLimitHelperTests(TestCase):
     def setUp(self):
         cache.clear()
 

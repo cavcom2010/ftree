@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
@@ -30,8 +31,32 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, 'class="auth-field"', count=2)
         self.assertContains(response, 'id="id_username"')
         self.assertContains(response, 'id="id_password"')
+        self.assertContains(response, 'autocomplete="username"')
+        self.assertContains(response, 'autocomplete="current-password"')
         self.assertContains(response, reverse("password_reset"))
         self.assertContains(response, "Forgot password?")
+
+    @override_settings(SESSION_COOKIE_AGE=60 * 60 * 24 * 14, SESSION_EXPIRE_AT_BROWSER_CLOSE=False)
+    def test_login_sets_persistent_session_cookie_and_survives_refresh(self):
+        User.objects.create_user(username="session-user", email="session@example.com", password="StrongPass123!")
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "session-user", "password": "StrongPass123!"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        session_cookie = response.cookies[settings.SESSION_COOKIE_NAME]
+        self.assertEqual(int(session_cookie["max-age"]), settings.SESSION_COOKIE_AGE)
+        self.assertTrue(session_cookie["expires"])
+
+        home_response = self.client.get("/")
+        tree_response = self.client.get(reverse("tree"))
+
+        self.assertEqual(home_response.status_code, 200)
+        self.assertEqual(tree_response.status_code, 200)
+        self.assertTrue(home_response.wsgi_request.user.is_authenticated)
+        self.assertTrue(tree_response.wsgi_request.user.is_authenticated)
 
     def test_signup_form_uses_styled_auth_fields(self):
         response = self.client.get(reverse("signup"))
@@ -69,16 +94,23 @@ class AccountFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
         self.assertEqual(message.subject, "Reset your HeritageTree password")
-        self.assertIn("Copy and open this single-line reset link:\n\n", message.body)
-        self.assertIn("/r/", message.body)
-        self.assertNotIn("/accounts/reset/", message.body)
-        reset_lines = [line for line in message.body.splitlines() if "/r/" in line]
-        self.assertEqual(len(reset_lines), 1)
-        self.assertTrue(reset_lines[0].startswith("http://testserver/r/"))
-        self.assertNotIn(" ", reset_lines[0])
+        self.assertIn("Copy and open this reset link:\n\n", message.body)
+        self.assertIn("/accounts/reset/", message.body)
         self.assertIn("Your username is: reset-user", message.body)
         self.assertNotIn("You're receiving this email", message.body)
         self.assertNotIn("you\u2019ve", message.body)
+
+    @override_settings(DEBUG=True, EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    def test_password_reset_done_shows_local_development_shortcut_for_console_email(self):
+        User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
+
+        response = self.client.post(reverse("password_reset"), {"email": "reset@example.com"}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Local development shortcut")
+        self.assertContains(response, "Open password reset page")
+        self.assertContains(response, "/accounts/reset/")
+        self.assertContains(response, "data-local-reset-link")
 
     def test_password_reset_confirm_form_uses_styled_auth_fields(self):
         user = User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")

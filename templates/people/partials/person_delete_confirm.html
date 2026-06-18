@@ -1,0 +1,23 @@
+<!-- templates/people/partials/person_delete_confirm.html -->
+<div class="drawer-handle"></div>
+<div class="drawer-main">
+  <div class="drawer-avatar" id="drawerAvatar">
+    {% if person.profile_photo %}
+      <img src="{{ person.profile_photo.url }}" alt="{{ person.full_name }}">
+    {% else %}
+      {{ person.initials }}
+    {% endif %}
+  </div>
+  <div>
+    <b id="drawerName">Delete {{ person.full_name }}?</b>
+    <span id="drawerMeta">This cannot be undone.</span>
+  </div>
+  <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+    <i data-lucide="x"></i>
+  </button>
+</div>
+<form class="drawer-actions" method="post" action="{% url 'person_delete' person.id %}" hx-post="{% url 'person_delete' person.id %}" hx-target="#personDrawer" hx-swap="innerHTML">
+  {% csrf_token %}
+  <button class="btn primary" type="submit" style="grid-column: span 2;">Yes, delete</button>
+  <button class="btn soft" type="button" onclick="closeDrawer()" style="grid-column: span 2;">Cancel</button>
+</form>

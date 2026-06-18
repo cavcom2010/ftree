@@ -2,23 +2,17 @@
 <div class="bottom-nav-wrapper">
   <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="Main navigation">
     {% if request.user.is_authenticated %}
-      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' or request.path == '/tree' %}class="active" aria-current="page"{% endif %}>
+      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="tree-deciduous"></i>Tree
       </a>
       <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="image"></i>Memory
       </a>
-      {% if request.path == '/tree/' or request.path == '/tree' %}
-        <button class="add-main" type="button" data-tree-open-anchor aria-label="Open your person card to connect relatives">
-          <i data-lucide="plus"></i>Connect
-        </button>
-      {% else %}
-        <a class="add-main" href="/tree/" aria-label="Connect relatives">
-          <i data-lucide="plus"></i>Connect
-        </a>
-      {% endif %}
-      <a href="{% url 'home' %}" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
-        <i data-lucide="home"></i>Home
+      <a class="add-main" href="/tree/" aria-label="Connect">
+        <i data-lucide="plus"></i>Connect
+      </a>
+      <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="users"></i>People
       </a>
       <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="menu"></i>Menu
@@ -27,7 +21,7 @@
       <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="home"></i>Home
       </a>
-      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' or request.path == '/tree' %}class="active" aria-current="page"{% endif %}>
+      <a href="/tree/" data-bottom-tree-link {% if request.path == '/tree/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="tree-deciduous"></i>Tree
       </a>
       <a

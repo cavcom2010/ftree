@@ -90,6 +90,8 @@ def invite_relative(request, person_id, relation_type):
                         "maiden_name": form.cleaned_data["maiden_name"],
                         "gender": form.cleaned_data["gender"],
                         "birth_date": form.cleaned_data["birth_date"],
+                        "is_living": form.cleaned_data["is_living"],
+                        "death_date": form.cleaned_data["death_date"],
                     },
                     invitee_identifier=form.cleaned_data["invitee"],
                     role=form.cleaned_data["role"],
@@ -211,26 +213,27 @@ def set_tree_anchor(request, person_id):
         messages.error(request, f"{person.full_name} is already connected to another account.")
         return redirect(f"{reverse('tree')}?family={family.slug}")
 
+    if membership.person_id:
+        if membership.person_id == person.id:
+            request.session["current_family_slug"] = family.slug
+            messages.info(request, f"{person.full_name} is already your linked profile.")
+            return redirect(f"{reverse('tree')}?family={family.slug}")
+
+        messages.error(
+            request,
+            (
+                f"Your account is already linked to {membership.person.full_name}. "
+                "Ask an admin to change your linked profile."
+            ),
+        )
+        return redirect(f"{reverse('tree')}?family={family.slug}")
+
     membership.person = person
     membership.full_clean()
     membership.save(update_fields=["person"])
     request.session["current_family_slug"] = family.slug
     messages.success(request, f"{person.full_name} is now your Gen 0 anchor.")
     return redirect(f"{reverse('tree')}?family={family.slug}")
-
-
-def signup(request):
-    if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            user.email = form.cleaned_data["email"]
-            user.save(update_fields=["email"])
-            login(request, user)
-            return redirect("tree")
-    else:
-        form = SignupForm()
-    return render(request, "registration/signup.html", {"form": form})
 
 
 def _current_family(request):

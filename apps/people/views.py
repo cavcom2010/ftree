@@ -1,11 +1,14 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.families.models import Family, FamilyMembership
 from apps.families.services import can_invite, current_family_for_user
-from apps.people.forms import PersonNameForm
+from apps.people.forms import PersonForm, PersonNameForm
 from apps.people.models import Person
 from apps.people.services import get_descendant_generation, get_generation_label
 from apps.social.models import Activity
@@ -24,6 +27,15 @@ def _family(request=None):
         if family:
             return family
     return Family.objects.first()
+
+
+def _user(request):
+    try:
+        if request.user.is_authenticated:
+            return request.user
+    except AttributeError:
+        pass
+    return User.objects.first()
 
 
 def _can_edit_person(person, user):
@@ -46,15 +58,15 @@ def _can_edit_person(person, user):
 
 def person_drawer(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
-    return render(
-        request,
-        "people/partials/person_drawer.html",
-        {
-            "person": person,
-            "generation_label": get_generation_label(person),
-            "can_edit_name": _can_edit_person(person, request.user),
-        },
-    )
+    context = {
+        "person": person,
+        "generation_label": get_generation_label(person),
+        "can_edit_name": _can_edit_person(person, request.user),
+        "can_add_relative": can_invite(person.family, request.user),
+    }
+    if request.headers.get("HX-Request"):
+        return render(request, "people/partials/person_drawer.html", context)
+    return render(request, "people/person_drawer.html", context)
 
 
 @login_required
@@ -90,12 +102,19 @@ def person_edit_name(request, person_id):
     else:
         form = PersonNameForm(instance=person)
 
+    template = (
+        "people/partials/person_name_form.html"
+        if request.headers.get("HX-Request")
+        else "people/edit_name.html"
+    )
+
     return render(
         request,
-        "people/partials/person_name_form.html",
+        template,
         {
             "person": person,
             "form": form,
+            "tree_only": True,
         },
     )
 
@@ -103,23 +122,91 @@ def person_edit_name(request, person_id):
 def person_descendants(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
     generation = get_descendant_generation(person)
+    template = (
+        "people/partials/descendant_generation.html"
+        if request.headers.get("HX-Request")
+        else "people/descendants.html"
+    )
     return render(
         request,
-        "people/partials/descendant_generation.html",
+        template,
         {
             "person": person,
-            "generation": generation,
+            "generation": [generation] if generation else [],
+            "tree_only": True,
+        },
+    )
+
+
+def person_create(request):
+    family = _family(request)
+    user = _user(request)
+
+    if request.method == "POST":
+        if not family:
+            return HttpResponse("No family configured.", status=404)
+
+        form = PersonForm(request.POST)
+        if form.is_valid():
+            person = form.save(commit=False)
+            person.family = family
+            person.created_by = user
+            person.save()
+
+            Activity.objects.create(
+                family=family,
+                actor=user,
+                activity_type=Activity.Type.PERSON_ADDED,
+                message=f"Added {person.full_name} to the family tree",
+                person=person,
+            )
+
+            from apps.achievements.services import check_branch_builder
+            check_branch_builder(family, user)
+
+            response = HttpResponse("")
+            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} added!"})
+
+            extra = (
+                f'<div hx-swap-oob="true" id="global-sheet" class="global-sheet"></div>'
+                f'<div hx-swap-oob="true" id="sheet-overlay" class="sheet-overlay"></div>'
+            )
+            response.content = extra
+            return response
+
+        return render(request, "people/partials/person_form.html", {"form": form})
+
+    form = PersonForm()
+    return render(
+        request,
+        "people/person_form.html",
+        {
+            "form": form,
+            "family": family,
+            "title": "Add Person",
         },
     )
 
 
 @login_required
-def person_create(request):
-    """Legacy route kept for old links.
+def person_delete(request, person_id):
+    person = get_object_or_404(Person, id=person_id, family=_family(request))
+    user = _user(request)
 
-    Family-tree people should be created through the /tree person-card relationship
-    flow so every new person is connected as a parent, partner, child, or sibling.
-    A standalone create page can create orphan records that do not appear in the
-    visual tree, so it now sends users back to the tree instead.
-    """
-    return redirect("tree")
+    membership = FamilyMembership.objects.filter(family=person.family, user=user).first()
+    can_delete = bool(
+        membership
+        and membership.role in {FamilyMembership.Role.OWNER, FamilyMembership.Role.ADMIN}
+    )
+    if not can_delete:
+        raise PermissionDenied("You do not have permission to delete this person.")
+
+    if request.method == "POST":
+        person.delete()
+        if request.headers.get("HX-Request"):
+            response = HttpResponse("")
+            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} deleted"})
+            return response
+        return redirect("tree")
+
+    return render(request, "people/partials/person_delete_confirm.html", {"person": person})

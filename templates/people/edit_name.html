@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit {{ person.full_name }} · {{ family.name|default:"HeritageTree" }}{% endblock %}
+{% block body_class %}tree-only-body{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260617-descendants">
+{% endblock %}
+
+{% block content %}
+<main class="tree-home" id="tree">
+  <header class="radial-header" id="tree-header">
+    <div class="radial-header-left">
+      <a class="radial-back" href="{% url 'tree' %}" aria-label="Back to tree">
+        <i data-lucide="chevron-left"></i>
+      </a>
+      <div>
+        <h1 class="radial-title">Edit person</h1>
+        <p class="radial-subtitle">{{ person.full_name }}</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="tree-form-page">
+    <section class="tree-create-sheet is-open" aria-labelledby="edit-name-title" aria-hidden="false">
+      <div class="tree-form-hero">
+        <div class="tree-form-avatar" aria-hidden="true">
+          {% if person.avatar %}
+            <img src="{{ person.avatar.url }}" alt="">
+          {% else %}
+            {{ person.get_initials }}
+          {% endif %}
+        </div>
+        <div>
+          <p class="tree-eyebrow">Edit person</p>
+          <h2 id="edit-name-title">{{ person.full_name }}</h2>
+        </div>
+      </div>
+
+      <form class="tree-polished-form" method="post" action="{% url 'person_edit_name' person.id %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="tree-form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="tree-field">
+          <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<span class="tree-field-error">{{ form.first_name.errors }}</span>{% endif %}
+        </div>
+
+        <div class="tree-field">
+          <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<span class="tree-field-error">{{ form.last_name.errors }}</span>{% endif %}
+        </div>
+
+        <div class="tree-field">
+          <label for="{{ form.middle_name.id_for_label }}">{{ form.middle_name.label }}</label>
+          {{ form.middle_name }}
+          {% if form.middle_name.errors %}<span class="tree-field-error">{{ form.middle_name.errors }}</span>{% endif %}
+        </div>
+
+        <div class="tree-field">
+          <label for="{{ form.maiden_name.id_for_label }}">{{ form.maiden_name.label }}</label>
+          {{ form.maiden_name }}
+          {% if form.maiden_name.errors %}<span class="tree-field-error">{{ form.maiden_name.errors }}</span>{% endif %}
+        </div>
+
+        <p class="tree-form-help">This updates the name shown on the homepage, tree cards, drawers, and relationship views.</p>
+
+        <div class="tree-form-actions">
+          <button class="tree-btn-primary" type="submit">Save name</button>
+          <a class="tree-btn-secondary" href="{% url 'tree' %}">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+</script>
+{% endblock %}

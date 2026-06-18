@@ -5,37 +5,15 @@
 {% block body_class %}tree-only-body{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/tree_home.css' %}?v=20260615-tree-shell">
-<link rel="stylesheet" href="{% static 'css/tree_onboarding.css' %}?v=20260615-tree-onboarding">
-<link rel="stylesheet" href="{% static 'css/tree_quick_relatives.css' %}?v=20260615-quick-relatives">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/tree.css' %}?v=20260618-tree-fix">
 {% endblock %}
 
 {% block content %}
 <main class="tree-home" id="tree" data-tree-page>
   <section class="tree-stage" id="tree-canvas" aria-labelledby="tree-title">
-    <header class="sticky-header tree-stage-header{% if can_invite_relatives %} has-create{% endif %}">
-      <a class="icon-btn tree-home-link" href="/" aria-label="Back to home">
-        <i data-lucide="chevron-left"></i>
-      </a>
-      <div class="brand-text tree-title-block">
-        <strong id="tree-title">{% if family %}{{ family.name }}{% else %}Tree setup{% endif %}</strong>
-        {% if needs_family_choice %}
-          <span>Admin view · Choose a family tree</span>
-        {% elif needs_tree_setup %}
-          <span>No family profile is linked to your account yet.</span>
-        {% elif tree_anchor %}
-          <span>Family Tree · Centred on {{ tree_anchor.full_name }}</span>
-        {% else %}
-          <span>Choose your Gen 0 anchor</span>
-        {% endif %}
-      </div>
-      {% if can_invite_relatives %}
-        <button class="icon-btn tree-icon-button" type="button" data-create-sheet-trigger aria-label="Add relative">
-          <i data-lucide="user-plus"></i>
-        </button>
-      {% endif %}
-    </header>
-
     {% if received_invitations %}
       <section class="tree-invite-strip" aria-label="Pending family invitations">
         <strong>{{ received_invitations|length }} pending invite{{ received_invitations|length|pluralize }}</strong>
@@ -122,49 +100,6 @@
         </div>
       </section>
     {% else %}
-      {% if show_tree_onboarding and tree_anchor and can_invite_relatives %}
-        <section class="tree-onboarding-card" aria-labelledby="tree-onboarding-title">
-          <div class="tree-onboarding-copy">
-            <p class="tree-kicker">Start your tree</p>
-            <h1 id="tree-onboarding-title">You are Gen 0. Build your first family links.</h1>
-            <p>
-              We have created your private family tree and placed <strong>{{ tree_anchor.full_name }}</strong> at the centre.
-              Add one close relative now, or skip and explore the tree first.
-            </p>
-          </div>
-          <div class="tree-onboarding-actions" aria-label="Quick ways to add your first relatives">
-            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-              <i data-lucide="arrow-up"></i>
-              Add parent
-            </button>
-            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-              <i data-lucide="heart"></i>
-              Add partner
-            </button>
-            <button type="button" hx-get="{% url 'family_invite_relative' tree_anchor.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-              <i data-lucide="baby"></i>
-              Add child
-            </button>
-            <a href="#tree-generation-stack">Explore first</a>
-          </div>
-        </section>
-      {% endif %}
-
-      <section class="tree-toolbar" aria-label="Tree controls">
-        <div>
-          <strong>{{ generation_count }}</strong>
-          <span>generation rows</span>
-        </div>
-        <div>
-          <strong>{{ people_count }}</strong>
-          <span>people</span>
-        </div>
-        <button type="button" data-tree-scroll-anchor>
-          <i data-lucide="target"></i>
-          Gen 0
-        </button>
-      </section>
-
       {% if is_global_admin_view %}
         <section class="tree-family-switcher tree-admin-switcher" aria-label="Admin tree controls">
           <a class="is-active" href="{% url 'tree' %}">All families</a>
@@ -196,215 +131,179 @@
         </section>
       {% endif %}
 
-      <section class="tree-generation-stack" id="tree-generation-stack" aria-label="Relative generations">
-        {% for row in relative_generation_rows %}
-          <article class="tree-generation-row{% if row.number == 0 %} is-anchor-row{% endif %}" data-generation-row="{{ row.label }}" data-generation-number="{{ row.number }}">
-            <button
-              class="tree-generation-head"
-              type="button"
-              data-generation-toggle
-              aria-expanded="true"
-              aria-controls="tree-row-content-{{ forloop.counter }}">
-              <span class="tree-generation-copy">
-                <span class="tree-generation-pill">{{ row.label }}</span>
-                <span class="tree-generation-title">{{ row.title }}</span>
-                <span class="tree-generation-subtitle">{{ row.subtitle }}</span>
-              </span>
-              <span class="tree-head-meta">
-                <span class="tree-row-count">{{ row.people|length }} people</span>
-                <i data-lucide="chevron-down" aria-hidden="true"></i>
-              </span>
+      <!-- ================= RADIAL TREE ================= -->
+      <header class="radial-header" id="tree-header">
+        <div class="radial-header-left">
+          <a class="radial-back" href="/" aria-label="Back to home">
+            <i data-lucide="chevron-left"></i>
+          </a>
+          <div>
+            <h1 class="radial-title">{{ family.name|default:"Family Tree" }}</h1>
+            <p class="radial-subtitle">{% if tree_anchor %}{{ tree_anchor.full_name }} · Gen 0{% else %}Select a person{% endif %}</p>
+          </div>
+        </div>
+        <div class="radial-header-actions">
+          <a class="header-pill" href="/" aria-label="Go home">
+            <i data-lucide="home"></i>
+            <span>Home</span>
+          </a>
+          <button class="header-pill" type="button" data-tree-expand-all>Expand All</button>
+          <button class="header-pill" type="button" data-tree-collapse>Collapse</button>
+          <button class="header-pill" type="button" data-tree-reset>Reset View</button>
+          {% if can_invite_relatives %}
+            <button class="header-pill is-create" type="button" data-create-sheet-trigger aria-label="Add relative">
+              <i data-lucide="user-plus"></i>
+              <span>Add</span>
             </button>
+          {% endif %}
+        </div>
+      </header>
 
-            <div class="tree-row-content" id="tree-row-content-{{ forloop.counter }}" data-generation-content>
-            <div class="tree-row-shell" data-row-shell>
-              <button class="tree-row-nav is-left" type="button" data-row-scroll="left" aria-label="Scroll {{ row.label }} left">
-                <i data-lucide="chevron-left"></i>
-              </button>
-              <div class="tree-person-track" data-tree-row-track tabindex="0" aria-label="{{ row.label }} relatives">
-                {% for person in row.people %}
-                  <button
-                    class="tree-person-card{% if person.is_anchor %} is-anchor{% endif %}{% if person.is_connected %} is-connected{% endif %}{% if person.has_pending_invite %} is-pending{% endif %}"
-                    type="button"
-                    data-person-reveal="{{ person.id }}"
-                    aria-controls="tree-reveal-{{ person.id }}"
-                    aria-expanded="false"
-                    aria-label="Open {{ person.full_name }} details">
-                    <span class="tree-avatar">
-                      {% if person.avatar_url %}
-                        <img src="{{ person.avatar_url }}" alt="" loading="lazy" onerror="this.style.display='none'">
-                      {% endif %}
-                      <span class="tree-avatar-fallback" aria-hidden="true">{{ person.initials }}</span>
-                    </span>
-                    <span class="tree-card-copy">
-                      <strong>{{ person.full_name }}</strong>
-                      <small>{{ person.relationship_label }} · {{ person.generation_label }}</small>
-                    </span>
-                    <span class="tree-card-meta">
-                      <em>{{ person.connection_label }}</em>
-                      {% if person.child_count %}<em>{{ person.child_count }} child{{ person.child_count|pluralize }}</em>{% endif %}
-                      {% if person.partner_count %}<em>{{ person.partner_count }} partner/co-parent{{ person.partner_count|pluralize }}</em>{% endif %}
-                    </span>
-                  </button>
-                {% endfor %}
-              </div>
-              <button class="tree-row-nav is-right" type="button" data-row-scroll="right" aria-label="Scroll {{ row.label }} right">
-                <i data-lucide="chevron-right"></i>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="canvas" id="canvas">
+          <svg class="tree-svg" id="tree-svg" width="2400" height="2400"></svg>
+          <div class="labels-container" id="labels-container"></div>
+          <div class="nodes-container" id="nodes-container"></div>
+        </div>
+      </div>
+
+      <div class="zoom-controls" id="zoom-controls" aria-label="Zoom controls">
+        <button class="zoom-btn" type="button" data-zoom-in aria-label="Zoom in"><i data-lucide="plus"></i></button>
+        <button class="zoom-btn" type="button" data-zoom-out aria-label="Zoom out"><i data-lucide="minus"></i></button>
+        <button class="zoom-btn" type="button" data-zoom-fit aria-label="Fit to screen"><i data-lucide="maximize"></i></button>
+      </div>
+
+      <div class="detail-overlay" id="detail-overlay"></div>
+      <aside class="detail-panel" id="detail-panel" aria-label="Person details">
+        <div class="detail-handle"></div>
+        <div class="detail-panel-header">
+          <div class="detail-avatar" id="detail-avatar">AB</div>
+          <div class="detail-title">
+            <h2 class="detail-name" id="detail-name"></h2>
+            <p class="detail-role" id="detail-role"></p>
+          </div>
+          <button class="detail-close" type="button" data-detail-close aria-label="Close details">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-meta">
+            <div class="detail-info-row">
+              <span>Born</span>
+              <span id="detail-born"></span>
+            </div>
+            <div class="detail-info-row" id="detail-life-status-row">
+              <span>Status</span>
+              <span id="detail-life-status"></span>
+            </div>
+            <div class="detail-info-row">
+              <span>Location</span>
+              <span id="detail-location"></span>
+            </div>
+            <div class="detail-info-row">
+              <span>Gender</span>
+              <span id="detail-gender"></span>
+            </div>
+          </div>
+
+          <div class="detail-status" id="detail-status"></div>
+
+          <div class="detail-toolbar" id="detail-toolbar">
+            <button class="detail-tool" type="button" data-detail-action="edit" id="detail-action-edit">
+              <i data-lucide="pencil"></i>
+              <span>Edit</span>
+            </button>
+            <div class="detail-tool-group" id="detail-action-add-relative">
+              <button class="detail-tool" type="button" data-detail-menu-toggle aria-expanded="false" aria-controls="detail-relation-picker">
+                <i data-lucide="user-plus"></i>
+                <span>Add relative</span>
               </button>
             </div>
-            <div class="tree-row-progress" aria-hidden="true"><span data-row-progress></span></div>
-            </div>
-          </article>
-        {% endfor %}
-      </section>
+            <button class="detail-tool" type="button" data-detail-action="invite" id="detail-action-invite">
+              <i data-lucide="mail"></i>
+              <span>Invite</span>
+            </button>
+            <button class="detail-tool" type="button" data-detail-action="anchor" id="detail-action-anchor">
+              <i data-lucide="locate"></i>
+              <span>Set anchor</span>
+            </button>
+            <button class="detail-tool" type="button" data-detail-action="descendants" id="detail-action-descendants">
+              <i data-lucide="git-branch"></i>
+              <span>Descendants</span>
+            </button>
+            <a class="detail-tool" id="detail-action-story" href="#">
+              <i data-lucide="book-open"></i>
+              <span>Write story</span>
+            </a>
+            <button class="detail-tool detail-tool-danger" type="button" data-detail-action="delete" id="detail-action-delete">
+              <i data-lucide="trash-2"></i>
+              <span>Delete</span>
+            </button>
+          </div>
+          <div class="detail-relation-picker" id="detail-relation-picker" hidden>
+            <button type="button" data-detail-action="add_parent">Parent</button>
+            <button type="button" data-detail-action="add_child">Child</button>
+            <button type="button" data-detail-action="add_partner">Partner</button>
+            <button type="button" data-detail-action="add_sibling">Sibling</button>
+          </div>
+
+          <div class="detail-section" id="detail-about-section">
+            <h3 class="detail-section-title">About</h3>
+            <p class="detail-bio" id="detail-bio"></p>
+          </div>
+
+          <div class="detail-section" id="detail-content-section">
+            <h3 class="detail-section-title">Memories & Stories</h3>
+            <div class="detail-content-stats" id="detail-content-stats"></div>
+          </div>
+
+          <div class="detail-section" id="detail-social-section">
+            <h3 class="detail-section-title">Family activity</h3>
+            <div class="detail-social" id="detail-social"></div>
+          </div>
+
+          <div class="detail-section" id="detail-parents-section">
+            <h3 class="detail-section-title">Parents</h3>
+            <div class="detail-relatives" id="detail-parents"></div>
+          </div>
+
+          <div class="detail-section" id="detail-partner-section">
+            <h3 class="detail-section-title">Partner</h3>
+            <div class="detail-relatives" id="detail-partner"></div>
+          </div>
+
+          <div class="detail-section" id="detail-siblings-section">
+            <h3 class="detail-section-title">Siblings</h3>
+            <div class="detail-relatives" id="detail-siblings"></div>
+          </div>
+
+          <div class="detail-section" id="detail-children-section">
+            <h3 class="detail-section-title">Children</h3>
+            <div class="detail-relatives" id="detail-children"></div>
+          </div>
+
+          <div class="detail-actions" id="detail-actions">
+            <a class="detail-action" id="detail-profile-link" href="#">
+              <i data-lucide="user"></i>
+              View full profile
+            </a>
+          </div>
+        </div>
+      </aside>
+      <!-- ============== END RADIAL TREE ============== -->
     {% endif %}
   </section>
 
-  {% if not needs_anchor_choice and not needs_tree_setup and not needs_family_choice %}
-    <div class="tree-reveal-backdrop" data-tree-reveal-close hidden></div>
-    {% for row in relative_generation_rows %}
-      {% for person in row.people %}
-        <aside class="tree-reveal-drawer" id="tree-reveal-{{ person.id }}" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tree-reveal-title-{{ person.id }}">
-          <div class="tree-reveal-handle"></div>
-          <div class="tree-reveal-head">
-            <span class="tree-avatar is-large">
-              {% if person.avatar_url %}
-                <img src="{{ person.avatar_url }}" alt="" loading="lazy" onerror="this.style.display='none'">
-              {% endif %}
-              <span class="tree-avatar-fallback" aria-hidden="true">{{ person.initials }}</span>
-            </span>
-            <div>
-              <p class="tree-kicker">{{ person.generation_label }}</p>
-              <h2 id="tree-reveal-title-{{ person.id }}">{{ person.full_name }}</h2>
-              <p>{{ person.relationship_label }}{% if person.life_years %} · {{ person.life_years }}{% endif %}</p>
-              <p>{{ person.connection_label }}</p>
-            </div>
-            <button type="button" data-tree-reveal-close aria-label="Close {{ person.full_name }}">
-              <i data-lucide="x"></i>
-            </button>
-          </div>
-
-          {% if can_invite_relatives %}
-            <section class="tree-quick-relatives" aria-labelledby="tree-quick-relatives-title-{{ person.id }}">
-              <div>
-                <p class="tree-kicker">Add relatives</p>
-                <h3 id="tree-quick-relatives-title-{{ person.id }}">Add relatives for {{ person.full_name }}</h3>
-              </div>
-              <div class="tree-quick-actions" aria-label="Add relatives for {{ person.full_name }}">
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-                  <i data-lucide="arrow-up"></i>
-                  <span>Parent</span>
-                </button>
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-                  <i data-lucide="heart"></i>
-                  <span>Partner</span>
-                </button>
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-                  <i data-lucide="baby"></i>
-                  <span>Child</span>
-                </button>
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
-                  <i data-lucide="users"></i>
-                  <span>Sibling</span>
-                </button>
-              </div>
-              <div class="tree-quick-helper">
-                <p><strong>Grandparents:</strong> open your parent’s card and add their parents.</p>
-                <p><strong>Aunties/uncles:</strong> open your parent’s card and add their siblings.</p>
-              </div>
-            </section>
-          {% endif %}
-
-          <div class="tree-reveal-pills" role="tablist" aria-label="{{ person.full_name }} relationship groups">
-            <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="parents-{{ person.id }}" data-reveal-tab="parents-{{ person.id }}">Parents</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="partners-{{ person.id }}" data-reveal-tab="partners-{{ person.id }}">Partners & co-parents</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="children-{{ person.id }}" data-reveal-tab="children-{{ person.id }}">Children</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="siblings-{{ person.id }}" data-reveal-tab="siblings-{{ person.id }}">Siblings</button>
-            <button type="button" role="tab" aria-selected="false" aria-controls="details-{{ person.id }}" data-reveal-tab="details-{{ person.id }}">Details</button>
-          </div>
-
-          <div class="tree-reveal-panel is-active" id="parents-{{ person.id }}" role="tabpanel" data-reveal-panel>
-            {% for relative in person.parents %}
-              <span>{{ relative.full_name }}</span>
-            {% empty %}
-              {% if not can_invite_relatives %}
-                <span>No parent connected</span>
-              {% endif %}
-            {% endfor %}
-              {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.parent_count %}Add another parent{% else %}Add parent{% endif %}</button>
-              {% endif %}
-          </div>
-          <div class="tree-reveal-panel" id="partners-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
-            {% for relative in person.partners %}
-              <span class="tree-related-chip">
-                <strong>{{ relative.full_name }}</strong>
-                {% if relative.relationship_label %}
-                  <small>
-                    {{ relative.relationship_label }}{% if relative.shared_child_names %} · shares {{ relative.shared_child_names|join:", " }}{% endif %}
-                  </small>
-                {% endif %}
-              </span>
-            {% empty %}
-              {% if not can_invite_relatives %}
-                <span>No partner or co-parent connected</span>
-              {% endif %}
-            {% endfor %}
-              {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.partner_count %}Add another partner{% else %}Add partner{% endif %}</button>
-              {% endif %}
-          </div>
-          <div class="tree-reveal-panel" id="children-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
-            <span>{{ person.child_count }} direct child{{ person.child_count|pluralize }}</span>
-            {% for relative in person.children %}
-              <span>{{ relative.full_name }}</span>
-            {% empty %}
-              {% if can_invite_relatives %}
-                <span>No children connected yet</span>
-              {% else %}
-                <span>No child connected</span>
-              {% endif %}
-            {% endfor %}
-            {% if can_invite_relatives %}
-              <button type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.child_count %}Add another child{% else %}Add child{% endif %}</button>
-            {% endif %}
-          </div>
-          <div class="tree-reveal-panel" id="siblings-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
-            {% for relative in person.siblings %}
-              <span>{{ relative.full_name }}</span>
-            {% empty %}
-              {% if not can_invite_relatives %}
-                <span>No sibling connected</span>
-              {% endif %}
-            {% endfor %}
-              {% if can_invite_relatives %}
-                <button type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">{% if person.sibling_count %}Add another sibling{% else %}Add sibling{% endif %}</button>
-              {% endif %}
-          </div>
-          <div class="tree-reveal-panel" id="details-{{ person.id }}" role="tabpanel" data-reveal-panel hidden>
-            <dl>
-              <div><dt>Place</dt><dd>{{ person.location }}</dd></div>
-              <div><dt>Life</dt><dd>{{ person.life_years|default:"Not recorded" }}</dd></div>
-              {% if person.maiden_name %}<div><dt>Birth/maiden surname</dt><dd>{{ person.maiden_name }}</dd></div>{% endif %}
-              <div><dt>Children</dt><dd>{{ person.child_count }}</dd></div>
-              <div><dt>Status</dt><dd>{{ person.connection_label }}</dd></div>
-            </dl>
-            {% if person.can_edit_name %}
-              <button type="button" hx-get="{% url 'person_edit_name' person.id %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Edit name</button>
-            {% endif %}
-            {% if person.can_invite %}
-              <button type="button" hx-get="{% url 'family_invite_person' person.id %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">Invite this person</button>
-            {% endif %}
-          </div>
-        </aside>
-      {% endfor %}
-    {% endfor %}
-  {% endif %}
+  {% include "tree/partials/create_sheet.html" %}
 </main>
 
-{% include "tree/partials/create_sheet.html" %}
+{% include "core/_bottom_nav.html" %}
+
+<script>
+  window.TREE_DATA = {{ tree_json|safe }};
+</script>
 {% endblock %}
 
 {% block extra_scripts %}
-<script defer src="{% static 'js/tree_home.js' %}?v=20260615-card-drawer-restore"></script>
+<script defer src="{% static 'js/tree.js' %}?v=20260618-tree-fix"></script>
 {% endblock %}

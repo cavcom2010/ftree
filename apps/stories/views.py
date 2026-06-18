@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from apps.families.models import Family
+from apps.people.models import Person
 from apps.social.models import Activity, Reaction
 from apps.stories.forms import StoryForm
 from apps.stories.models import Story
@@ -64,6 +65,7 @@ def story_list(request):
 def story_create(request):
     family = _family(request)
     user = _user(request)
+    selected_person = _selected_story_person(request, family)
 
     if request.method == "POST":
         form = StoryForm(request.POST)
@@ -72,12 +74,15 @@ def story_create(request):
             story.family = family
             story.author = user
             story.save()
+            if selected_person:
+                story.people.add(selected_person)
 
             Activity.objects.create(
                 family=family,
                 actor=user,
                 activity_type=Activity.Type.STORY_ADDED,
                 message=f"Published {story.title}",
+                person=selected_person,
                 story=story,
             )
 
@@ -94,12 +99,21 @@ def story_create(request):
         return render(
             request,
             "stories/story_form.html",
-            {"form": form},
+            {"form": form, "selected_person": selected_person},
         )
 
     form = StoryForm()
     return render(
         request,
         "stories/story_form.html",
-        {"form": form, "title": "Tell a Family Story"},
+        {"form": form, "title": "Tell a Family Story", "selected_person": selected_person},
     )
+
+
+def _selected_story_person(request, family):
+    if not family:
+        return None
+    person_id = request.POST.get("person") or request.GET.get("person")
+    if not person_id:
+        return None
+    return Person.objects.filter(family=family, id=person_id).first()

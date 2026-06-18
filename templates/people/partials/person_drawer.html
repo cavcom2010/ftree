@@ -11,6 +11,11 @@
   <div>
     <b id="drawerName">{{ person.full_name }}</b>
     <span id="drawerMeta">{{ generation_label|default:"Family Member" }}</span>
+    {% if person.death_date %}
+      <span class="drawer-life-status">Died {{ person.death_date|date:"j M Y" }}</span>
+    {% elif not person.is_living %}
+      <span class="drawer-life-status">Deceased</span>
+    {% endif %}
   </div>
   <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">
     <i data-lucide="x"></i>
@@ -24,9 +29,13 @@
     <button class="btn soft" type="button" hx-get="{% url 'person_edit_name' person.id %}" hx-target="#global-sheet" hx-swap="innerHTML">
       <i data-lucide="pencil"></i>Edit Name
     </button>
-  {% else %}
-    <a href="{% url 'tree' %}" class="btn soft">
-      <i data-lucide="user-plus"></i>Add Relative
-    </a>
   {% endif %}
 </div>
+{% if can_add_relative %}
+  <div class="drawer-relative-actions" aria-label="Add relative for {{ person.full_name }}">
+    <button class="btn soft" type="button" hx-get="{% url 'family_invite_relative' person.id 'parent' %}" hx-target="#global-sheet" hx-swap="innerHTML">Parent</button>
+    <button class="btn soft" type="button" hx-get="{% url 'family_invite_relative' person.id 'child' %}" hx-target="#global-sheet" hx-swap="innerHTML">Child</button>
+    <button class="btn soft" type="button" hx-get="{% url 'family_invite_relative' person.id 'partner' %}" hx-target="#global-sheet" hx-swap="innerHTML">Partner</button>
+    <button class="btn soft" type="button" hx-get="{% url 'family_invite_relative' person.id 'sibling' %}" hx-target="#global-sheet" hx-swap="innerHTML">Sibling</button>
+  </div>
+{% endif %}

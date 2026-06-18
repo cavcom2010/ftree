@@ -43,6 +43,11 @@ class InvitePersonForm(forms.Form):
 
 
 class InviteRelativeForm(InvitePersonForm):
+    LIVING_CHOICES = [
+        (True, "Living"),
+        (False, "Deceased"),
+    ]
+
     invitee = forms.CharField(
         label="Invite username or email",
         max_length=254,
@@ -75,6 +80,21 @@ class InviteRelativeForm(InvitePersonForm):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+    is_living = forms.TypedChoiceField(
+        label="Life status",
+        choices=LIVING_CHOICES,
+        coerce=lambda value: value in {True, "True", "true", "1", 1},
+        initial=True,
+        required=False,
+        empty_value=True,
+        widget=forms.RadioSelect,
+    )
+    death_date = forms.DateField(
+        label="Death date",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional. Leave blank if the exact date is unknown.",
+    )
     parent_relationship_type = forms.ChoiceField(
         label="Parent type",
         choices=PARENT_RELATIONSHIP_CHOICES,
@@ -98,6 +118,7 @@ class InviteRelativeForm(InvitePersonForm):
         queryset=Person.objects.none(),
         required=False,
         widget=forms.CheckboxSelectMultiple,
+        help_text="Select the parents this sibling shares. This places them on the tree.",
     )
     partner_shared_children = forms.ModelMultipleChoiceField(
         label="Children you share with this partner",
@@ -136,15 +157,34 @@ class InviteRelativeForm(InvitePersonForm):
         existing_person = cleaned_data.get("existing_person")
         first_name = (cleaned_data.get("first_name") or "").strip()
         last_name = (cleaned_data.get("last_name") or "").strip()
+        is_living = cleaned_data.get("is_living")
+        death_date = cleaned_data.get("death_date")
+        invitee = (cleaned_data.get("invitee") or "").strip()
 
         if existing_person and self.relation_type not in {"partner", "spouse"}:
             self.add_error("existing_person", "Existing-person connection is available for partners and co-parents.")
+
+        if not existing_person and is_living and death_date:
+            self.add_error("death_date", "Mark this relative as deceased before adding a death date.")
+
+        effective_is_living = existing_person.is_living if existing_person else is_living
+        if invitee and effective_is_living is False:
+            self.add_error("invitee", "Deceased relatives cannot be invited to claim an account.")
 
         if not existing_person:
             if not first_name:
                 self.add_error("first_name", "Enter a first name or choose an existing person.")
             if not last_name:
                 self.add_error("last_name", "Enter a surname or choose an existing person.")
+
+        if self.relation_type == "sibling" and not existing_person:
+            shared_parents = cleaned_data.get("shared_parents")
+            candidate_parents = self.fields["shared_parents"].queryset
+            if candidate_parents.exists() and not shared_parents:
+                self.add_error(
+                    "shared_parents",
+                    "Select at least one shared parent so the sibling appears on the tree.",
+                )
 
         return cleaned_data
 
@@ -271,11 +311,24 @@ def _direct_relative_ids(family, person):
 
 
 def _parents_for_person(family, person):
-    parent_ids = Relationship.objects.filter(
-        family=family,
-        to_person=person,
-        relationship_type__in=_parent_types(),
-    ).values_list("from_person_id", flat=True)
+    parent_ids = set(
+        Relationship.objects.filter(
+            family=family,
+            to_person=person,
+            relationship_type__in=_parent_types(),
+        ).values_list("from_person_id", flat=True)
+    )
+    # Also include parents attached to the person's existing siblings,
+    # because those parents are already on the tree and may be shared.
+    sibling_ids = _siblings_for_person(family, person).values_list("id", flat=True)
+    if sibling_ids:
+        parent_ids.update(
+            Relationship.objects.filter(
+                family=family,
+                to_person_id__in=sibling_ids,
+                relationship_type__in=_parent_types(),
+            ).values_list("from_person_id", flat=True)
+        )
     return Person.objects.filter(family=family, id__in=parent_ids).order_by("first_name", "last_name")
 
 

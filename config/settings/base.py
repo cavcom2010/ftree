@@ -105,6 +105,23 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/tree/"
 LOGOUT_REDIRECT_URL = "/"
 
+SESSION_COOKIE_AGE = config("SESSION_COOKIE_AGE", default=60 * 60 * 24 * 14, cast=int)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = config("SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False, cast=bool)
+SESSION_SAVE_EVERY_REQUEST = True
+
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="http://127.0.0.1:8029,http://localhost:8029", cast=Csv())
+
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="HeritageTree <noreply@localhost>")
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND",

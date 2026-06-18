@@ -20,9 +20,12 @@
       <a class="btn primary" href="/tree/">
         <i data-lucide="git-branch"></i>Open tree
       </a>
-      <a class="btn soft" href="/tree/">
+      <button class="btn soft" type="button"
+        hx-get="/people/{{ dashboard.profile.source_id }}/edit-name/"
+        hx-target="#global-sheet"
+        hx-swap="innerHTML">
         <i data-lucide="edit-3"></i>Edit profile
-      </a>
+      </button>
     </div>
   </article>
 
@@ -71,9 +74,18 @@
           {% endfor %}
         </div>
 
-        <a class="close-family-add" href="{{ group.action_href }}">
-          <i data-lucide="plus"></i>{{ group.action_label }}
-        </a>
+        {% if group.action_hx_get %}
+          <button class="close-family-add" type="button"
+            hx-get="{{ group.action_hx_get }}"
+            hx-target="{{ group.action_hx_target }}"
+            hx-swap="{{ group.action_hx_swap }}">
+            <i data-lucide="plus"></i>{{ group.action_label }}
+          </button>
+        {% else %}
+          <a class="close-family-add" href="{{ group.action_href }}">
+            <i data-lucide="plus"></i>{{ group.action_label }}
+          </a>
+        {% endif %}
       </article>
     {% endfor %}
   </div>
@@ -86,10 +98,20 @@
   </div>
   <div class="dashboard-actions">
     {% for action in dashboard.quick_actions %}
-      <a class="dashboard-action {% if action.kind == 'primary' %}is-primary{% endif %}" href="{{ action.href }}">
-        <i data-lucide="{{ action.icon }}"></i>
-        <span>{{ action.label }}</span>
-      </a>
+      {% if action.hx_get %}
+        <button class="dashboard-action {% if action.kind == 'primary' %}is-primary{% endif %}" type="button"
+          hx-get="{{ action.hx_get }}"
+          hx-target="{{ action.hx_target }}"
+          hx-swap="{{ action.hx_swap }}">
+          <i data-lucide="{{ action.icon }}"></i>
+          <span>{{ action.label }}</span>
+        </button>
+      {% else %}
+        <a class="dashboard-action {% if action.kind == 'primary' %}is-primary{% endif %}" href="{{ action.href }}">
+          <i data-lucide="{{ action.icon }}"></i>
+          <span>{{ action.label }}</span>
+        </a>
+      {% endif %}
     {% endfor %}
   </div>
 </section>

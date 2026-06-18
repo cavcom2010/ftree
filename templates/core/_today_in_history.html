@@ -9,11 +9,7 @@
 </div>
 <div class="today-grid animate-in delay-1">
   {% for card in today_cards %}
-    {% if card.href %}
-      <a class="today-card" href="{{ card.href }}">
-    {% else %}
-      <div class="today-card" {% if card.toast %}onclick="showToast('{{ card.toast|escapejs }}')"{% endif %}>
-    {% endif %}
+    <a class="today-card" href="{{ card.href|default:'/tree/' }}">
         <div class="today-icon">
           <i data-lucide="{{ card.icon|default:'sparkles' }}"></i>
         </div>
@@ -24,11 +20,7 @@
         <div class="arrow">
           <i data-lucide="chevron-right"></i>
         </div>
-    {% if card.href %}
-      </a>
-    {% else %}
-      </div>
-    {% endif %}
+    </a>
   {% empty %}
     <a class="today-card" href="/tree/">
       <div class="today-icon">

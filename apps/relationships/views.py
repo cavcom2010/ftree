@@ -91,6 +91,29 @@ def add_relative(request, person_id, relation_type):
                     to_person=relative,
                     relationship_type=Relationship.Type.SIBLING,
                 )
+                parent_ids = Relationship.objects.filter(
+                    family=family,
+                    to_person=current_person,
+                    relationship_type__in={
+                        Relationship.Type.PARENT_CHILD,
+                        Relationship.Type.ADOPTIVE_PARENT,
+                        Relationship.Type.STEP_PARENT,
+                        Relationship.Type.GUARDIAN,
+                    },
+                ).values_list("from_person_id", flat=True)
+                for parent_id in parent_ids:
+                    if not Relationship.objects.filter(
+                        family=family,
+                        from_person_id=parent_id,
+                        to_person=relative,
+                        relationship_type=Relationship.Type.PARENT_CHILD,
+                    ).exists():
+                        Relationship.objects.create(
+                            family=family,
+                            from_person_id=parent_id,
+                            to_person=relative,
+                            relationship_type=Relationship.Type.PARENT_CHILD,
+                        )
                 msg = f"Added {relative.full_name} as sibling of {current_person.first_name}"
 
             else:
@@ -104,11 +127,12 @@ def add_relative(request, person_id, relation_type):
                 person=relative,
             )
 
+            descendant_generation = get_descendant_generation(current_person)
             descendants_html = render_to_string(
                 "people/partials/descendant_generation.html",
                 {
                     "person": current_person,
-                    "generation": get_descendant_generation(current_person),
+                    "generation": [descendant_generation] if descendant_generation else [],
                 },
                 request=request,
             )

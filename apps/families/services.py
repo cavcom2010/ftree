@@ -111,6 +111,8 @@ def create_invitation(
     require_invite_permission(family, inviter)
     if person.family_id != family.id:
         raise ValidationError("Invited person must belong to this family.")
+    if not person.is_living:
+        raise ValidationError("Deceased relatives cannot be invited to claim an account.")
     if anchor_person and anchor_person.family_id != family.id:
         raise ValidationError("Anchor person must belong to this family.")
 
@@ -236,6 +238,18 @@ def invitation_counts_for_people(family, people=None):
     return counts
 
 
+def pending_invitations_by_person(family, people):
+    person_ids = [p.id for p in people]
+    return {
+        inv.person_id: inv
+        for inv in FamilyInvitation.objects.filter(
+            family=family,
+            status=FamilyInvitation.Status.PENDING,
+            person_id__in=person_ids,
+        ).select_related("invitee_user")
+    }
+
+
 def create_relative_with_optional_invite(
     *,
     family,
@@ -271,6 +285,8 @@ def create_relative_with_optional_invite(
         )
         invitation = None
         if invitee_identifier:
+            if not person.is_living:
+                raise ValidationError("Deceased relatives cannot be invited to claim an account.")
             invitation = create_invitation(
                 family=family,
                 inviter=inviter,
@@ -345,9 +361,31 @@ def create_relative(
 
     person_data = person_data or {}
     person = existing_person
+    if not person:
+        match, match_type = _find_existing_person(
+            family,
+            person_data.get("first_name", ""),
+            person_data.get("last_name", ""),
+            person_data.get("birth_date"),
+        )
+        if match:
+            if match_type == "exact":
+                _validate_existing_person_connection(family, anchor_person, match, relation_type)
+                person = match
+            else:
+                raise ValidationError(
+                    f"A person named '{match.full_name}' already exists in this family "
+                    f"but with a different birth date. To link to the existing person, "
+                    f"use the 'Existing Person' picker instead."
+                )
+
     if person:
         _validate_existing_person_connection(family, anchor_person, person, relation_type)
     else:
+        is_living = _coerce_is_living(person_data.get("is_living"))
+        death_date = person_data.get("death_date")
+        if is_living and death_date:
+            raise ValidationError("Mark this relative as deceased before adding a death date.")
         person = Person(
             family=family,
             created_by=inviter,
@@ -356,6 +394,8 @@ def create_relative(
             maiden_name=person_data.get("maiden_name", "").strip(),
             gender=person_data.get("gender") or Person.Gender.UNKNOWN,
             birth_date=person_data.get("birth_date"),
+            is_living=is_living,
+            death_date=death_date,
         )
         person.full_clean()
         person.save()
@@ -399,6 +439,29 @@ def create_relative(
         ),
     )
     return person, relationship_type
+
+
+def _find_existing_person(family, first_name, last_name, birth_date=None):
+    if not first_name or not last_name:
+        return None, None
+    candidates = Person.objects.filter(
+        family=family,
+        first_name__iexact=first_name.strip(),
+        last_name__iexact=last_name.strip(),
+    )
+    if not candidates.exists():
+        return None, None
+    if birth_date:
+        exact = candidates.filter(birth_date=birth_date).first()
+        if exact:
+            return exact, "exact"
+    return candidates.first(), "name_only"
+
+
+def _coerce_is_living(value):
+    if value is None:
+        return True
+    return value in {True, "True", "true", "1", 1}
 
 
 def _relationship_type_for_relation(relation_type, parent_relationship_type=None, partner_relationship_type=None):
@@ -488,7 +551,15 @@ def _relationships_for_new_relative(
                 relationship_type=relationship_type,
             )
         )
-        for parent in shared_parents or []:
+        parents_to_link = list(shared_parents or [])
+        if not parents_to_link:
+            parent_ids = Relationship.objects.filter(
+                family=family,
+                to_person=anchor_person,
+                relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+            ).values_list("from_person_id", flat=True)
+            parents_to_link = list(Person.objects.filter(family=family, id__in=parent_ids))
+        for parent in parents_to_link:
             _validate_shared_parent(family, anchor_person, parent)
             relationships.append(
                 Relationship(

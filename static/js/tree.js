@@ -20,8 +20,12 @@
   let panX = 0;
   let panY = 0;
   let initialFitDone = false;
+  let focusedId = null;
+  let previewHoverId = null;
+  let previewHideTimeout = null;
   const minScale = 0.3;
   const maxScale = 2.5;
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
   const wrap = document.getElementById('canvas-wrap');
   const canvas = document.getElementById('canvas');
@@ -30,6 +34,11 @@
   const labelsContainer = document.getElementById('labels-container');
   const detailOverlay = document.getElementById('detail-overlay');
   const detailPanel = document.getElementById('detail-panel');
+
+  // Preview layer for hover descendants
+  const previewContainer = document.createElement('div');
+  previewContainer.className = 'tree-preview-layer';
+  if (canvas) canvas.appendChild(previewContainer);
 
   // -------------------------------------------------------------------------
   // Core algorithm
@@ -96,6 +105,232 @@
 
   function getHiddenCount(personId, visibleIds) {
     return collectHiddenRelatives(personId, visibleIds).size;
+  }
+
+  function getDescendants(personId, maxDepth = 2) {
+    const result = new Map();
+    const queue = [{ id: personId, depth: 0 }];
+    while (queue.length) {
+      const { id, depth } = queue.shift();
+      if (depth >= maxDepth) continue;
+      const person = peopleMap.get(id);
+      if (!person) continue;
+      person.child_ids.forEach((cid) => {
+        if (!result.has(cid)) {
+          result.set(cid, depth + 1);
+          queue.push({ id: cid, depth: depth + 1 });
+        }
+      });
+    }
+    return result;
+  }
+
+  function getPathToRoot(personId) {
+    const path = new Set();
+    let current = peopleMap.get(personId);
+    while (current) {
+      path.add(current.id);
+      if (current.id === root_id) break;
+      const parentId = current.father_id || current.mother_id;
+      current = parentId ? peopleMap.get(parentId) : null;
+    }
+    return path;
+  }
+
+  function clearPreview() {
+    if (previewContainer) previewContainer.innerHTML = '';
+  }
+
+  function hidePreview() {
+    previewHoverId = null;
+    if (previewContainer) previewContainer.classList.remove('is-visible');
+    if (previewHideTimeout) clearTimeout(previewHideTimeout);
+    previewHideTimeout = setTimeout(() => {
+      if (!previewHoverId) clearPreview();
+    }, 250);
+  }
+
+  function showPreview(personId) {
+    if (isTouch || !previewContainer) return;
+    if (previewHoverId === personId) return;
+    previewHoverId = personId;
+    if (previewHideTimeout) clearTimeout(previewHideTimeout);
+
+    const visibleIds = getVisibleNodes();
+    const descendants = getDescendants(personId, 2);
+    const hiddenDescendants = [];
+    let deeperCount = 0;
+    descendants.forEach((depth, id) => {
+      if (!visibleIds.has(id)) {
+        hiddenDescendants.push({ id, depth });
+      }
+    });
+
+    // Count descendants beyond preview depth
+    const allDescendants = getDescendants(personId, 50);
+    allDescendants.forEach((depth, id) => {
+      if (depth > 2 && !visibleIds.has(id)) deeperCount++;
+    });
+
+    if (hiddenDescendants.length === 0 && deeperCount === 0) {
+      hidePreview();
+      return;
+    }
+
+    renderPreview(personId, hiddenDescendants, deeperCount);
+    previewContainer.classList.add('is-visible');
+  }
+
+  function renderPreview(anchorId, descendants, deeperCount) {
+    clearPreview();
+    const anchor = peopleMap.get(anchorId);
+    const anchorNode = nodesContainer.querySelector(`[data-person-id="${anchorId}"]`);
+    if (!anchor || !anchorNode) return;
+
+    const anchorRect = {
+      left: parseFloat(anchorNode.style.left) + 34,
+      top: parseFloat(anchorNode.style.top) + 34,
+    };
+
+    const byDepth = {};
+    descendants.forEach(({ id, depth }) => {
+      if (!byDepth[depth]) byDepth[depth] = [];
+      byDepth[depth].push(id);
+    });
+
+    const previewSpacing = 120;
+    const genGap = 160;
+    const fragment = document.createDocumentFragment();
+
+    Object.keys(byDepth)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .forEach((depth) => {
+        const ids = byDepth[depth];
+        const count = ids.length;
+        const totalWidth = (count - 1) * previewSpacing;
+        const startX = anchorRect.left - totalWidth / 2;
+        const y = anchorRect.top + depth * genGap;
+
+        ids.forEach((id, index) => {
+          const person = peopleMap.get(id);
+          if (!person) return;
+          const x = startX + index * previewSpacing;
+
+          // Find parent for line
+          let parentId = null;
+          const parent = peopleMap.get(person.father_id) || peopleMap.get(person.mother_id);
+          if (parent && (parent.id === anchorId || descendants.find((d) => d.id === parent.id))) {
+            parentId = parent.id;
+          }
+
+          if (parentId) {
+            const parentX = depth === 1 ? anchorRect.left : (
+              parseFloat(previewContainer.querySelector(`[data-preview-id="${parentId}"]`)?.style.left || 0) + 34
+            );
+            const parentY = depth === 1 ? anchorRect.top : (
+              parseFloat(previewContainer.querySelector(`[data-preview-id="${parentId}"]`)?.style.top || 0) + 34
+            );
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            line.classList.add('tree-preview-line');
+            line.style.left = '0';
+            line.style.top = '0';
+            line.style.width = '100%';
+            line.style.height = '100%';
+            line.setAttribute('width', '100%');
+            line.setAttribute('height', '100%');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const midY = (parentY + y) / 2;
+            path.setAttribute('d', `M ${parentX} ${parentY} C ${parentX} ${midY}, ${x} ${midY}, ${x} ${y}`);
+            path.setAttribute('class', 'tree-preview-path');
+            line.appendChild(path);
+            fragment.appendChild(line);
+          }
+
+          const node = document.createElement('div');
+          node.className = 'person-node is-preview';
+          node.dataset.previewId = id;
+          node.style.left = `${x - 34}px`;
+          node.style.top = `${y - 34}px`;
+
+          const avatar = document.createElement('div');
+          avatar.className = 'person-avatar';
+          avatar.textContent = person.initials;
+          node.appendChild(avatar);
+
+          const nameLabel = document.createElement('div');
+          nameLabel.className = 'name-label';
+          nameLabel.textContent = person.name;
+          node.appendChild(nameLabel);
+
+          fragment.appendChild(node);
+        });
+      });
+
+    if (deeperCount > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'tree-preview-more';
+      badge.textContent = `+${deeperCount} more`;
+      badge.style.left = `${anchorRect.left}px`;
+      badge.style.top = `${anchorRect.top + 3 * genGap - 20}px`;
+      fragment.appendChild(badge);
+    }
+
+    previewContainer.appendChild(fragment);
+  }
+
+  function focusOnNode(personId) {
+    const person = peopleMap.get(personId);
+    const node = nodesContainer.querySelector(`[data-person-id="${personId}"]`);
+    if (!person || !node || !wrap) return;
+
+    focusedId = personId;
+    nodesContainer.querySelectorAll('.person-node.is-focused').forEach((n) => n.classList.remove('is-focused'));
+    node.classList.add('is-focused');
+
+    const nodeLeft = parseFloat(node.style.left) + 34;
+    const nodeTop = parseFloat(node.style.top) + 34;
+    const wrapRect = wrap.getBoundingClientRect();
+
+    // Target: scale 1.1 and centre the node
+    const targetScale = Math.min(1.1, maxScale);
+    const centerX = wrapRect.width / 2;
+    const centerY = wrapRect.height / 2;
+
+    panX = centerX - nodeLeft * targetScale;
+    panY = centerY - nodeTop * targetScale;
+    scale = targetScale;
+    updateTransform();
+  }
+
+  function highlightPath(personId) {
+    const pathIds = getPathToRoot(personId);
+    nodesContainer.querySelectorAll('.person-node').forEach((node) => {
+      const id = node.dataset.personId;
+      if (pathIds.has(id)) {
+        node.classList.add('is-path');
+      } else {
+        node.classList.add('is-dimmed');
+      }
+    });
+    svg.querySelectorAll('.conn-line').forEach((line) => {
+      const from = line.getAttribute('data-from');
+      const to = line.getAttribute('data-to');
+      if (from && to && pathIds.has(from) && pathIds.has(to)) {
+        line.classList.add('is-path');
+      } else {
+        line.classList.add('is-dimmed');
+      }
+    });
+  }
+
+  function clearPathHighlight() {
+    nodesContainer.querySelectorAll('.person-node').forEach((node) => {
+      node.classList.remove('is-path', 'is-dimmed');
+    });
+    svg.querySelectorAll('.conn-line').forEach((line) => {
+      line.classList.remove('is-path', 'is-dimmed');
+    });
   }
 
   const nodeSpacing = 160;
@@ -369,6 +604,8 @@
               `M ${pos.x} ${pos.y} C ${pos.x} ${midY}, ${pPos.x} ${midY}, ${pPos.x} ${pPos.y}`
             );
             path.setAttribute('class', 'conn-line partner');
+            path.setAttribute('data-from', id);
+            path.setAttribute('data-to', person.partner_id);
             path.style.animationDelay = `${lineIndex++ * 0.08}s`;
             svg.appendChild(path);
           }
@@ -393,6 +630,8 @@
                 `M ${pPos.x} ${pPos.y} C ${pPos.x} ${midY}, ${pos.x} ${midY}, ${pos.x} ${pos.y}`
               );
               path.setAttribute('class', 'conn-line parent');
+              path.setAttribute('data-from', pid);
+              path.setAttribute('data-to', id);
               path.style.animationDelay = `${lineIndex++ * 0.08}s`;
               svg.appendChild(path);
             }
@@ -418,6 +657,8 @@
                 `M ${pos.x} ${pos.y} C ${pos.x} ${midY}, ${cPos.x} ${midY}, ${cPos.x} ${cPos.y}`
               );
               path.setAttribute('class', 'conn-line child');
+              path.setAttribute('data-from', id);
+              path.setAttribute('data-to', cid);
               path.style.animationDelay = `${lineIndex++ * 0.08}s`;
               svg.appendChild(path);
             }
@@ -493,7 +734,7 @@
       const isRoot = id === root_id;
 
       const node = document.createElement('div');
-      node.className = `person-node${isRoot ? ' is-root' : ''}${!person.is_living ? ' is-deceased' : ''}`;
+      node.className = `person-node${isRoot ? ' is-root' : ''}${!person.is_living ? ' is-deceased' : ''}${hiddenCount > 0 ? ' is-expandable' : ''}${focusedId === id ? ' is-focused' : ''}`;
       node.dataset.personId = id;
       node.style.left = `${pos.x - 34}px`;
       node.style.top = `${pos.y - 34}px`;
@@ -586,6 +827,18 @@
         node.appendChild(lifeLabel);
       }
 
+      node.addEventListener('mouseenter', () => {
+        if (isTouch) return;
+        showPreview(id);
+        highlightPath(id);
+      });
+
+      node.addEventListener('mouseleave', () => {
+        if (isTouch) return;
+        hidePreview();
+        clearPathHighlight();
+      });
+
       node.addEventListener('click', (e) => {
         e.stopPropagation();
         if (suppressClick) return;
@@ -593,6 +846,7 @@
           expandedNodes.add(id);
           renderTree();
         } else {
+          focusOnNode(id);
           openDetail(id);
         }
       });
@@ -641,11 +895,22 @@
   }
 
   function fitToScreen() {
+    focusedId = null;
     renderTree();
     showToast('Tree fitted to screen');
   }
 
   function resetView() {
+    focusedId = null;
+    const visibleIds = getVisibleNodes();
+    const { width, height } = computeCanvasSize(visibleIds);
+    const header = document.getElementById('tree-header');
+    const headerHeight = header ? header.getBoundingClientRect().height : 64;
+    const fitScaleH = (window.innerHeight - headerHeight - 48) / height;
+    const fitScaleW = (window.innerWidth - 48) / width;
+    scale = Math.max(minScale, Math.min(1, Math.min(fitScaleH, fitScaleW)));
+    panX = 0;
+    panY = 0;
     renderTree();
     showToast('View reset');
   }
@@ -1385,6 +1650,13 @@
   window.addEventListener('resize', () => {
     centerCanvas();
     renderTree();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      focusedId = null;
+      resetView();
+    }
   });
 
   document.body.addEventListener('htmx:afterSwap', (event) => {

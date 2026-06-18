@@ -19,6 +19,10 @@ from apps.social.models import Activity
 from apps.stories.models import Story
 
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
 def home(request):
     if _is_global_tree_admin(request.user):
         return redirect("tree")

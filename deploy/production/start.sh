@@ -145,6 +145,7 @@ preflight_django() {
   run_manage makemigrations --check --dry-run
   if [[ "$RUN_MIGRATE" == "1" ]]; then
     run_manage migrate --noinput
+    run_manage createcachetable
   else
     run_manage migrate --check --noinput
   fi

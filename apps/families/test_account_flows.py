@@ -1,10 +1,13 @@
 from datetime import timedelta
+from io import StringIO
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -125,6 +128,26 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, 'class="auth-field"', count=2)
         self.assertContains(response, 'id="id_new_password1"')
         self.assertContains(response, 'id="id_new_password2"')
+
+    def test_print_password_reset_link_command_outputs_valid_reset_url(self):
+        User.objects.create_user(username="reset-user", email="reset@example.com", password="OldPass123!")
+        output = StringIO()
+
+        call_command(
+            "print_password_reset_link",
+            "reset-user",
+            base_url="https://ftree.example",
+            stdout=output,
+        )
+
+        reset_url = output.getvalue().strip()
+        parsed_url = urlparse(reset_url)
+        response = self.client.get(parsed_url.path, follow=True)
+
+        self.assertEqual(parsed_url.scheme, "https")
+        self.assertEqual(parsed_url.netloc, "ftree.example")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_new_password1"')
 
     def test_signup_creates_inactive_user_and_verification_record(self):
         with self.assertLogs("apps.families.auth_views", level="WARNING") as captured:

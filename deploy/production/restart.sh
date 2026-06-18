@@ -141,6 +141,8 @@ if [[ "$MIGRATIONS_PENDING" == "1" ]]; then
   run_manage "Applying database migrations" migrate --noinput
 fi
 
+run_manage "Ensuring database cache table exists" createcachetable
+
 if [[ "$RUN_COMPRESS" == "1" ]]; then
   run_manage "Building offline compressed assets" compress --force
 else

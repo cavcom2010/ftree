@@ -22,6 +22,16 @@ from apps.stories.models import Story
 
 
 @override_settings(ALLOWED_HOSTS=["testserver"])
+class HealthCheckTests(TestCase):
+    def test_health_endpoint_returns_ok_json_without_login(self):
+        response = self.client.get("/health/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        self.assertEqual(response.json(), {"status": "ok"})
+
+
+@override_settings(ALLOWED_HOSTS=["testserver"])
 class HomepageShellTests(TestCase):
     def _login_demo_as_regular_user(self):
         call_command("seed_demo_family", verbosity=0)

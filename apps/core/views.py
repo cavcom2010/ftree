@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -20,6 +20,9 @@ from apps.stories.models import Story
 
 
 def home(request):
+    if _is_global_tree_admin(request.user):
+        return redirect("tree")
+
     family_slug = request.session.get("current_family_slug")
     if request.user.is_authenticated:
         if not (_is_global_tree_admin(request.user) and not _has_family_membership(request.user)):
@@ -41,7 +44,7 @@ def tree(request):
     is_global_admin = _is_global_tree_admin(request.user)
     if is_global_admin:
         explicit_family_slug = request.GET.get("family")
-        if not explicit_family_slug and not _has_family_membership(request.user):
+        if not explicit_family_slug:
             return render(request, "tree/home.html", _admin_family_picker_context(request.user))
 
         if explicit_family_slug and not Family.objects.filter(slug=explicit_family_slug).exists():
@@ -156,13 +159,11 @@ def _anchor_id_from_request(request):
 
 
 def _admin_family_picker_context(user):
-    families = list(
-        Family.objects.annotate(people_count=Count("people"))
-        .order_by("name", "id")
-    )
+    families = _admin_family_choices(user)
     return {
         "family": None,
         "tree_only": True,
+        "tree_json": json.dumps({"people": [], "root_id": None}),
         "tree_anchor": None,
         "anchor_choices": [],
         "available_families": families,
@@ -181,6 +182,34 @@ def _admin_family_picker_context(user):
         "show_tree_onboarding": False,
         "is_global_admin_view": True,
     }
+
+
+def _admin_family_choices(user):
+    families = list(
+        Family.objects.annotate(
+            people_count=Count("people", distinct=True),
+            relationship_count=Count("relationships", distinct=True),
+            memory_count=Count("memories", distinct=True),
+            story_count=Count("stories", distinct=True),
+        )
+        .order_by("name", "id")
+    )
+    return [
+        family
+        for family in families
+        if not _is_empty_staff_starter_family(family, user)
+    ]
+
+
+def _is_empty_staff_starter_family(family, user):
+    return bool(
+        getattr(user, "is_staff", False)
+        and family.created_by_id == user.id
+        and family.people_count <= 1
+        and family.relationship_count == 0
+        and family.memory_count == 0
+        and family.story_count == 0
+    )
 
 
 @transaction.atomic
@@ -597,7 +626,9 @@ def tree_json(request):
     is_global_admin = _is_global_tree_admin(request.user)
     explicit_family_slug = request.GET.get("family")
 
-    if is_global_admin and explicit_family_slug:
+    if is_global_admin:
+        if not explicit_family_slug:
+            return JsonResponse({"people": [], "root_id": None})
         family = Family.objects.filter(slug=explicit_family_slug).first()
     else:
         family_slug = request.GET.get("family") or request.session.get("current_family_slug")

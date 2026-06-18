@@ -23,6 +23,15 @@ from apps.stories.models import Story
 
 @override_settings(ALLOWED_HOSTS=["testserver"])
 class HomepageShellTests(TestCase):
+    def _login_demo_as_regular_user(self):
+        call_command("seed_demo_family", verbosity=0)
+        user = User.objects.get(username="demo")
+        user.is_staff = False
+        user.is_superuser = False
+        user.save(update_fields=["is_staff", "is_superuser"])
+        self.client.force_login(user)
+        return user
+
     def test_homepage_returns_http_200(self):
         response = self.client.get("/")
 
@@ -61,8 +70,7 @@ class HomepageShellTests(TestCase):
         self.assertNotContains(response, 'data-lucide="user-plus"></i>Sign up')
 
     def test_authenticated_navigation_keeps_app_nav_without_account_sheet(self):
-        call_command("seed_demo_family", verbosity=0)
-        self.client.force_login(User.objects.get(username="demo"))
+        self._login_demo_as_regular_user()
 
         response = self.client.get("/")
 
@@ -74,8 +82,7 @@ class HomepageShellTests(TestCase):
         self.assertNotContains(response, 'id="accountSheet"')
 
     def test_authenticated_homepage_uses_real_header_and_connect_links(self):
-        call_command("seed_demo_family", verbosity=0)
-        self.client.force_login(User.objects.get(username="demo"))
+        self._login_demo_as_regular_user()
 
         response = self.client.get("/")
 
@@ -88,9 +95,7 @@ class HomepageShellTests(TestCase):
         self.assertNotContains(response, "Search is available from the tree homepage")
 
     def test_authenticated_homepage_relative_actions_open_anchor_sheets(self):
-        call_command("seed_demo_family", verbosity=0)
-        user = User.objects.get(username="demo")
-        self.client.force_login(user)
+        user = self._login_demo_as_regular_user()
         anchor = FamilyMembership.objects.select_related("person").get(user=user).person
 
         response = self.client.get("/")
@@ -104,16 +109,13 @@ class HomepageShellTests(TestCase):
         self.assertContains(response, f'hx-get="/people/{anchor.id}/edit-name/"')
 
     def test_authenticated_homepage_prompt_loads_prompt_endpoint(self):
-        call_command("seed_demo_family", verbosity=0)
-        user = User.objects.get(username="demo")
+        user = self._login_demo_as_regular_user()
         family = FamilyMembership.objects.get(user=user).family
         FamilyPrompt.objects.update_or_create(
             family=family,
             active_date=date.today(),
             defaults={"question": "What should we preserve today?"},
         )
-        self.client.force_login(user)
-
         response = self.client.get("/")
         prompt_response = self.client.get("/prompts/current/")
 
@@ -123,8 +125,7 @@ class HomepageShellTests(TestCase):
         self.assertContains(prompt_response, "/answer/")
 
     def test_authenticated_homepage_activity_and_memory_cards_are_real_actions(self):
-        call_command("seed_demo_family", verbosity=0)
-        user = User.objects.get(username="demo")
+        user = self._login_demo_as_regular_user()
         family = FamilyMembership.objects.get(user=user).family
         person = Person.objects.filter(family=family).first()
         Activity.objects.create(
@@ -134,8 +135,6 @@ class HomepageShellTests(TestCase):
             message="Added a test relative",
             person=person,
         )
-        self.client.force_login(user)
-
         response = self.client.get("/")
 
         self.assertContains(response, f'hx-get="/people/{person.id}/drawer/"')
@@ -149,6 +148,9 @@ class TreePageTests(TestCase):
     def setUp(self):
         call_command("seed_demo_family", verbosity=0)
         self.demo_user = User.objects.get(username="demo")
+        self.demo_user.is_staff = False
+        self.demo_user.is_superuser = False
+        self.demo_user.save(update_fields=["is_staff", "is_superuser"])
         self.client.force_login(self.demo_user)
 
     def _tree_data(self, response):
@@ -203,6 +205,79 @@ class TreePageTests(TestCase):
         self.assertEqual(Family.objects.count(), family_count)
         self.assertEqual(Person.objects.count(), person_count)
         self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
+        self.assertEqual(self._tree_data(response), {"people": [], "root_id": None})
+
+    def test_staff_with_personal_membership_still_sees_global_family_picker(self):
+        staff = User.objects.create_user(
+            username="staff-with-tree",
+            email="staff-with-tree@example.com",
+            is_staff=True,
+        )
+        admin_family = Family.objects.create(
+            name="Admin's Family Tree",
+            slug="admin-family-tree",
+            created_by=staff,
+        )
+        admin_person = Person.objects.create(
+            family=admin_family,
+            first_name="Admin",
+            last_name="Family",
+            created_by=staff,
+        )
+        FamilyMembership.objects.create(
+            family=admin_family,
+            user=staff,
+            person=admin_person,
+            role=FamilyMembership.Role.OWNER,
+        )
+        family_count = Family.objects.count()
+        person_count = Person.objects.count()
+        self.client.force_login(staff)
+
+        response = self.client.get("/tree/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Admin view")
+        self.assertContains(response, "Choose a family tree")
+        self.assertContains(response, "Johnson Family")
+        self.assertNotContains(response, "Admin&#x27;s Family Tree")
+        self.assertEqual(Family.objects.count(), family_count)
+        self.assertEqual(Person.objects.count(), person_count)
+        self.assertEqual(self._tree_data(response), {"people": [], "root_id": None})
+
+    def test_staff_can_explicitly_open_personal_membership_tree(self):
+        staff = User.objects.create_user(
+            username="staff-own-tree",
+            email="staff-own-tree@example.com",
+            is_staff=True,
+        )
+        admin_family = Family.objects.create(
+            name="Admin's Family Tree",
+            slug="staff-own-family-tree",
+            created_by=staff,
+        )
+        admin_person = Person.objects.create(
+            family=admin_family,
+            first_name="Admin",
+            last_name="Family",
+            created_by=staff,
+        )
+        FamilyMembership.objects.create(
+            family=admin_family,
+            user=staff,
+            person=admin_person,
+            role=FamilyMembership.Role.OWNER,
+        )
+        self.client.force_login(staff)
+
+        response = self.client.get(f"/tree/?family={admin_family.slug}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Admin&#x27;s Family Tree")
+        self.assertContains(response, "Admin Family · Gen 0")
+        tree_data = self._tree_data(response)
+        self.assertEqual(len(tree_data["people"]), 1)
+        self.assertEqual(tree_data["root_id"], str(admin_person.id))
 
     def test_staff_can_view_selected_family_read_only_without_membership(self):
         staff = User.objects.create_user(
@@ -252,10 +327,41 @@ class TreePageTests(TestCase):
 
         response = self.client.get("/")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/tree/")
         self.assertEqual(Family.objects.count(), family_count)
         self.assertEqual(Person.objects.count(), person_count)
         self.assertFalse(FamilyMembership.objects.filter(user=staff).exists())
+
+    def test_staff_tree_json_without_family_returns_empty_tree(self):
+        staff = User.objects.create_user(
+            username="tree-json-staff",
+            email="tree-json-staff@example.com",
+            is_staff=True,
+        )
+        admin_family = Family.objects.create(
+            name="Admin's Family Tree",
+            slug="tree-json-admin-family-tree",
+            created_by=staff,
+        )
+        admin_person = Person.objects.create(
+            family=admin_family,
+            first_name="Admin",
+            last_name="Family",
+            created_by=staff,
+        )
+        FamilyMembership.objects.create(
+            family=admin_family,
+            user=staff,
+            person=admin_person,
+            role=FamilyMembership.Role.OWNER,
+        )
+        self.client.force_login(staff)
+
+        response = self.client.get("/tree/json/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"people": [], "root_id": None})
 
     def test_regular_non_member_cannot_view_other_family_by_slug(self):
         user = User.objects.create_user(

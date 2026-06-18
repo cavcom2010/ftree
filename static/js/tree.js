@@ -125,16 +125,32 @@
     return result;
   }
 
-  function getPathToRoot(personId) {
-    const path = new Set();
-    let current = peopleMap.get(personId);
-    while (current) {
-      path.add(current.id);
-      if (current.id === root_id) break;
-      const parentId = current.father_id || current.mother_id;
-      current = parentId ? peopleMap.get(parentId) : null;
+  function getHoverNetwork(personId) {
+    const network = new Set([personId]);
+    const person = peopleMap.get(personId);
+    if (!person) return network;
+
+    // All ancestors through both parents (recursive)
+    function addAncestors(id) {
+      const p = peopleMap.get(id);
+      if (!p) return;
+      [p.father_id, p.mother_id].forEach((pid) => {
+        if (pid && !network.has(pid)) {
+          network.add(pid);
+          addAncestors(pid);
+        }
+      });
     }
-    return path;
+    addAncestors(personId);
+
+    // Immediate family: partner, children, siblings
+    [person.father_id, person.mother_id, person.partner_id]
+      .filter((id) => id && id !== 'null')
+      .forEach((id) => network.add(id));
+    person.child_ids.forEach((cid) => network.add(cid));
+    person.sibling_ids.forEach((sid) => network.add(sid));
+
+    return network;
   }
 
   function clearPreview() {
@@ -303,11 +319,11 @@
     updateTransform();
   }
 
-  function highlightPath(personId) {
-    const pathIds = getPathToRoot(personId);
+  function highlightNetwork(personId) {
+    const networkIds = getHoverNetwork(personId);
     nodesContainer.querySelectorAll('.person-node').forEach((node) => {
       const id = node.dataset.personId;
-      if (pathIds.has(id)) {
+      if (networkIds.has(id)) {
         node.classList.add('is-path');
       } else {
         node.classList.add('is-dimmed');
@@ -316,7 +332,7 @@
     svg.querySelectorAll('.conn-line').forEach((line) => {
       const from = line.getAttribute('data-from');
       const to = line.getAttribute('data-to');
-      if (from && to && pathIds.has(from) && pathIds.has(to)) {
+      if (from && to && networkIds.has(from) && networkIds.has(to)) {
         line.classList.add('is-path');
       } else {
         line.classList.add('is-dimmed');
@@ -324,7 +340,7 @@
     });
   }
 
-  function clearPathHighlight() {
+  function clearNetworkHighlight() {
     nodesContainer.querySelectorAll('.person-node').forEach((node) => {
       node.classList.remove('is-path', 'is-dimmed');
     });
@@ -830,13 +846,13 @@
       node.addEventListener('mouseenter', () => {
         if (isTouch) return;
         showPreview(id);
-        highlightPath(id);
+        highlightNetwork(id);
       });
 
       node.addEventListener('mouseleave', () => {
         if (isTouch) return;
         hidePreview();
-        clearPathHighlight();
+        clearNetworkHighlight();
       });
 
       node.addEventListener('click', (e) => {

@@ -38,6 +38,11 @@ class RateLimitedLoginView(LoginView):
     template_name = "registration/login.html"
     authentication_form = AuthenticationForm
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        return response
+
     def post(self, request, *args, **kwargs):
         identifier = (request.POST.get("username") or "").strip().lower() or _client_ip(request)
         if _rate_limited("login-ip", _client_ip(request), LOGIN_IP_LIMIT, RATE_LIMIT_WINDOW_SECONDS) or _rate_limited(

@@ -1,0 +1,206 @@
+<section class="tree-create-sheet relationship-modal relationship-modal__panel is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head relationship-modal__header">
+    <div>
+      <p class="tree-eyebrow">Bulk add</p>
+      <h2 id="tree-create-title">{{ title }}</h2>
+      <small>Add several close relatives now. You can invite accounts and fine-tune advanced links later.</small>
+    </div>
+    <button class="relationship-modal__close" type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+  </div>
+
+  <form class="tree-invite-form relationship-form" method="post" hx-post="{% url 'family_bulk_add_relatives' anchor_person.id %}" hx-target="#tree-create-sheet" hx-swap="outerHTML">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if formset.non_form_errors %}
+      <div class="tree-form-errors">{{ formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div class="relationship-form__group">
+      <p>
+        Use one row per relative. Empty rows are ignored. Parent and partner type fields only matter when that row is a parent or partner.
+      </p>
+    </div>
+
+    <div id="bulk-relative-formset">
+      {% for form in formset %}
+        <fieldset class="relationship-form__group bulk-relative-row" data-bulk-relative-row>
+          <legend>Relative {{ forloop.counter }}</legend>
+
+          {% if form.non_field_errors %}
+            <div class="tree-form-errors">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="tree-form-grid relationship-form__grid">
+            <label class="relationship-form__field">
+              <span>{{ form.relation_type.label }}</span>
+              {{ form.relation_type }}
+              {{ form.relation_type.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.first_name.label }}</span>
+              {{ form.first_name }}
+              {{ form.first_name.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.last_name.label }}</span>
+              {{ form.last_name }}
+              {{ form.last_name.errors }}
+            </label>
+          </div>
+
+          <label class="relationship-form__field">
+            <span>{{ form.maiden_name.label }}</span>
+            {{ form.maiden_name }}
+            {{ form.maiden_name.errors }}
+          </label>
+
+          <div class="tree-form-grid relationship-form__grid">
+            <label class="relationship-form__field">
+              <span>{{ form.gender.label }}</span>
+              {{ form.gender }}
+              {{ form.gender.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.birth_date.label }}</span>
+              {{ form.birth_date }}
+              {{ form.birth_date.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.is_living.label }}</span>
+              {{ form.is_living }}
+              {{ form.is_living.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.death_date.label }}</span>
+              {{ form.death_date }}
+              {{ form.death_date.errors }}
+            </label>
+          </div>
+
+          <div class="tree-form-grid relationship-form__grid">
+            <label class="relationship-form__field">
+              <span>{{ form.parent_relationship_type.label }}</span>
+              {{ form.parent_relationship_type }}
+              {% if form.parent_relationship_type.help_text %}<small>{{ form.parent_relationship_type.help_text }}</small>{% endif %}
+              {{ form.parent_relationship_type.errors }}
+            </label>
+            <label class="relationship-form__field">
+              <span>{{ form.partner_relationship_type.label }}</span>
+              {{ form.partner_relationship_type }}
+              {% if form.partner_relationship_type.help_text %}<small>{{ form.partner_relationship_type.help_text }}</small>{% endif %}
+              {{ form.partner_relationship_type.errors }}
+            </label>
+          </div>
+
+          <span hidden>{{ form.DELETE }}</span>
+          <button class="btn soft" type="button" data-bulk-remove-row>Remove row</button>
+        </fieldset>
+      {% endfor %}
+    </div>
+
+    <template id="bulk-relative-empty-form">
+      <fieldset class="relationship-form__group bulk-relative-row" data-bulk-relative-row>
+        <legend>New relative</legend>
+
+        <div class="tree-form-grid relationship-form__grid">
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.relation_type.label }}</span>
+            {{ formset.empty_form.relation_type }}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.first_name.label }}</span>
+            {{ formset.empty_form.first_name }}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.last_name.label }}</span>
+            {{ formset.empty_form.last_name }}
+          </label>
+        </div>
+
+        <label class="relationship-form__field">
+          <span>{{ formset.empty_form.maiden_name.label }}</span>
+          {{ formset.empty_form.maiden_name }}
+        </label>
+
+        <div class="tree-form-grid relationship-form__grid">
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.gender.label }}</span>
+            {{ formset.empty_form.gender }}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.birth_date.label }}</span>
+            {{ formset.empty_form.birth_date }}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.is_living.label }}</span>
+            {{ formset.empty_form.is_living }}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.death_date.label }}</span>
+            {{ formset.empty_form.death_date }}
+          </label>
+        </div>
+
+        <div class="tree-form-grid relationship-form__grid">
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.parent_relationship_type.label }}</span>
+            {{ formset.empty_form.parent_relationship_type }}
+            {% if formset.empty_form.parent_relationship_type.help_text %}<small>{{ formset.empty_form.parent_relationship_type.help_text }}</small>{% endif %}
+          </label>
+          <label class="relationship-form__field">
+            <span>{{ formset.empty_form.partner_relationship_type.label }}</span>
+            {{ formset.empty_form.partner_relationship_type }}
+            {% if formset.empty_form.partner_relationship_type.help_text %}<small>{{ formset.empty_form.partner_relationship_type.help_text }}</small>{% endif %}
+          </label>
+        </div>
+
+        <span hidden>{{ formset.empty_form.DELETE }}</span>
+        <button class="btn soft" type="button" data-bulk-remove-row>Remove row</button>
+      </fieldset>
+    </template>
+
+    <div class="tree-create-actions relationship-form__actions">
+      <button type="button" data-bulk-add-row>Add another row</button>
+      <button type="submit">{{ submit_label }}</button>
+      <button type="button" data-create-sheet-close>Cancel</button>
+    </div>
+  </form>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>
+
+<script>
+  (function () {
+    const sheet = document.getElementById('tree-create-sheet');
+    if (!sheet) return;
+
+    const addButton = sheet.querySelector('[data-bulk-add-row]');
+    const formset = sheet.querySelector('#bulk-relative-formset');
+    const template = sheet.querySelector('#bulk-relative-empty-form');
+    const totalFormsInput = sheet.querySelector('input[name="{{ formset.prefix }}-TOTAL_FORMS"]');
+
+    if (addButton && formset && template && totalFormsInput) {
+      addButton.addEventListener('click', function () {
+        const index = Number(totalFormsInput.value);
+        const html = template.innerHTML.replaceAll('__prefix__', index);
+        formset.insertAdjacentHTML('beforeend', html);
+        totalFormsInput.value = index + 1;
+      });
+    }
+
+    sheet.addEventListener('click', function (event) {
+      const removeButton = event.target.closest('[data-bulk-remove-row]');
+      if (!removeButton) return;
+
+      const row = removeButton.closest('[data-bulk-relative-row]');
+      if (!row) return;
+
+      const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteInput) {
+        deleteInput.checked = true;
+      }
+      row.hidden = true;
+    });
+  })();
+</script>

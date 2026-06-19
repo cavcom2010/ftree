@@ -2,10 +2,12 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from apps.families.bulk_forms import BulkRelativeFormSet
 from apps.families.forms import InvitePersonForm, InviteRelativeForm, SignupForm
 from apps.families.models import Family, FamilyInvitation, FamilyMembership
 from apps.families.services import (
@@ -121,6 +123,62 @@ def invite_relative(request, person_id, relation_type):
             "relation_type": relation_type,
             "relation_label": RELATION_LABELS[relation_type],
             "submit_label": f"Add {RELATION_LABELS[relation_type].lower()}",
+        },
+    )
+
+
+@login_required
+def bulk_add_relatives(request, person_id):
+    family = _current_family(request)
+    anchor_person = get_object_or_404(Person, id=person_id, family=family)
+
+    if request.method == "POST":
+        formset = BulkRelativeFormSet(request.POST, prefix="relatives")
+        if formset.is_valid():
+            created_count = 0
+            try:
+                with transaction.atomic():
+                    for form in formset:
+                        if not _bulk_form_has_data(form):
+                            continue
+
+                        create_relative_with_optional_invite(
+                            family=family,
+                            inviter=request.user,
+                            anchor_person=anchor_person,
+                            relation_type=form.cleaned_data["relation_type"],
+                            person_data={
+                                "first_name": form.cleaned_data["first_name"],
+                                "last_name": form.cleaned_data["last_name"],
+                                "maiden_name": form.cleaned_data["maiden_name"],
+                                "gender": form.cleaned_data["gender"],
+                                "birth_date": form.cleaned_data["birth_date"],
+                                "is_living": form.cleaned_data["is_living"],
+                                "death_date": form.cleaned_data["death_date"],
+                            },
+                            parent_relationship_type=form.cleaned_data["parent_relationship_type"],
+                            partner_relationship_type=form.cleaned_data["partner_relationship_type"],
+                        )
+                        created_count += 1
+
+                    if created_count == 0:
+                        raise ValidationError("Add at least one relative before saving.")
+            except (ValidationError, PermissionDenied) as exc:
+                _add_form_error(formset.forms[0], exc)
+            else:
+                return _render_bulk_relative_success(request, anchor_person, created_count)
+    else:
+        formset = BulkRelativeFormSet(prefix="relatives")
+
+    return render(
+        request,
+        "families/partials/bulk_add_relatives_sheet.html",
+        {
+            "formset": formset,
+            "family": family,
+            "anchor_person": anchor_person,
+            "title": f"Add many relatives for {anchor_person.first_name}",
+            "submit_label": "Save relatives",
         },
     )
 
@@ -262,6 +320,10 @@ def _add_form_error(form, exc):
     form.add_error(None, message)
 
 
+def _bulk_form_has_data(form):
+    return bool(form.cleaned_data) and not form.cleaned_data.get("DELETE") and form.has_relative_data()
+
+
 def _render_invite_success(request, invitation):
     invitation_url = request.build_absolute_uri(
         reverse("family_invitation_detail", args=[invitation.token])
@@ -289,6 +351,20 @@ def _render_relative_success(request, person, invitation=None):
             "person": person,
             "invitation": invitation,
             "invitation_url": invitation_url,
+        },
+    )
+    if request.headers.get("HX-Request") == "true":
+        response["HX-Refresh"] = "true"
+    return response
+
+
+def _render_bulk_relative_success(request, anchor_person, created_count):
+    response = render(
+        request,
+        "families/partials/bulk_relative_success_sheet.html",
+        {
+            "anchor_person": anchor_person,
+            "created_count": created_count,
         },
     )
     if request.headers.get("HX-Request") == "true":

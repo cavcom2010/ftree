@@ -9,6 +9,14 @@
     </div>
     <div class="tree-create-actions">
         {% if tree_only %}
+            {% if tree_anchor and can_invite_relatives %}
+                <button type="button"
+                    hx-get="{% url 'family_bulk_add_relatives' tree_anchor.id %}"
+                    hx-target="#tree-create-sheet"
+                    hx-swap="outerHTML">
+                    Add many relatives
+                </button>
+            {% endif %}
             <button type="button" data-tree-choose-person data-create-sheet-close>Choose a person in the tree</button>
             <button type="button" data-tree-open-root-detail data-create-sheet-close>Invite from person card</button>
             <button type="button" data-tree-sheet-panel="invite-status">Review invite status</button>

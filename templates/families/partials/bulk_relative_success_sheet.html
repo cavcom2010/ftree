@@ -1,0 +1,18 @@
+<section class="tree-create-sheet relationship-modal relationship-modal__panel relationship-modal--success is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
+  <div class="tree-create-handle"></div>
+  <div class="tree-create-head relationship-modal__header">
+    <div>
+      <p class="tree-eyebrow">Relatives added</p>
+      <h2 id="tree-create-title">{{ created_count }} relative{{ created_count|pluralize }} added for {{ anchor_person.first_name }}</h2>
+    </div>
+    <button class="relationship-modal__close" type="button" data-create-sheet-close aria-label="Close create menu">&times;</button>
+  </div>
+  <div class="tree-invite-success relationship-form relationship-form__success">
+    <p>The new profiles were created and connected to {{ anchor_person.full_name }}.</p>
+  </div>
+  <div class="tree-create-actions relationship-form__actions">
+    <a href="{% url 'tree' %}" class="tree-action-link">Refresh tree</a>
+    <button type="button" data-create-sheet-close>Done</button>
+  </div>
+</section>
+<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>

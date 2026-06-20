@@ -87,7 +87,8 @@ class HomepageShellTests(TestCase):
         self.assertContains(response, "data-bottom-tree-link")
         self.assertContains(response, 'href="/memories/"')
         self.assertContains(response, 'aria-label="Connect"')
-        self.assertContains(response, 'href="/people/create/"')
+        self.assertContains(response, 'href="/"')
+        self.assertContains(response, 'data-tree-open-root-detail')
         self.assertNotContains(response, "data-bottom-account-trigger")
         self.assertNotContains(response, 'id="accountSheet"')
 
@@ -98,7 +99,10 @@ class HomepageShellTests(TestCase):
 
         self.assertContains(response, 'aria-label="Search tree"')
         self.assertContains(response, 'aria-label="Create family entry"')
-        self.assertContains(response, 'class="add-main" href="/tree/" aria-label="Connect"')
+        self.assertContains(response, 'class="add-main"')
+        self.assertContains(response, 'href="/tree/"')
+        self.assertContains(response, 'data-tree-open-root-detail')
+        self.assertContains(response, 'aria-label="Connect"')
         self.assertNotContains(response, "data-tree-search-trigger")
         self.assertNotContains(response, "data-create-sheet-trigger")
         self.assertNotContains(response, "Create menu is available from the tree homepage")
@@ -166,12 +170,14 @@ class TreePageTests(TestCase):
     def _tree_data(self, response):
         return json.loads(response.context["tree_json"])
 
-    def test_tree_page_requires_login(self):
+    def test_logged_out_tree_page_shows_public_discovery(self):
         self.client.logout()
 
         response = self.client.get("/tree/")
 
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Explore public family trees")
+        self.assertNotIn("tree_json", response.context)
 
     def test_tree_page_creates_starter_tree_for_new_signed_in_user(self):
         user = User.objects.create_user(

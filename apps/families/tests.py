@@ -25,6 +25,109 @@ from apps.stories.models import Story
 User = get_user_model()
 
 
+class PublicDiscoveryPrivacyTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="public-owner",
+            email="public-owner@example.com",
+            password="secret",
+        )
+        self.viewer = User.objects.create_user(
+            username="public-viewer",
+            email="public-viewer@example.com",
+            password="secret",
+        )
+        self.family = Family.objects.create(
+            name="Safe Discovery Family",
+            slug="safe-discovery",
+            created_by=self.owner,
+            visibility=Family.Visibility.PUBLIC_ANCESTORS,
+            description="Secret internal owner notes",
+            public_summary="",
+            main_surnames=["SafeSurname"],
+            maiden_surnames=["HiddenMaiden"],
+            allow_public_surname_search=True,
+        )
+        self.public_ancestor = Person.objects.create(
+            family=self.family,
+            first_name="Ada",
+            last_name="SafeSurname",
+            birth_date=date(1910, 1, 1),
+            death_date=date(1980, 1, 1),
+            is_living=False,
+            visibility=Person.Visibility.PUBLIC_IF_DECEASED,
+            created_by=self.owner,
+        )
+        self.private_living = Person.objects.create(
+            family=self.family,
+            first_name="Living",
+            last_name="SecretSurname",
+            maiden_name="HiddenMaiden",
+            birth_date=date(2000, 2, 3),
+            birth_place="Secret Birthplace",
+            current_place="Secret Current Place",
+            biography="Private biography text",
+            is_living=True,
+            is_private=True,
+            created_by=self.owner,
+        )
+
+    def test_public_gallery_uses_only_public_safe_card_fields(self):
+        response = self.client.get("/tree/?q=SafeSurname")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Safe Discovery Family")
+        self.assertContains(response, "SafeSurname")
+        self.assertNotContains(response, "Secret internal owner notes")
+        self.assertNotContains(response, "HiddenMaiden")
+        self.assertNotContains(response, "SecretSurname")
+
+    def test_public_gallery_does_not_match_private_maiden_or_internal_description(self):
+        maiden_response = self.client.get("/tree/?q=HiddenMaiden")
+        description_response = self.client.get("/tree/?q=internal+owner")
+
+        self.assertNotContains(maiden_response, "Safe Discovery Family")
+        self.assertNotContains(description_response, "Safe Discovery Family")
+
+    def test_public_surname_page_uses_explicit_public_surnames_only(self):
+        public_response = self.client.get("/surnames/SafeSurname/")
+        private_response = self.client.get("/surnames/SecretSurname/")
+
+        self.assertContains(public_response, "Safe Discovery Family")
+        self.assertNotContains(private_response, "Safe Discovery Family")
+
+    def test_public_tree_redacts_living_private_people(self):
+        response = self.client.get("/tree/public/safe-discovery/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ada SafeSurname")
+        self.assertContains(response, "Private living person")
+        self.assertNotContains(response, "Living SecretSurname")
+        self.assertNotContains(response, "Secret Birthplace")
+        self.assertNotContains(response, "Secret Current Place")
+        self.assertNotContains(response, "Private biography text")
+
+    def test_start_or_find_tree_does_not_suggest_from_private_living_profile(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.post(
+            "/tree/start/",
+            {
+                "first_name": "Living",
+                "middle_name": "",
+                "last_name": "SecretSurname",
+                "maiden_name": "HiddenMaiden",
+                "birth_date": "2000-02-03",
+                "parent_clue": "",
+                "grandparent_clue": "",
+                "region_clue": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Safe Discovery Family")
+
+
 class FamilyInvitationServiceTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(

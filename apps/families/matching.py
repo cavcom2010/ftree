@@ -34,7 +34,17 @@ def find_possible_family_matches(form_data, limit=8, include_private=False):
             Family.Visibility.PUBLIC_SHOWCASE,
         ]
     )
-    queryset = _narrow_people_queryset(Person.objects.filter(family__in=families).select_related("family"), form_data)
+    people = Person.objects.filter(family__in=families).select_related("family")
+    if not include_private:
+        people = people.filter(
+            is_private=False,
+            is_living=False,
+            visibility__in=[
+                Person.Visibility.PUBLIC_IF_DECEASED,
+                Person.Visibility.PUBLIC_SHOWCASE,
+            ],
+        )
+    queryset = _narrow_people_queryset(people, form_data, include_private=include_private)
     suggestions = []
     for person in queryset[:750]:
         score, reasons = score_person_match(person, form_data)
@@ -91,7 +101,7 @@ def _clue_score(person, data):
     return score
 
 
-def _narrow_people_queryset(queryset, data):
+def _narrow_people_queryset(queryset, data, include_private=False):
     first_name = (data.get("first_name") or "").strip()
     last_name = (data.get("last_name") or "").strip()
     previous_name = (data.get("maiden_name") or "").strip()
@@ -99,7 +109,7 @@ def _narrow_people_queryset(queryset, data):
     filters = Q()
     if last_name:
         filters |= Q(last_name__istartswith=last_name[:3]) | Q(family__main_surnames__icontains=last_name)
-    if previous_name:
+    if previous_name and include_private:
         filters |= Q(maiden_name__istartswith=previous_name[:3]) | Q(family__maiden_surnames__icontains=previous_name)
     if first_name:
         filters |= Q(first_name__istartswith=first_name[:2])

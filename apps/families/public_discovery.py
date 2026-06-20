@@ -47,11 +47,9 @@ def public_family_cards(query=""):
     if query:
         families = families.filter(
             Q(name__icontains=query)
-            | Q(description__icontains=query)
             | Q(public_summary__icontains=query)
             | Q(origin_summary__icontains=query)
             | Q(main_surnames__icontains=query)
-            | Q(maiden_surnames__icontains=query)
             | Q(regions__icontains=query)
         )
     return [_family_card(family) for family in families[:80]]
@@ -62,26 +60,18 @@ def surname_family_cards(surname):
     if not surname:
         return []
     families = public_family_queryset().filter(allow_public_surname_search=True).filter(
-        Q(main_surnames__icontains=surname) | Q(people__last_name__iexact=surname)
+        main_surnames__icontains=surname
     ).distinct()
     return [_family_card(family) for family in families[:80]]
 
 
 def _family_card(family):
     surnames = _clean_list(family.main_surnames)
-    if not surnames:
-        surnames = list(
-            Person.objects.filter(family=family)
-            .exclude(last_name="")
-            .values_list("last_name", flat=True)
-            .distinct()
-            .order_by("last_name")[:6]
-        )
     return {
         "family": family,
         "name": family.name,
         "slug": family.slug,
-        "summary": family.public_summary or family.description,
+        "summary": family.public_summary,
         "origin": family.public_origin_label,
         "surnames": surnames[:6],
         "people_count": getattr(family, "people_count", family.people.count()),
@@ -194,6 +184,10 @@ def _public_tree_data_for_family(family, anchor, people):
             visible_people.append(person)
 
     visible_ids = {person.id for person in visible_people}
+    if not visible_people:
+        return {"people": [], "root_id": None}
+    if anchor.id not in visible_ids:
+        anchor = visible_people[0]
 
     payloads = []
     for person in visible_people:

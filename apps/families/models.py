@@ -84,8 +84,8 @@ class Family(models.Model):
         verbose_name_plural = "families"
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["visibility", "slug"]),
-            models.Index(fields=["allow_public_surname_search"]),
+            models.Index(fields=["visibility", "slug"], name="families_fa_visibil_38ff75_idx"),
+            models.Index(fields=["allow_public_surname_search"], name="families_fa_allow_p_fdd9f5_idx"),
         ]
 
     def __str__(self):
@@ -216,7 +216,10 @@ class FamilyInviteLink(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["token"]), models.Index(fields=["family", "revoked_at"])]
+        indexes = [
+            models.Index(fields=["token"], name="families_fa_token_b79c3f_idx"),
+            models.Index(fields=["family", "revoked_at"], name="families_fa_family__52c7e5_idx"),
+        ]
 
     def __str__(self):
         return f"Invite link for {self.family}"
@@ -337,9 +340,9 @@ class FamilyInvitation(models.Model):
     class Meta:
         ordering = ["-sent_at"]
         indexes = [
-            models.Index(fields=["family", "status"]),
-            models.Index(fields=["invitee_email", "status"]),
-            models.Index(fields=["token"]),
+            models.Index(fields=["family", "status"], name="families_fa_family__5d0556_idx"),
+            models.Index(fields=["invitee_email", "status"], name="families_fa_invitee_1d6bc1_idx"),
+            models.Index(fields=["token"], name="families_fa_token_7d51e4_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -446,9 +449,9 @@ class FamilyConnectionRequest(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["family", "status"]),
-            models.Index(fields=["user", "status"]),
-            models.Index(fields=["last_name", "birth_date"]),
+            models.Index(fields=["family", "status"], name="families_fa_family__353a96_idx"),
+            models.Index(fields=["user", "status"], name="families_fa_user_id_99e30a_idx"),
+            models.Index(fields=["last_name", "birth_date"], name="families_fa_last_na_9f4dbd_idx"),
         ]
 
     def __str__(self):
@@ -501,7 +504,10 @@ class FamilyEditSuggestion(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["family", "status"]), models.Index(fields=["person", "status"])]
+        indexes = [
+            models.Index(fields=["family", "status"], name="families_fa_family__6c5d21_idx"),
+            models.Index(fields=["person", "status"], name="families_fa_person__881f4c_idx"),
+        ]
 
     def __str__(self):
         return f"Suggestion for {self.person}: {self.field_name}"
@@ -542,7 +548,10 @@ class FamilyTakedownRequest(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["family", "status"]), models.Index(fields=["reporter_email"])]
+        indexes = [
+            models.Index(fields=["family", "status"], name="families_fa_family__31d6f1_idx"),
+            models.Index(fields=["reporter_email"], name="families_fa_reporte_536aca_idx"),
+        ]
 
     def __str__(self):
         return f"Takedown request for {self.family}"
@@ -572,7 +581,10 @@ class FamilyAuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["family", "created_at"]), models.Index(fields=["action"])]
+        indexes = [
+            models.Index(fields=["family", "created_at"], name="families_fa_family__7185a7_idx"),
+            models.Index(fields=["action"], name="families_fa_action_86639f_idx"),
+        ]
 
     def __str__(self):
         return f"{self.action} · {self.family}"

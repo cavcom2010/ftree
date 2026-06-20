@@ -85,8 +85,8 @@ class Person(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["family", "visibility", "is_living"]),
-            models.Index(fields=["last_name", "maiden_name"]),
+            models.Index(fields=["family", "visibility", "is_living"], name="people_pers_family__93d6aa_idx"),
+            models.Index(fields=["last_name", "maiden_name"], name="people_pers_last_na_6af25d_idx"),
         ]
 
     def __str__(self):

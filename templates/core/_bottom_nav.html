@@ -14,9 +14,12 @@
       <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="home"></i>Home
       </a>
-      <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
-        <i data-lucide="menu"></i>Menu
-      </a>
+      <form class="bottom-nav-item" method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" aria-label="Log out">
+          <i data-lucide="log-out"></i>Log out
+        </button>
+      </form>
     {% else %}
       <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="home"></i>Home

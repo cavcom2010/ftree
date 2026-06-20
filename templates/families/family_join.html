@@ -1,1 +1,29 @@
-hello
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Join family tree{% endblock %}
+{% block body_class %}discovery-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/discovery.css' %}?v=20260620-public-discovery">{% endblock %}
+{% block content %}
+<section class="discovery-shell">
+  <div class="discovery-form-card">
+    <p class="discovery-kicker">Family access</p>
+    <h1>{{ family.name }}</h1>
+    <p>Send your details to the tree owner. Private profiles stay hidden until approval.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="discovery-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="discovery-form-grid">
+        {% for field in form %}
+          <div class="discovery-field {% if field.name == 'requester_message' or field.name == 'parent_clue' or field.name == 'grandparent_clue' or field.name == 'region_clue' %}is-wide{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="discovery-errors">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <button class="discovery-btn" type="submit">Send</button>
+      <a class="discovery-btn-secondary" href="{% url 'public_tree_detail' family.slug %}">Back</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

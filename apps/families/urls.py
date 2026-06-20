@@ -1,8 +1,18 @@
 from django.urls import path
 
-from . import auth_views, views
+from . import auth_views, discovery_views, views
 
 urlpatterns = [
+    path("tree/start/", discovery_views.start_or_find_tree, name="start_or_find_tree"),
+    path("tree/public/<slug:slug>/", discovery_views.public_tree_detail, name="public_tree_detail"),
+    path("tree/public/<slug:slug>/request/", discovery_views.request_connection, name="family_request_connection"),
+    path("tree/requests/", discovery_views.connection_requests_dashboard, name="family_connection_requests"),
+    path(
+        "tree/requests/<int:request_id>/<str:action>/",
+        discovery_views.review_connection_request,
+        name="family_connection_request_review",
+    ),
+    path("surnames/<slug:surname_slug>/", discovery_views.surname_detail, name="surname_detail"),
     path("tree/people/<int:person_id>/invite/", views.invite_person, name="family_invite_person"),
     path(
         "tree/people/<int:person_id>/invite-relative/<str:relation_type>/",

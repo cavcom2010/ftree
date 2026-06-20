@@ -14,10 +14,11 @@ class PersonAdmin(admin.ModelAdmin):
         "has_profile_photo",
         "is_living",
         "is_private",
+        "visibility",
     ]
-    list_filter = ["gender", "is_living", "is_private", "family"]
+    list_filter = ["gender", "is_living", "is_private", "visibility", "family"]
     search_fields = ["first_name", "middle_name", "last_name", "maiden_name"]
-    readonly_fields = ["profile_photo_preview", "created_at", "updated_at"]
+    readonly_fields = ["profile_photo_preview", "created_at", "updated_at", "public_display_name", "public_date_label"]
     fields = [
         "family",
         "first_name",
@@ -34,6 +35,10 @@ class PersonAdmin(admin.ModelAdmin):
         "biography",
         "is_living",
         "is_private",
+        "visibility",
+        "public_display_name",
+        "public_date_label",
+        "public_notes",
         "created_by",
         "created_at",
         "updated_at",

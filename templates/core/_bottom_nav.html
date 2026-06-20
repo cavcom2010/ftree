@@ -8,11 +8,11 @@
       <a href="/memories/" {% if request.path == '/memories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="image"></i>Memory
       </a>
-      <a class="add-main" href="/tree/" aria-label="Connect">
+      <a class="add-main" href="/tree/" data-tree-open-root-detail aria-label="Connect">
         <i data-lucide="plus"></i>Connect
       </a>
-      <a href="/people/create/" {% if request.path == '/people/create/' %}class="active" aria-current="page"{% endif %}>
-        <i data-lucide="users"></i>People
+      <a href="/" {% if request.path == '/' %}class="active" aria-current="page"{% endif %}>
+        <i data-lucide="home"></i>Home
       </a>
       <a href="/stories/" {% if request.path == '/stories/' %}class="active" aria-current="page"{% endif %}>
         <i data-lucide="menu"></i>Menu

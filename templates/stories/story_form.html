@@ -3,6 +3,14 @@
 
 {% block title %}{% if form.instance.id %}Edit Story{% else %}Write Story{% endif %} — HeritageTree{% endblock %}
 
+{% block body_class %}app-premium-body{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/home_dashboard.css' %}?v=20260620-unify">
+<link rel="stylesheet" href="{% static 'css/app_pages.css' %}?v=20260620-unify">
+{% endblock %}
+
 {% block content %}
 <div class="section-head animate-in">
   <div>
@@ -11,41 +19,43 @@
   </div>
 </div>
 
-<form class="animate-in" method="post" enctype="multipart/form-data" style="background:#fff; border:1px solid var(--line); border-radius:24px; padding:20px; box-shadow:var(--shadow-sm);">
-  {% csrf_token %}
-  {% if selected_person %}
-    <input type="hidden" name="person" value="{{ selected_person.id }}">
-  {% endif %}
-  <div class="form-group" style="margin-bottom:14px;">
-    <label class="form-label" for="id_title">Title</label>
-    {{ form.title }}
-    {% if form.title.errors %}
-      <span style="color:#ef4444;font-size:0.78rem;">{{ form.title.errors|join:", " }}</span>
+<div class="tree-card animate-in">
+  <form class="person-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if selected_person %}
+      <input type="hidden" name="person" value="{{ selected_person.id }}">
     {% endif %}
-  </div>
-  <div class="form-group" style="margin-bottom:14px;">
-    <label class="form-label" for="id_body">Story</label>
-    {{ form.body }}
-    {% if form.body.errors %}
-      <span style="color:#ef4444;font-size:0.78rem;">{{ form.body.errors|join:", " }}</span>
-    {% endif %}
-  </div>
-  <div class="form-group" style="margin-bottom:14px;">
-    <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-      {{ form.is_featured }}
-      <span>Feature this story on the homepage</span>
-    </label>
-    {% if form.is_featured.errors %}
-      <span style="color:#ef4444;font-size:0.78rem;">{{ form.is_featured.errors|join:", " }}</span>
-    {% endif %}
-  </div>
-  <div class="form-actions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-    <button type="submit" class="btn primary btn-block">
-      <i data-lucide="check"></i>{% if form.instance.id %}Save Changes{% else %}Publish Story{% endif %}
-    </button>
-    <a href="/stories/" class="btn btn-ghost btn-block" style="text-align:center;">
-      Cancel
-    </a>
-  </div>
-</form>
+    <div class="form-group">
+      <label class="form-label" for="id_title">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}
+        <span style="color:#ef4444;font-size:0.78rem;">{{ form.title.errors|join:", " }}</span>
+      {% endif %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_body">Story</label>
+      {{ form.body }}
+      {% if form.body.errors %}
+        <span style="color:#ef4444;font-size:0.78rem;">{{ form.body.errors|join:", " }}</span>
+      {% endif %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        {{ form.is_featured }}
+        <span>Feature this story on the homepage</span>
+      </label>
+      {% if form.is_featured.errors %}
+        <span style="color:#ef4444;font-size:0.78rem;">{{ form.is_featured.errors|join:", " }}</span>
+      {% endif %}
+    </div>
+    <div class="form-actions" style="grid-template-columns:1fr 1fr;">
+      <button type="submit" class="btn primary btn-block">
+        <i data-lucide="check"></i>{% if form.instance.id %}Save Changes{% else %}Publish Story{% endif %}
+      </button>
+      <a href="/stories/" class="btn btn-ghost btn-block" style="text-align:center;">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
 {% endblock %}

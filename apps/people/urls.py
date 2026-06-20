@@ -19,6 +19,11 @@ urlpatterns = [
         name="person_edit_name",
     ),
     path(
+        "people/<int:person_id>/edit/",
+        views.person_edit,
+        name="person_edit",
+    ),
+    path(
         "people/<int:person_id>/descendants/",
         views.person_descendants,
         name="person_descendants",

@@ -4,8 +4,15 @@
   <div class="sheet-handle"></div>
   <h3 class="sheet-title">{% if form.instance.id %}Edit Person{% else %}Add Person{% endif %}</h3>
   {% endif %}
-  <form class="person-form" method="post" action="{% if form.instance.id %}/people/{{ form.instance.id }}/edit/{% else %}/people/create/{% endif %}" hx-post="{% if form.instance.id %}/people/{{ form.instance.id }}/edit/{% else %}/people/create/{% endif %}" hx-target="#global-sheet" hx-swap="innerHTML">
+  <form class="person-form" method="post" action="{% if form.instance.id %}/people/{{ form.instance.id }}/edit/{% else %}/people/create/{% endif %}" hx-post="{% if form.instance.id %}/people/{{ form.instance.id }}/edit/{% else %}/people/create/{% endif %}" hx-target="#global-sheet" hx-swap="innerHTML" enctype="multipart/form-data" hx-encoding="multipart/form-data">
     {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="id_profile_photo">Profile Photo</label>
+      {{ form.profile_photo }}
+      {% if form.profile_photo.errors %}
+        <span style="color:#ef4444;font-size:0.78rem;">{{ form.profile_photo.errors|join:", " }}</span>
+      {% endif %}
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="id_first_name">First Name</label>
@@ -19,6 +26,31 @@
         {{ form.last_name }}
         {% if form.last_name.errors %}
           <span style="color:#ef4444;font-size:0.78rem;">{{ form.last_name.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="id_middle_name">Middle Name</label>
+        {{ form.middle_name }}
+        {% if form.middle_name.errors %}
+          <span style="color:#ef4444;font-size:0.78rem;">{{ form.middle_name.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="id_maiden_name">Maiden Name</label>
+        {{ form.maiden_name }}
+        {% if form.maiden_name.errors %}
+          <span style="color:#ef4444;font-size:0.78rem;">{{ form.maiden_name.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="id_gender">Gender</label>
+        {{ form.gender }}
+        {% if form.gender.errors %}
+          <span style="color:#ef4444;font-size:0.78rem;">{{ form.gender.errors|join:", " }}</span>
         {% endif %}
       </div>
     </div>
@@ -39,10 +71,10 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" for="id_bio">Bio</label>
-      {{ form.bio }}
-      {% if form.bio.errors %}
-        <span style="color:#ef4444;font-size:0.78rem;">{{ form.bio.errors|join:", " }}</span>
+      <label class="form-label" for="id_biography">Bio</label>
+      {{ form.biography }}
+      {% if form.biography.errors %}
+        <span style="color:#ef4444;font-size:0.78rem;">{{ form.biography.errors|join:", " }}</span>
       {% endif %}
     </div>
     <div class="form-actions">

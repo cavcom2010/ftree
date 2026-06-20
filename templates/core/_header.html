@@ -13,24 +13,23 @@
   </div>
 
   {% if request.user.is_authenticated %}
-    <a class="icon-btn" href="/tree/" aria-label="Search tree">
+    <a class="icon-btn header-action-icon" href="/tree/" aria-label="Search tree">
       <i data-lucide="search"></i>
     </a>
-    <a class="icon-btn" href="/tree/" aria-label="Create family entry">
+    <a class="icon-btn header-action-icon" href="/tree/" aria-label="Create family entry">
       <i data-lucide="plus"></i>
     </a>
-    <form method="post" action="{% url 'logout' %}">
+    <form class="header-account-form" method="post" action="{% url 'logout' %}">
       {% csrf_token %}
-      <button class="icon-btn" type="submit" aria-label="Log out">
+      <button class="header-account-btn" type="submit" aria-label="Log out">
         <i data-lucide="log-out"></i>
+        <span>Log out</span>
       </button>
     </form>
   {% else %}
-    <a
-      class="icon-btn"
-      href="{% url 'login' %}"
-      aria-label="Account">
+    <a class="header-account-btn" href="{% url 'login' %}" aria-label="Account">
       <i data-lucide="circle-user-round"></i>
+      <span>Account</span>
     </a>
   {% endif %}
 </header>

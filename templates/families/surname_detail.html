@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ surname }} family trees · HeritageTree{% endblock %}
+{% block body_class %}discovery-page{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/discovery.css' %}?v=20260620-public-discovery">
+{% endblock %}
+
+{% block content %}
+<section class="discovery-shell">
+  <div class="discovery-hero">
+    <div class="discovery-hero-card">
+      <p class="discovery-kicker">Surname discovery</p>
+      <h1 class="discovery-title">{{ surname }} family trees</h1>
+      <p class="discovery-copy">These public or discoverable trees mention this surname. Surname matches help discovery but never unlock private branches automatically.</p>
+      <div class="discovery-actions">
+        <a class="discovery-btn" href="{% url 'tree' %}">Explore all public trees</a>
+        {% if request.user.is_authenticated %}
+          <a class="discovery-btn-secondary" href="{% url 'start_or_find_tree' %}">Start or find my tree</a>
+        {% endif %}
+      </div>
+    </div>
+    <aside class="discovery-side-card">
+      <p class="discovery-kicker">Safe access</p>
+      <p>Having the same surname is useful, but it is not proof of family membership. Use request connection so the tree owner can approve access.</p>
+    </aside>
+  </div>
+
+  <div class="discovery-grid">
+    {% for card in family_cards %}
+      <article class="discovery-card">
+        <div class="discovery-card-top">
+          <div>
+            <p class="discovery-kicker">{{ card.visibility_label }}</p>
+            <h2>{{ card.name }}</h2>
+          </div>
+          <div class="discovery-avatar">{{ card.name|slice:":1" }}</div>
+        </div>
+        {% if card.summary %}<p>{{ card.summary|truncatewords:28 }}</p>{% endif %}
+        <div class="discovery-meta">
+          {% if card.origin %}<span class="discovery-pill is-safe">{{ card.origin }}</span>{% endif %}
+          <span class="discovery-pill">{{ card.people_count }} people</span>
+        </div>
+        <div class="discovery-actions">
+          <a class="discovery-btn" href="{{ card.url }}">View public tree</a>
+          <a class="discovery-btn-secondary" href="{{ card.request_url }}">Request connection</a>
+        </div>
+      </article>
+    {% empty %}
+      <article class="discovery-card">
+        <h2>No public trees found</h2>
+        <p>No discoverable tree currently lists {{ surname }}.</p>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

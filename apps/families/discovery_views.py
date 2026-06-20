@@ -3,9 +3,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 
 from apps.families.connection_services import approve_connection_request, create_connection_request, reject_connection_request
 from apps.families.discovery_forms import ConnectionRequestForm, StartTreeIdentityForm
@@ -13,12 +11,19 @@ from apps.families.matching import find_possible_family_matches
 from apps.families.models import Family, FamilyConnectionRequest, FamilyMembership
 from apps.families.public_discovery import (
     can_public_view_family,
-    manager_can_review_requests,
     public_family_cards,
     public_tree_context,
     surname_family_cards,
 )
 from apps.people.models import Person
+
+
+def tree_entry(request):
+    if request.user.is_authenticated:
+        from apps.core.views import tree as private_tree
+
+        return private_tree(request)
+    return public_tree_gallery(request)
 
 
 def public_tree_gallery(request):

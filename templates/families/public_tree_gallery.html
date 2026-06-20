@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Explore public family trees · HeritageTree{% endblock %}
+{% block body_class %}discovery-page{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/discovery.css' %}?v=20260620-public-discovery">
+{% endblock %}
+
+{% block content %}
+<section class="discovery-shell">
+  <div class="discovery-hero">
+    <div class="discovery-hero-card">
+      <p class="discovery-kicker">Public discovery</p>
+      <h1 class="discovery-title">Explore family trees before you join.</h1>
+      <p class="discovery-copy">
+        Browse public family-tree previews, discover surnames and places, then request a safe connection when you recognise a branch.
+        Living people remain private by default.
+      </p>
+      <div class="discovery-actions">
+        {% if request.user.is_authenticated %}
+          <a class="discovery-btn" href="{% url 'start_or_find_tree' %}">Start or find my tree</a>
+        {% else %}
+          <a class="discovery-btn" href="{% url 'signup' %}">Create a free account</a>
+        {% endif %}
+        <a class="discovery-btn-secondary" href="/">Back home</a>
+      </div>
+    </div>
+    <aside class="discovery-side-card">
+      <p class="discovery-kicker">Privacy model</p>
+      <p><strong>Open for discovery.</strong> Public trees can show ancestors, surnames, places and the shape of the tree.</p>
+      <p><strong>Private for living people.</strong> Living relatives, children, full DOBs and private branches are hidden unless access is approved.</p>
+    </aside>
+  </div>
+
+  <form class="discovery-search" method="get" action="{% url 'tree' %}">
+    <input type="search" name="q" value="{{ query }}" placeholder="Search surname, place, or public tree name">
+    <button class="discovery-btn" type="submit">Search</button>
+  </form>
+
+  <div class="discovery-grid">
+    {% for card in family_cards %}
+      <article class="discovery-card">
+        <div class="discovery-card-top">
+          <div>
+            <p class="discovery-kicker">{{ card.visibility_label }}</p>
+            <h2>{{ card.name }}</h2>
+          </div>
+          <div class="discovery-avatar">{{ card.name|slice:":1" }}</div>
+        </div>
+        {% if card.summary %}<p>{{ card.summary|truncatewords:28 }}</p>{% endif %}
+        <div class="discovery-meta">
+          {% if card.origin %}<span class="discovery-pill is-safe">{{ card.origin }}</span>{% endif %}
+          <span class="discovery-pill">{{ card.people_count }} people</span>
+          <span class="discovery-pill">{{ card.story_count }} stories</span>
+        </div>
+        {% if card.surnames %}
+          <div class="discovery-meta">
+            {% for surname in card.surnames %}
+              <a class="discovery-pill" href="{% url 'surname_detail' surname|slugify %}">{{ surname }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="discovery-actions">
+          <a class="discovery-btn" href="{{ card.url }}">View public tree</a>
+          <a class="discovery-btn-secondary" href="{{ card.request_url }}">Request connection</a>
+        </div>
+      </article>
+    {% empty %}
+      <article class="discovery-card">
+        <h2>No public trees yet</h2>
+        <p>Public and discoverable trees will appear here once a tree owner enables public discovery.</p>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

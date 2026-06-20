@@ -116,7 +116,7 @@ def request_connection(request, slug):
 
     return render(
         request,
-        "families/request_connection.html",
+        "families/family_join.html",
         {
             "family": family,
             "form": form,

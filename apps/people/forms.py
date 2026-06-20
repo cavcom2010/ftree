@@ -11,6 +11,7 @@ class PersonForm(forms.ModelForm):
             "last_name",
             "middle_name",
             "maiden_name",
+            "profile_photo",
             "gender",
             "birth_date",
             "death_date",
@@ -23,6 +24,7 @@ class PersonForm(forms.ModelForm):
             "birth_date": forms.DateInput(attrs={"type": "date"}),
             "death_date": forms.DateInput(attrs={"type": "date"}),
             "biography": forms.Textarea(attrs={"rows": 3}),
+            "profile_photo": forms.ClearableFileInput(attrs={"accept": "image/*"}),
         }
 
 

@@ -119,6 +119,54 @@ def person_edit_name(request, person_id):
     )
 
 
+@login_required
+def person_edit(request, person_id):
+    person = get_object_or_404(Person, id=person_id, family=_family(request))
+    if not _can_edit_person(person, request.user):
+        raise PermissionDenied("You do not have permission to edit this person.")
+
+    if request.method == "POST":
+        form = PersonForm(request.POST, request.FILES, instance=person)
+        if form.is_valid():
+            person = form.save()
+            Activity.objects.create(
+                family=person.family,
+                actor=request.user,
+                activity_type=Activity.Type.PERSON_ADDED,
+                message=f"Updated {person.full_name}'s profile",
+                person=person,
+            )
+            if request.headers.get("HX-Request"):
+                response = HttpResponse("")
+                response["HX-Trigger"] = json.dumps(
+                    {"showToast": f"{person.full_name} updated"}
+                )
+                response.content = (
+                    '<div hx-swap-oob="true" id="global-sheet" class="global-sheet"></div>'
+                    '<div hx-swap-oob="true" id="sheet-overlay" class="sheet-overlay"></div>'
+                )
+                return response
+            return redirect("tree")
+
+        return render(request, "people/partials/person_form.html", {"form": form})
+
+    form = PersonForm(instance=person)
+    template = (
+        "people/partials/person_form.html"
+        if request.headers.get("HX-Request")
+        else "people/person_form.html"
+    )
+    return render(
+        request,
+        template,
+        {
+            "form": form,
+            "family": person.family,
+            "title": f"Edit {person.full_name}",
+        },
+    )
+
+
 def person_descendants(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
     generation = get_descendant_generation(person)

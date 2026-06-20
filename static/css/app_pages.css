@@ -338,6 +338,28 @@
   font-weight: 800;
 }
 
+/* File upload (ClearableFileInput) */
+.app-premium-body .form-group input[type="file"] {
+  min-height: auto;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.app-premium-body .person-photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-premium-body .person-photo-preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(44, 24, 16, 0.08);
+}
+
 .app-premium-body .form-errors,
 .app-premium-body .auth-form .form-errors {
   border: 1px solid rgba(217, 119, 6, 0.24);

@@ -9,6 +9,11 @@ urlpatterns = [
         name="person_drawer",
     ),
     path(
+        "people/<int:person_id>/edit/",
+        views.person_edit,
+        name="person_edit",
+    ),
+    path(
         "people/<int:person_id>/edit-name/",
         views.person_edit_name,
         name="person_edit_name",

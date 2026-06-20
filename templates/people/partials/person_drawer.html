@@ -26,6 +26,9 @@
     <i data-lucide="tree-deciduous"></i>Open Tree
   </a>
   {% if can_edit_name %}
+    <button class="btn soft" type="button" hx-get="{% url 'person_edit' person.id %}" hx-target="#global-sheet" hx-swap="innerHTML">
+      <i data-lucide="pencil"></i>Edit Profile
+    </button>
     <button class="btn soft" type="button" hx-get="{% url 'person_edit_name' person.id %}" hx-target="#global-sheet" hx-swap="innerHTML">
       <i data-lucide="pencil"></i>Edit Name
     </button>

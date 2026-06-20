@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.families.models import Family, FamilyMembership
 from apps.families.services import can_invite, current_family_for_user
-from apps.people.forms import PersonForm, PersonNameForm
+from apps.people.forms import PersonEditForm, PersonForm, PersonNameForm
 from apps.people.models import Person
 from apps.people.services import get_descendant_generation, get_generation_label
 from apps.social.models import Activity
@@ -42,7 +42,9 @@ def _can_edit_person(person, user):
     if not getattr(user, "is_authenticated", False):
         return False
 
-    membership = FamilyMembership.objects.filter(family=person.family, user=user).first()
+    membership = FamilyMembership.objects.filter(
+        family=person.family, user=user
+    ).first()
     if not membership:
         return False
 
@@ -52,7 +54,9 @@ def _can_edit_person(person, user):
     if membership.role in {FamilyMembership.Role.OWNER, FamilyMembership.Role.ADMIN}:
         return True
 
-    person_is_claimed = FamilyMembership.objects.filter(family=person.family, person=person).exists()
+    person_is_claimed = FamilyMembership.objects.filter(
+        family=person.family, person=person
+    ).exists()
     return can_invite(person.family, user) and not person_is_claimed
 
 
@@ -119,6 +123,58 @@ def person_edit_name(request, person_id):
     )
 
 
+@login_required
+def person_edit(request, person_id):
+    person = get_object_or_404(Person, id=person_id, family=_family(request))
+    if not _can_edit_person(person, request.user):
+        raise PermissionDenied("You do not have permission to edit this person.")
+
+    if request.method == "POST":
+        form = PersonEditForm(request.POST, request.FILES, instance=person)
+        if form.is_valid():
+            person = form.save()
+            photo_updated = "profile_photo" in form.changed_data
+            message = f"Updated {person.full_name}'s profile"
+            if photo_updated:
+                if request.FILES.get("profile_photo"):
+                    message = f"Updated {person.full_name}'s profile photo"
+                elif not person.profile_photo:
+                    message = f"Removed {person.full_name}'s profile photo"
+            Activity.objects.create(
+                family=person.family,
+                actor=request.user,
+                activity_type=Activity.Type.PERSON_ADDED,
+                message=message,
+                person=person,
+            )
+            if request.headers.get("HX-Request"):
+                response = render(
+                    request,
+                    "people/partials/person_edit_success.html",
+                    {"person": person},
+                )
+                response["HX-Refresh"] = "true"
+                return response
+            return redirect("tree")
+    else:
+        form = PersonEditForm(instance=person)
+
+    template = (
+        "people/partials/person_edit_form.html"
+        if request.headers.get("HX-Request")
+        else "people/edit_person.html"
+    )
+
+    return render(
+        request,
+        template,
+        {
+            "person": person,
+            "form": form,
+        },
+    )
+
+
 def person_descendants(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
     generation = get_descendant_generation(person)
@@ -162,10 +218,13 @@ def person_create(request):
             )
 
             from apps.achievements.services import check_branch_builder
+
             check_branch_builder(family, user)
 
             response = HttpResponse("")
-            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} added!"})
+            response["HX-Trigger"] = json.dumps(
+                {"showToast": f"{person.full_name} added!"}
+            )
 
             extra = (
                 f'<div hx-swap-oob="true" id="global-sheet" class="global-sheet"></div>'
@@ -193,10 +252,13 @@ def person_delete(request, person_id):
     person = get_object_or_404(Person, id=person_id, family=_family(request))
     user = _user(request)
 
-    membership = FamilyMembership.objects.filter(family=person.family, user=user).first()
+    membership = FamilyMembership.objects.filter(
+        family=person.family, user=user
+    ).first()
     can_delete = bool(
         membership
-        and membership.role in {FamilyMembership.Role.OWNER, FamilyMembership.Role.ADMIN}
+        and membership.role
+        in {FamilyMembership.Role.OWNER, FamilyMembership.Role.ADMIN}
     )
     if not can_delete:
         raise PermissionDenied("You do not have permission to delete this person.")
@@ -205,8 +267,12 @@ def person_delete(request, person_id):
         person.delete()
         if request.headers.get("HX-Request"):
             response = HttpResponse("")
-            response["HX-Trigger"] = json.dumps({"showToast": f"{person.full_name} deleted"})
+            response["HX-Trigger"] = json.dumps(
+                {"showToast": f"{person.full_name} deleted"}
+            )
             return response
         return redirect("tree")
 
-    return render(request, "people/partials/person_delete_confirm.html", {"person": person})
+    return render(
+        request, "people/partials/person_delete_confirm.html", {"person": person}
+    )

@@ -36,3 +36,32 @@ class PersonNameForm(forms.ModelForm):
             "last_name": forms.TextInput(attrs={"autocomplete": "family-name"}),
             "maiden_name": forms.TextInput(attrs={"autocomplete": "off"}),
         }
+
+
+class PersonEditForm(forms.ModelForm):
+    class Meta:
+        model = Person
+        fields = [
+            "first_name",
+            "last_name",
+            "middle_name",
+            "maiden_name",
+            "gender",
+            "birth_date",
+            "death_date",
+            "birth_place",
+            "current_place",
+            "biography",
+            "is_private",
+            "is_living",
+            "visibility",
+            "public_notes",
+            "profile_photo",
+        ]
+        widgets = {
+            "birth_date": forms.DateInput(attrs={"type": "date"}),
+            "death_date": forms.DateInput(attrs={"type": "date"}),
+            "biography": forms.Textarea(attrs={"rows": 3}),
+            "public_notes": forms.Textarea(attrs={"rows": 2}),
+            "profile_photo": forms.ClearableFileInput(),
+        }

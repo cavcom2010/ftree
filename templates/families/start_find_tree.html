@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Start or find my tree{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/discovery.css' %}?v=20260620-public-discovery">{% endblock %}
+{% block content %}
+<section class="discovery-shell">
+  <div class="discovery-form-card">
+    <h1>Start or find my tree</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="discovery-btn" type="submit">Search</button>
+    </form>
+  </div>
+  {% if suggestions %}
+    <div class="suggestion-grid" style="margin-top:1rem">
+      {% for suggestion in suggestions %}
+        <article class="discovery-card">
+          <h2>{{ suggestion.family.name }}</h2>
+          <p>{{ suggestion.confidence }} · {{ suggestion.score }}</p>
+          <a class="discovery-btn" href="{% url 'family_request_connection' suggestion.family.slug %}">Request connection</a>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

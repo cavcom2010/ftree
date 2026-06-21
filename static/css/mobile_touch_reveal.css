@@ -1,0 +1,104 @@
+/* Mobile-only two-step touch workflow for existing tree nodes.
+   Desktop hover behaviour remains controlled by tree.css/tree.js. */
+
+.mobile-touch-reveal {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .person-node {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .person-node.is-touch-revealed {
+    z-index: 80;
+  }
+
+  .person-node.is-touch-revealed .person-avatar {
+    box-shadow: var(--shadow-strong), 0 0 0 6px rgba(123, 45, 59, 0.2);
+  }
+
+  .mobile-touch-reveal {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    display: block;
+    width: min(238px, calc(100vw - 32px));
+    padding: 10px;
+    border: 1px solid rgba(44, 24, 16, 0.1);
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at top left, rgba(201, 169, 110, 0.2), transparent 44%),
+      rgba(255, 255, 255, 0.98);
+    box-shadow: 0 18px 42px rgba(44, 24, 16, 0.18);
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 180ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .person-node.is-touch-revealed .mobile-touch-reveal {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+    pointer-events: auto;
+  }
+
+  .mobile-touch-reveal::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translateX(-50%) rotate(45deg);
+    background: rgba(255, 255, 255, 0.98);
+    border-left: 1px solid rgba(44, 24, 16, 0.1);
+    border-top: 1px solid rgba(44, 24, 16, 0.1);
+  }
+
+  .mobile-touch-reveal__title {
+    position: relative;
+    z-index: 1;
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-touch-reveal__pills {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .mobile-touch-reveal__pills span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(201, 169, 110, 0.15);
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+    font-weight: 800;
+  }
+
+  .mobile-touch-reveal__hint {
+    position: relative;
+    z-index: 1;
+    margin: 9px 0 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(44, 24, 16, 0.08);
+    color: var(--accent-burgundy);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-align: center;
+  }
+}

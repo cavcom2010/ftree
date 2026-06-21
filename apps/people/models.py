@@ -1,15 +1,16 @@
 import uuid
+from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from PIL import Image as PILImage
 
 
 def person_profile_photo_upload_path(instance, filename):
-    extension = Path(filename).suffix.lower()
-    return f"people/profile-photos/{uuid.uuid4()}{extension}"
+    return f"people/profile-photos/{uuid.uuid4()}.jpg"
 
 
 class Person(models.Model):
@@ -85,9 +86,57 @@ class Person(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["family", "visibility", "is_living"], name="people_pers_family__93d6aa_idx"),
-            models.Index(fields=["last_name", "maiden_name"], name="people_pers_last_na_6af25d_idx"),
+            models.Index(
+                fields=["family", "visibility", "is_living"],
+                name="people_pers_family__93d6aa_idx",
+            ),
+            models.Index(
+                fields=["last_name", "maiden_name"],
+                name="people_pers_last_na_6af25d_idx",
+            ),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            try:
+                old = Person.objects.get(pk=self.pk)
+                photo_changed = old.profile_photo != self.profile_photo
+            except Person.DoesNotExist:
+                photo_changed = bool(self.profile_photo)
+        else:
+            photo_changed = bool(self.profile_photo)
+
+        super().save(*args, **kwargs)
+
+        if photo_changed and self.profile_photo:
+            self._resize_profile_photo()
+
+    def _resize_profile_photo(self):
+        img = PILImage.open(self.profile_photo)
+        img = img.convert("RGB")
+
+        size = 512
+        w, h = img.size
+        if w < h:
+            new_w = size
+            new_h = int(h * size / w)
+        else:
+            new_h = size
+            new_w = int(w * size / h)
+        img = img.resize((new_w, new_h), PILImage.LANCZOS)
+
+        left = (img.width - size) // 2
+        top = (img.height - size) // 2
+        img = img.crop((left, top, left + size, top + size))
+
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG", quality=85, optimize=True)
+        buffer.seek(0)
+
+        self.profile_photo.save(self.profile_photo.name, buffer, save=False)
+        buffer.close()
+
+        super().save(update_fields=["profile_photo"])
 
     def __str__(self):
         return self.full_name
@@ -105,8 +154,10 @@ class Person(models.Model):
         if not self.is_living or not self.birth_date:
             return False
         today = timezone.localdate()
-        age = today.year - self.birth_date.year - (
-            (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
+        age = (
+            today.year
+            - self.birth_date.year
+            - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         )
         return age < 18
 
@@ -259,12 +310,20 @@ class Person(models.Model):
         # Map to a single father / mother / partner to match the simple radial tree model.
         # Avoid assigning the same single parent as both father and mother.
         father = next(
-            (p for p in sorted(parents, key=lambda p: (p.created_at, p.id))
-             if p.gender == Person.Gender.MALE), None
+            (
+                p
+                for p in sorted(parents, key=lambda p: (p.created_at, p.id))
+                if p.gender == Person.Gender.MALE
+            ),
+            None,
         )
         mother = next(
-            (p for p in sorted(parents, key=lambda p: (p.created_at, p.id))
-             if p.gender == Person.Gender.FEMALE), None
+            (
+                p
+                for p in sorted(parents, key=lambda p: (p.created_at, p.id))
+                if p.gender == Person.Gender.FEMALE
+            ),
+            None,
         )
         if not father and not mother and parents:
             # Only one parent is known and gender is unclear/unknown/other.
@@ -274,13 +333,17 @@ class Person(models.Model):
         if partners:
             # Prefer an active spouse, otherwise fall back to the first partner.
             partner_ids = {p.id for p in partners}
-            spouse_rel = Relationship.objects.filter(
-                family=self.family,
-                relationship_type=Relationship.Type.SPOUSE,
-            ).filter(
-                models.Q(from_person=self, to_person_id__in=partner_ids)
-                | models.Q(to_person=self, from_person_id__in=partner_ids)
-            ).first()
+            spouse_rel = (
+                Relationship.objects.filter(
+                    family=self.family,
+                    relationship_type=Relationship.Type.SPOUSE,
+                )
+                .filter(
+                    models.Q(from_person=self, to_person_id__in=partner_ids)
+                    | models.Q(to_person=self, from_person_id__in=partner_ids)
+                )
+                .first()
+            )
             if spouse_rel:
                 spouse_id = (
                     spouse_rel.to_person_id
@@ -303,7 +366,9 @@ class Person(models.Model):
             "generation": generation,
             "role": "Member",
             "born": self.birth_date.strftime("%d %b %Y") if self.birth_date else None,
-            "death_date": self.death_date.strftime("%d %b %Y") if self.death_date else None,
+            "death_date": self.death_date.strftime("%d %b %Y")
+            if self.death_date
+            else None,
             "is_living": self.is_living,
             "is_private": self.is_private,
             "visibility": self.visibility,
@@ -311,7 +376,9 @@ class Person(models.Model):
             "life_status": (
                 f"Died {self.death_date.strftime('%d %b %Y')}"
                 if self.death_date
-                else "Deceased" if not self.is_living else ""
+                else "Deceased"
+                if not self.is_living
+                else ""
             ),
             "location": self.current_place or self.birth_place or "",
             "occupation": "",
@@ -333,7 +400,9 @@ class Person(models.Model):
                     "born": self.public_date_label,
                     "location": self.birth_place or self.current_place or "",
                     "biography": self.public_notes or "",
-                    "avatar_url": self.profile_photo.url if self.profile_photo else None,
+                    "avatar_url": self.profile_photo.url
+                    if self.profile_photo
+                    else None,
                     "is_public_safe": True,
                     "is_redacted": False,
                 }

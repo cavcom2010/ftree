@@ -65,7 +65,11 @@ def current_family_for_user(user, family_slug=None):
 def membership_for_user(family, user):
     if not family or not getattr(user, "is_authenticated", False):
         return None
-    return FamilyMembership.objects.filter(family=family, user=user).select_related("person").first()
+    return (
+        FamilyMembership.objects.filter(family=family, user=user)
+        .select_related("person")
+        .first()
+    )
 
 
 def can_invite(family, user):
@@ -75,7 +79,9 @@ def can_invite(family, user):
 
 def require_invite_permission(family, user):
     if not can_invite(family, user):
-        raise PermissionDenied("You do not have permission to invite relatives to this family.")
+        raise PermissionDenied(
+            "You do not have permission to invite relatives to this family."
+        )
 
 
 def resolve_invitee(identifier):
@@ -92,7 +98,9 @@ def resolve_invitee(identifier):
         return user, user.email or value
 
     if "@" not in value:
-        raise ValidationError("Enter an email address for people who have not signed up yet.")
+        raise ValidationError(
+            "Enter an email address for people who have not signed up yet."
+        )
 
     return None, value.lower()
 
@@ -112,19 +120,29 @@ def create_invitation(
     if person.family_id != family.id:
         raise ValidationError("Invited person must belong to this family.")
     if not person.is_living:
-        raise ValidationError("Deceased relatives cannot be invited to claim an account.")
+        raise ValidationError(
+            "Deceased relatives cannot be invited to claim an account."
+        )
     if anchor_person and anchor_person.family_id != family.id:
         raise ValidationError("Anchor person must belong to this family.")
 
     invitee_user, invitee_email = resolve_invitee(invitee_identifier)
     existing_membership = None
     if invitee_user:
-        existing_membership = FamilyMembership.objects.filter(family=family, user=invitee_user).first()
+        existing_membership = FamilyMembership.objects.filter(
+            family=family, user=invitee_user
+        ).first()
         if existing_membership and existing_membership.person_id == person.id:
-            raise ValidationError("This user is already linked to that person in this family.")
+            raise ValidationError(
+                "This user is already linked to that person in this family."
+            )
         if existing_membership and existing_membership.person_id:
-            raise ValidationError("This user is already linked to another person in this family.")
-    if FamilyInvitation.objects.filter(family=family, person=person, status=FamilyInvitation.Status.PENDING).exists():
+            raise ValidationError(
+                "This user is already linked to another person in this family."
+            )
+    if FamilyInvitation.objects.filter(
+        family=family, person=person, status=FamilyInvitation.Status.PENDING
+    ).exists():
         raise ValidationError("This person already has a pending invitation.")
 
     invitation = FamilyInvitation(
@@ -157,8 +175,14 @@ def accept_invitation(invitation, user):
         raise ValidationError("This invitation is no longer active.")
     if invitation.invitee_user and invitation.invitee_user_id != user.id:
         raise PermissionDenied("This invitation belongs to another user.")
-    if invitation.invitee_email and user.email and invitation.invitee_email.lower() != user.email.lower():
-        raise PermissionDenied("Sign in with the invited email address to accept this invitation.")
+    if (
+        invitation.invitee_email
+        and user.email
+        and invitation.invitee_email.lower() != user.email.lower()
+    ):
+        raise PermissionDenied(
+            "Sign in with the invited email address to accept this invitation."
+        )
 
     with transaction.atomic():
         membership, created = FamilyMembership.objects.get_or_create(
@@ -168,7 +192,9 @@ def accept_invitation(invitation, user):
         )
         if not created:
             if membership.person_id and membership.person_id != invitation.person_id:
-                raise ValidationError("Your account is already linked to another person in this family.")
+                raise ValidationError(
+                    "Your account is already linked to another person in this family."
+                )
             membership.role = _strongest_role(membership.role, invitation.role)
             membership.person = invitation.person
             membership.full_clean()
@@ -200,8 +226,14 @@ def _respond_to_invitation(invitation, user, status):
         raise ValidationError("This invitation is no longer active.")
     if invitation.invitee_user and invitation.invitee_user_id != user.id:
         raise PermissionDenied("This invitation belongs to another user.")
-    if invitation.invitee_email and user.email and invitation.invitee_email.lower() != user.email.lower():
-        raise PermissionDenied("Sign in with the invited email address to respond to this invitation.")
+    if (
+        invitation.invitee_email
+        and user.email
+        and invitation.invitee_email.lower() != user.email.lower()
+    ):
+        raise PermissionDenied(
+            "Sign in with the invited email address to respond to this invitation."
+        )
     invitation.status = status
     invitation.responded_at = timezone.now()
     invitation.save(update_fields=["status", "responded_at"])
@@ -212,16 +244,24 @@ def pending_invitations_for_user(user):
     if not getattr(user, "is_authenticated", False):
         return FamilyInvitation.objects.none()
     user_email = (user.email or "").lower()
-    invitations = FamilyInvitation.objects.filter(status=FamilyInvitation.Status.PENDING)
+    invitations = FamilyInvitation.objects.filter(
+        status=FamilyInvitation.Status.PENDING
+    )
     query = Q(invitee_user=user)
     if user_email:
         query |= Q(invitee_email__iexact=user_email)
-    return invitations.filter(query).select_related("family", "person", "inviter").order_by("-sent_at")
+    return (
+        invitations.filter(query)
+        .select_related("family", "person", "inviter")
+        .order_by("-sent_at")
+    )
 
 
 def memberships_by_person(family, people=None):
     person_ids = [person.id for person in people] if people is not None else None
-    queryset = FamilyMembership.objects.filter(family=family, person__isnull=False).select_related("user", "person")
+    queryset = FamilyMembership.objects.filter(
+        family=family, person__isnull=False
+    ).select_related("user", "person")
     if person_ids is not None:
         queryset = queryset.filter(person_id__in=person_ids)
     return {membership.person_id: membership for membership in queryset}
@@ -229,7 +269,9 @@ def memberships_by_person(family, people=None):
 
 def invitation_counts_for_people(family, people=None):
     person_ids = [person.id for person in people] if people is not None else None
-    queryset = FamilyInvitation.objects.filter(family=family, status=FamilyInvitation.Status.PENDING)
+    queryset = FamilyInvitation.objects.filter(
+        family=family, status=FamilyInvitation.Status.PENDING
+    )
     if person_ids is not None:
         queryset = queryset.filter(person_id__in=person_ids)
     counts = {}
@@ -286,7 +328,9 @@ def create_relative_with_optional_invite(
         invitation = None
         if invitee_identifier:
             if not person.is_living:
-                raise ValidationError("Deceased relatives cannot be invited to claim an account.")
+                raise ValidationError(
+                    "Deceased relatives cannot be invited to claim an account."
+                )
             invitation = create_invitation(
                 family=family,
                 inviter=inviter,
@@ -367,25 +411,25 @@ def create_relative(
             person_data.get("first_name", ""),
             person_data.get("last_name", ""),
             person_data.get("birth_date"),
+            person_data.get("maiden_name", ""),
         )
         if match:
-            if match_type == "exact":
-                _validate_existing_person_connection(family, anchor_person, match, relation_type)
-                person = match
-            else:
-                raise ValidationError(
-                    f"A person named '{match.full_name}' already exists in this family "
-                    f"but with a different birth date. To link to the existing person, "
-                    f"use the 'Existing Person' picker instead."
-                )
+            _validate_existing_person_connection(
+                family, anchor_person, match, relation_type
+            )
+            person = match
 
     if person:
-        _validate_existing_person_connection(family, anchor_person, person, relation_type)
+        _validate_existing_person_connection(
+            family, anchor_person, person, relation_type
+        )
     else:
         is_living = _coerce_is_living(person_data.get("is_living"))
         death_date = person_data.get("death_date")
         if is_living and death_date:
-            raise ValidationError("Mark this relative as deceased before adding a death date.")
+            raise ValidationError(
+                "Mark this relative as deceased before adding a death date."
+            )
         person = Person(
             family=family,
             created_by=inviter,
@@ -406,13 +450,12 @@ def create_relative(
         partner_relationship_type=partner_relationship_type,
     )
     if existing_person and relation_type in {"partner", "spouse"}:
-        relationship_type = (
-            _existing_partner_relationship_type(family, anchor_person, person)
-            or (
-                relationship_type
-                if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
-                else Relationship.Type.CO_PARENT
-            )
+        relationship_type = _existing_partner_relationship_type(
+            family, anchor_person, person
+        ) or (
+            relationship_type
+            if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
+            else Relationship.Type.CO_PARENT
         )
     relationships = _relationships_for_new_relative(
         family=family,
@@ -441,7 +484,9 @@ def create_relative(
     return person, relationship_type
 
 
-def _find_existing_person(family, first_name, last_name, birth_date=None):
+def _find_existing_person(
+    family, first_name, last_name, birth_date=None, maiden_name=None
+):
     if not first_name or not last_name:
         return None, None
     candidates = Person.objects.filter(
@@ -451,11 +496,15 @@ def _find_existing_person(family, first_name, last_name, birth_date=None):
     )
     if not candidates.exists():
         return None, None
+    if maiden_name:
+        candidates = candidates.filter(maiden_name__iexact=maiden_name.strip())
+        if not candidates.exists():
+            return None, None
     if birth_date:
         exact = candidates.filter(birth_date=birth_date).first()
         if exact:
             return exact, "exact"
-    return candidates.first(), "name_only"
+    return None, None
 
 
 def _coerce_is_living(value):
@@ -464,11 +513,21 @@ def _coerce_is_living(value):
     return value in {True, "True", "true", "1", 1}
 
 
-def _relationship_type_for_relation(relation_type, parent_relationship_type=None, partner_relationship_type=None):
+def _relationship_type_for_relation(
+    relation_type, parent_relationship_type=None, partner_relationship_type=None
+):
     if relation_type == "parent":
-        return parent_relationship_type if parent_relationship_type in PARENT_RELATIONSHIP_TYPES else Relationship.Type.PARENT_CHILD
+        return (
+            parent_relationship_type
+            if parent_relationship_type in PARENT_RELATIONSHIP_TYPES
+            else Relationship.Type.PARENT_CHILD
+        )
     if relation_type in {"partner", "spouse"}:
-        return partner_relationship_type if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES else Relationship.Type.SPOUSE
+        return (
+            partner_relationship_type
+            if partner_relationship_type in PARTNER_RELATIONSHIP_TYPES
+            else Relationship.Type.SPOUSE
+        )
     return RELATIONSHIP_DIRECTIONS[relation_type]
 
 
@@ -558,7 +617,9 @@ def _relationships_for_new_relative(
                 to_person=anchor_person,
                 relationship_type__in=PARENT_RELATIONSHIP_TYPES,
             ).values_list("from_person_id", flat=True)
-            parents_to_link = list(Person.objects.filter(family=family, id__in=parent_ids))
+            parents_to_link = list(
+                Person.objects.filter(family=family, id__in=parent_ids)
+            )
         for parent in parents_to_link:
             _validate_shared_parent(family, anchor_person, parent)
             relationships.append(
@@ -575,27 +636,37 @@ def _relationships_for_new_relative(
 def _validate_known_partner(family, anchor_person, other_parent):
     if other_parent.family_id != family.id:
         raise ValidationError("Other parent must belong to this family.")
-    is_partner = Relationship.objects.filter(
-        family=family,
-        relationship_type__in=PARTNER_RELATIONSHIP_TYPES,
-    ).filter(
-        Q(from_person=anchor_person, to_person=other_parent)
-        | Q(from_person=other_parent, to_person=anchor_person)
-    ).exists()
+    is_partner = (
+        Relationship.objects.filter(
+            family=family,
+            relationship_type__in=PARTNER_RELATIONSHIP_TYPES,
+        )
+        .filter(
+            Q(from_person=anchor_person, to_person=other_parent)
+            | Q(from_person=other_parent, to_person=anchor_person)
+        )
+        .exists()
+    )
     if not is_partner:
         raise ValidationError("Other parent must be a known partner of this person.")
 
 
-def _validate_existing_person_connection(family, anchor_person, existing_person, relation_type):
+def _validate_existing_person_connection(
+    family, anchor_person, existing_person, relation_type
+):
     if existing_person.family_id != family.id:
         raise ValidationError("Existing person must belong to this family.")
     if existing_person.id == anchor_person.id:
         raise ValidationError("A person cannot be connected to themself.")
     if relation_type in {"partner", "spouse"}:
         if _is_parent_child_between(family, anchor_person, existing_person):
-            raise ValidationError("A partner or co-parent cannot be a direct parent or child of this person.")
+            raise ValidationError(
+                "A partner or co-parent cannot be a direct parent or child of this person."
+            )
         if _is_known_sibling(family, anchor_person, existing_person):
-            raise ValidationError("A partner or co-parent cannot be a sibling of this person.")
+            raise ValidationError(
+                "A partner or co-parent cannot be a sibling of this person."
+            )
 
 
 def _existing_partner_relationship_type(family, person, partner):
@@ -648,7 +719,9 @@ def _validate_shared_parent(family, anchor_person, parent):
         to_person=anchor_person,
         relationship_type__in=PARENT_RELATIONSHIP_TYPES,
     ).exists():
-        raise ValidationError("Shared parents must already be parents or guardians of this person.")
+        raise ValidationError(
+            "Shared parents must already be parents or guardians of this person."
+        )
 
 
 def _validate_known_child(family, anchor_person, child):
@@ -660,17 +733,23 @@ def _validate_known_child(family, anchor_person, child):
         to_person=child,
         relationship_type__in=PARENT_RELATIONSHIP_TYPES,
     ).exists():
-        raise ValidationError("Shared children must already be children of this person.")
+        raise ValidationError(
+            "Shared children must already be children of this person."
+        )
 
 
 def _is_parent_child_between(family, person, other_person):
-    return Relationship.objects.filter(
-        family=family,
-        relationship_type__in=PARENT_RELATIONSHIP_TYPES,
-    ).filter(
-        Q(from_person=person, to_person=other_person)
-        | Q(from_person=other_person, to_person=person)
-    ).exists()
+    return (
+        Relationship.objects.filter(
+            family=family,
+            relationship_type__in=PARENT_RELATIONSHIP_TYPES,
+        )
+        .filter(
+            Q(from_person=person, to_person=other_person)
+            | Q(from_person=other_person, to_person=person)
+        )
+        .exists()
+    )
 
 
 def _validate_known_sibling(family, anchor_person, sibling):
@@ -680,16 +759,23 @@ def _validate_known_sibling(family, anchor_person, sibling):
         raise ValidationError("Do not select yourself as a sibling.")
     if _is_known_sibling(family, anchor_person, sibling):
         return
-    raise ValidationError("Selected children must already be known siblings of this person.")
+    raise ValidationError(
+        "Selected children must already be known siblings of this person."
+    )
 
 
 def _is_known_sibling(family, person, sibling):
-    explicit_sibling = Relationship.objects.filter(
-        family=family,
-        relationship_type=Relationship.Type.SIBLING,
-    ).filter(
-        Q(from_person=person, to_person=sibling) | Q(from_person=sibling, to_person=person)
-    ).exists()
+    explicit_sibling = (
+        Relationship.objects.filter(
+            family=family,
+            relationship_type=Relationship.Type.SIBLING,
+        )
+        .filter(
+            Q(from_person=person, to_person=sibling)
+            | Q(from_person=sibling, to_person=person)
+        )
+        .exists()
+    )
     if explicit_sibling:
         return True
 

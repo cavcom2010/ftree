@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from apps.people.models import Person
 
@@ -67,3 +68,13 @@ class PersonEditForm(forms.ModelForm):
             "public_notes": forms.Textarea(attrs={"rows": 2}),
             "profile_photo": forms.ClearableFileInput(),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_living = cleaned_data.get("is_living")
+        death_date = cleaned_data.get("death_date")
+        if is_living and death_date:
+            raise ValidationError(
+                "Mark this person as deceased before adding a death date."
+            )
+        return cleaned_data

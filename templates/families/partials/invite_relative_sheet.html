@@ -169,3 +169,36 @@
   </form>
 </section>
 <div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>
+
+<script>
+  (function () {
+    var sheet = document.getElementById('tree-create-sheet');
+    if (!sheet) return;
+
+    var deathWidget = sheet.querySelector('input[name="death_date"]');
+    var livingRadio = sheet.querySelector('input[name="is_living"][value="True"]');
+    var deceasedRadio = sheet.querySelector('input[name="is_living"][value="False"]');
+    if (!deathWidget || !livingRadio || !deceasedRadio) return;
+
+    function applyState() {
+      var isLiving = livingRadio.checked;
+      deathWidget.disabled = isLiving;
+      if (isLiving) deathWidget.value = '';
+    }
+
+    sheet.addEventListener('change', function (e) {
+      if (e.target.name === 'is_living') {
+        applyState();
+      }
+    });
+
+    deathWidget.addEventListener('change', function () {
+      if (deathWidget.value) {
+        deceasedRadio.checked = true;
+        deathWidget.disabled = false;
+      }
+    });
+
+    applyState();
+  })();
+</script>

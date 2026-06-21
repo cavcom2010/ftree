@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageOps
 
 
 def person_profile_photo_upload_path(instance, filename):
@@ -113,6 +113,7 @@ class Person(models.Model):
 
     def _resize_profile_photo(self):
         img = PILImage.open(self.profile_photo)
+        img = ImageOps.exif_transpose(img)
         img = img.convert("RGB")
 
         size = 512

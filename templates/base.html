@@ -123,6 +123,8 @@
 
   <script defer src="{% static 'js/app.js' %}?v=20260617-relationship-modal-lifecycle"></script>
   {% block extra_scripts %}{% endblock %}
+  {% if not tree_only %}
   <script defer src="{% static 'js/tree_detail_fallback.js' %}?v=20260620-tree-drawer"></script>
+  {% endif %}
 </body>
 </html>

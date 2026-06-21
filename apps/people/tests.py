@@ -38,7 +38,10 @@ class PersonProfilePhotoTests(TestCase):
             profile_photo=self._uploaded_image(),
         )
 
-        with person.profile_photo.open("rb") as stored_file:
-            with PILImage.open(stored_file) as stored_image:
+        person.profile_photo.open("rb")
+        try:
+            with PILImage.open(person.profile_photo.file) as stored_image:
                 self.assertEqual(stored_image.size, (512, 512))
                 self.assertEqual(stored_image.format, "JPEG")
+        finally:
+            person.profile_photo.close()

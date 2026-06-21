@@ -30,18 +30,31 @@ class PersonProfilePhotoTests(TestCase):
             content_type="image/png",
         )
 
-    def test_profile_photo_upload_is_cropped_to_square_jpeg(self):
+    def test_profile_photo_upload_preserves_aspect_ratio(self):
+        original_width, original_height = 2400, 1400
         person = Person.objects.create(
             family=self.family,
             first_name="Ada",
             last_name="Lovelace",
-            profile_photo=self._uploaded_image(),
+            profile_photo=self._uploaded_image(size=(original_width, original_height)),
         )
 
         person.profile_photo.open("rb")
         try:
             with PILImage.open(person.profile_photo.file) as stored_image:
-                self.assertEqual(stored_image.size, (512, 512))
                 self.assertEqual(stored_image.format, "JPEG")
+                self.assertLessEqual(
+                    max(stored_image.size),
+                    1024,
+                    "Longest side should be capped at 1024px",
+                )
+                width, height = stored_image.size
+                expected_height = round(original_height * width / original_width)
+                self.assertAlmostEqual(
+                    height,
+                    expected_height,
+                    delta=1,
+                    msg="Aspect ratio should be preserved",
+                )
         finally:
             person.profile_photo.close()

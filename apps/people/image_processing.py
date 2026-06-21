@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from PIL import Image as PILImage, ImageOps, UnidentifiedImageError
 
 
-PROFILE_PHOTO_SIZE = 512
+PROFILE_PHOTO_MAX_SIZE = 1024
 PROFILE_PHOTO_QUALITY = 86
 
 
@@ -16,13 +16,14 @@ def _lanczos_filter():
     return PILImage.LANCZOS
 
 
-def normalise_profile_photo_upload(profile_photo, *, size=PROFILE_PHOTO_SIZE):
+def normalise_profile_photo_upload(profile_photo, *, max_size=PROFILE_PHOTO_MAX_SIZE):
     """
-    Convert an uploaded profile photo into a square, web-friendly JPEG.
+    Convert an uploaded profile photo into a web-friendly JPEG.
 
-    The returned ContentFile is intentionally unsaved. Assign it back to the
-    ImageField before model storage runs, so the original full-size upload is
-    never persisted as the profile photo.
+    The image is resized so its longest side is at most ``max_size`` pixels,
+    preserving the original aspect ratio. The returned ContentFile is
+    intentionally unsaved; assign it back to the ImageField before model
+    storage runs so the original full-size upload is never persisted.
     """
     if not profile_photo:
         return None
@@ -39,12 +40,7 @@ def normalise_profile_photo_upload(profile_photo, *, size=PROFILE_PHOTO_SIZE):
     except (UnidentifiedImageError, OSError, ValueError):
         return None
 
-    image = ImageOps.fit(
-        image,
-        (size, size),
-        method=_lanczos_filter(),
-        centering=(0.5, 0.5),
-    )
+    image.thumbnail((max_size, max_size), resample=_lanczos_filter())
 
     output = BytesIO()
     image.save(

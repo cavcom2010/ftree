@@ -28,5 +28,8 @@ media/
 # Home server runtime
 .home_nginx/
 
+# Production backup artifacts
+.production/backups/
+
 # Internal docs
 docs/mailpit-setup.md

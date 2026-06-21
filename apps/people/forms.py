@@ -66,7 +66,7 @@ class PersonEditForm(forms.ModelForm):
             "death_date": forms.DateInput(attrs={"type": "date"}),
             "biography": forms.Textarea(attrs={"rows": 3}),
             "public_notes": forms.Textarea(attrs={"rows": 2}),
-            "profile_photo": forms.ClearableFileInput(),
+            "profile_photo": forms.ClearableFileInput(attrs={"accept": "image/*"}),
         }
 
     def clean(self):

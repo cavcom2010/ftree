@@ -30,6 +30,7 @@ media/
 
 # Production backup artifacts
 .production/backups/
+.production/imports/
 
 # Internal docs
 docs/mailpit-setup.md

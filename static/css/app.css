@@ -1909,6 +1909,36 @@ body.account-sheet-open {
   margin-top: 6px;
 }
 
+.photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green), #047857);
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-preview.has-photo {
+  border: 2px solid var(--green);
+}
+
+.photo-preview-placeholder {
+  pointer-events: none;
+}
+
 /* ===== Auth Forms ===== */
 .auth-card {
   position: relative;

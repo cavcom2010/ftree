@@ -1832,52 +1832,6 @@
   color: var(--text-secondary);
 }
 
-.tree-form-section {
-  margin-bottom: 10px;
-}
-
-.tree-photo-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.tree-photo-label {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
-
-.tree-photo-preview {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: white;
-  background: var(--accent-burgundy);
-  overflow: hidden;
-  box-shadow: var(--shadow-soft);
-  flex-shrink: 0;
-}
-
-.tree-photo-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.tree-photo-preview.has-photo {
-  border: 2px solid var(--accent-burgundy);
-}
-
-.tree-photo-placeholder {
-  pointer-events: none;
-}
-
 .tree-form-actions {
   display: flex;
   flex-direction: column;

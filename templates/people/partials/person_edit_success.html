@@ -1,17 +1,16 @@
-<section class="tree-create-sheet is-open" id="tree-create-sheet" aria-labelledby="tree-create-title" aria-hidden="false">
-  <div class="tree-create-handle"></div>
-  <div class="tree-create-head">
-    <div>
-      <p class="tree-eyebrow">Saved</p>
-      <h2 id="tree-create-title">Profile updated</h2>
-    </div>
-    <button type="button" data-create-sheet-close aria-label="Close update message">&times;</button>
+<div class="sheet-content">
+  <div class="sheet-handle"></div>
+  <h3 class="sheet-title">Profile Updated</h3>
+
+  <div style="margin:0 0 16px;color:var(--muted);line-height:1.5;">
+    <strong>{{ person.full_name }}</strong>'s profile has been updated.
   </div>
-  <div class="tree-invite-success">
-    <p><strong>{{ person.full_name }}</strong>'s profile has been updated.</p>
-    <div class="tree-create-actions">
-      <button type="button" data-create-sheet-close>Done</button>
-    </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn primary btn-block" onclick="closeSheet()">Done</button>
   </div>
-</section>
-<div class="tree-sheet-backdrop" id="tree-sheet-backdrop" data-create-sheet-close hx-swap-oob="true"></div>
+</div>
+
+<script>
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>

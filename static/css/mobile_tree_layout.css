@@ -1,0 +1,286 @@
+/* Mobile-only vertical family tree layout.
+   Desktop keeps the existing landscape/canvas tree. */
+
+.mobile-tree-vertical {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tree-only-body.has-mobile-vertical-tree {
+    overflow: auto;
+    background: var(--bg-primary);
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .tree-home {
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .canvas-wrap,
+  .tree-only-body.has-mobile-vertical-tree .zoom-controls {
+    display: none;
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .radial-header {
+    align-items: flex-start;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .radial-title {
+    max-width: 190px;
+    font-size: 1rem;
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .radial-header-actions {
+    gap: 6px;
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .header-pill {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.7rem;
+  }
+
+  .tree-only-body.has-mobile-vertical-tree .header-pill[data-tree-reset],
+  .tree-only-body.has-mobile-vertical-tree .header-pill[data-tree-collapse] {
+    display: none;
+  }
+
+  .mobile-tree-vertical {
+    position: relative;
+    display: block;
+    width: min(100%, 520px);
+    margin: 0 auto;
+    padding: 96px 14px 24px;
+  }
+
+  .mobile-tree-intro {
+    position: relative;
+    margin: 0 0 18px;
+    padding: 16px;
+    border: 1px solid rgba(44, 24, 16, 0.08);
+    border-radius: 26px;
+    background:
+      radial-gradient(circle at top left, rgba(201, 169, 110, 0.22), transparent 42%),
+      linear-gradient(135deg, rgba(255,255,255,0.96), rgba(245,237,228,0.9));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .mobile-tree-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px;
+    color: var(--accent-burgundy);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .mobile-tree-intro h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    line-height: 1.15;
+  }
+
+  .mobile-tree-intro p {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .mobile-tree-line {
+    position: absolute;
+    top: 210px;
+    bottom: 42px;
+    left: 50%;
+    width: 3px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      rgba(123, 45, 59, 0.12),
+      rgba(201, 169, 110, 0.65),
+      rgba(74, 93, 78, 0.22)
+    );
+    pointer-events: none;
+  }
+
+  .mobile-generation {
+    position: relative;
+    margin: 0 0 22px;
+  }
+
+  .mobile-generation:last-child {
+    margin-bottom: 0;
+  }
+
+  .mobile-generation-heading {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    margin: 0 0 12px;
+  }
+
+  .mobile-generation-heading span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border: 1px solid rgba(44, 24, 16, 0.08);
+    border-radius: 999px;
+    background: rgba(253, 248, 243, 0.96);
+    color: var(--text-secondary);
+    box-shadow: 0 4px 18px rgba(44, 24, 16, 0.07);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+  }
+
+  .mobile-person-stack {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-person-card {
+    position: relative;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(44, 24, 16, 0.08);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--text-primary);
+    padding: 12px;
+    text-align: left;
+    box-shadow: 0 14px 34px rgba(44, 24, 16, 0.09);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-person-card.is-root {
+    border-color: rgba(123, 45, 59, 0.35);
+    background:
+      radial-gradient(circle at top left, rgba(123, 45, 59, 0.13), transparent 48%),
+      #fff;
+    box-shadow: 0 18px 42px rgba(123, 45, 59, 0.16);
+  }
+
+  .mobile-person-card:active {
+    transform: translateY(1px);
+  }
+
+  .mobile-person-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 3px solid var(--accent-gold);
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+    color: #fff;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .mobile-person-card.is-root .mobile-person-avatar {
+    border-color: var(--accent-burgundy);
+  }
+
+  .mobile-person-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-person-main {
+    min-width: 0;
+  }
+
+  .mobile-person-main strong,
+  .mobile-person-main small {
+    display: block;
+  }
+
+  .mobile-person-main strong {
+    color: var(--text-primary);
+    font-size: 0.98rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-person-main small {
+    margin-top: 3px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-person-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .mobile-person-pills span {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(201, 169, 110, 0.14);
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+    font-weight: 800;
+  }
+
+  .mobile-person-card.is-root .mobile-person-pills span:first-child {
+    background: rgba(123, 45, 59, 0.1);
+    color: var(--accent-burgundy);
+  }
+
+  .mobile-card-chevron {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 900;
+  }
+
+  .mobile-tree-empty {
+    margin: 112px 16px 24px;
+    padding: 18px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+}

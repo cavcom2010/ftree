@@ -337,6 +337,8 @@
 }
 
 .home-premium-body .profile-orb, .app-premium-body .profile-orb, .home-premium-body .mini-person-avatar, .app-premium-body .mini-person-avatar, .home-premium-body .card-avatar, .app-premium-body .card-avatar {
+  position: relative;
+  overflow: hidden;
   border-radius: 50%;
   background: linear-gradient(145deg, #fff, #fff5ed);
   border: 4px solid var(--home-burgundy);

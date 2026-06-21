@@ -17,6 +17,7 @@
   <script src="{% get_static_prefix %}js/local_icons.js?v=20260618-local-icons-full" defer></script>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   {% block extra_head %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/profile_images.css' %}?v=20260621-profile-image-fit">
 </head>
 <body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 

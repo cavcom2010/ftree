@@ -1,12 +1,9 @@
 import uuid
-from io import BytesIO
-from pathlib import Path
 
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from PIL import Image as PILImage, ImageOps
 
 
 def person_profile_photo_upload_path(instance, filename):
@@ -95,49 +92,6 @@ class Person(models.Model):
                 name="people_pers_last_na_6af25d_idx",
             ),
         ]
-
-    def save(self, *args, **kwargs):
-        if self.pk:
-            try:
-                old = Person.objects.get(pk=self.pk)
-                photo_changed = old.profile_photo != self.profile_photo
-            except Person.DoesNotExist:
-                photo_changed = bool(self.profile_photo)
-        else:
-            photo_changed = bool(self.profile_photo)
-
-        super().save(*args, **kwargs)
-
-        if photo_changed and self.profile_photo:
-            self._resize_profile_photo()
-
-    def _resize_profile_photo(self):
-        img = PILImage.open(self.profile_photo)
-        img = ImageOps.exif_transpose(img)
-        img = img.convert("RGB")
-
-        size = 512
-        w, h = img.size
-        if w < h:
-            new_w = size
-            new_h = int(h * size / w)
-        else:
-            new_h = size
-            new_w = int(w * size / h)
-        img = img.resize((new_w, new_h), PILImage.LANCZOS)
-
-        left = (img.width - size) // 2
-        top = (img.height - size) // 2
-        img = img.crop((left, top, left + size, top + size))
-
-        buffer = BytesIO()
-        img.save(buffer, format="JPEG", quality=85, optimize=True)
-        buffer.seek(0)
-
-        self.profile_photo.save(self.profile_photo.name, buffer, save=False)
-        buffer.close()
-
-        super().save(update_fields=["profile_photo"])
 
     def __str__(self):
         return self.full_name

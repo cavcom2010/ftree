@@ -202,7 +202,7 @@ def person_create(request):
         if not family:
             return HttpResponse("No family configured.", status=404)
 
-        form = PersonForm(request.POST)
+        form = PersonForm(request.POST, request.FILES)
         if form.is_valid():
             person = form.save(commit=False)
             person.family = family

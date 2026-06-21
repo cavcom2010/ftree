@@ -241,6 +241,45 @@
     chips.forEach((chip) => container.appendChild(chip));
   }
 
+  function setDetailToolbar(person) {
+    const editBtn = document.getElementById('detail-action-edit');
+    const inviteBtn = document.getElementById('detail-action-invite');
+    const anchorBtn = document.getElementById('detail-action-anchor');
+    const descendantsBtn = document.getElementById('detail-action-descendants');
+    const storyLink = document.getElementById('detail-action-story');
+    const addRelativeWrap = document.getElementById('detail-action-add-relative');
+    const deleteBtn = document.getElementById('detail-action-delete');
+    const urls = person.urls || {};
+
+    setVisible(editBtn, Boolean(person.can_edit));
+    setVisible(inviteBtn, Boolean(person.can_invite));
+    setVisible(anchorBtn, Boolean(person.can_set_anchor));
+    setVisible(descendantsBtn, person.child_ids && person.child_ids.length > 0);
+    setVisible(storyLink, true);
+    setVisible(addRelativeWrap, Boolean(person.can_add_relative));
+    setVisible(deleteBtn, Boolean(person.can_delete));
+
+    if (editBtn) editBtn.dataset.url = urls.edit_name || '';
+    if (inviteBtn) inviteBtn.dataset.url = urls.invite || '';
+    if (anchorBtn) anchorBtn.dataset.url = urls.set_anchor || '';
+    if (descendantsBtn) descendantsBtn.dataset.url = urls.descendants || '';
+    if (storyLink) storyLink.href = urls.story_create || '#';
+    if (deleteBtn) deleteBtn.dataset.url = urls.delete || '';
+
+    const addRelativeUrls = urls.add_relative || {};
+    ['parent', 'child', 'partner', 'sibling'].forEach((rel) => {
+      const btn = document.querySelector(`[data-detail-action="add_${rel}"]`);
+      if (btn) btn.dataset.url = addRelativeUrls[rel] || '';
+    });
+
+    const picker = document.getElementById('detail-relation-picker');
+    const toggle = document.querySelector('[data-detail-menu-toggle]');
+    const wrap = document.getElementById('detail-action-add-relative');
+    if (picker) picker.hidden = true;
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    if (wrap) wrap.classList.remove('is-open');
+  }
+
   function openMobileDetail(personId) {
     const person = peopleMap.get(String(personId));
     const overlay = document.getElementById('detail-overlay');
@@ -287,6 +326,7 @@
     const profileLink = document.getElementById('detail-profile-link');
     if (profileLink && person.urls && person.urls.drawer) profileLink.href = person.urls.drawer;
 
+    setDetailToolbar(person);
     populateRelatives('detail-parents', [person.father_id, person.mother_id].filter(Boolean));
     populateRelatives('detail-partner', person.partner_id ? [person.partner_id] : []);
     populateRelatives('detail-siblings', person.sibling_ids || []);
